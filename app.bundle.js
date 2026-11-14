@@ -6,8 +6,11 @@ window.CHINESE_DATA = {"total_lessons": 30, "total_words": 744, "lessons": [{"id
 
 /* === storage.js === */
 /**
- * Storage & Auth Manager: Supabase Cloud Authentication & Multi-Device Realtime Persistence
- * Seamless cross-device synchronization (PC <-> Mobile) with offline localStorage fallback.
+ * Storage & Auth Manager
+ * - Supabase Auth (email + password, password recovery)
+ * - Progress synced to table `user_progress` (RLS protected), with automatic
+ *   fallback to auth user_metadata if the table does not exist yet.
+ * - Local cache in localStorage so the app opens instantly and works offline.
  */
 
 const SUPABASE_CONFIG = {
@@ -20,22 +23,54 @@ function getSupabase() {
   if (!_supabaseClient && typeof window !== 'undefined' && window.supabase && window.supabase.createClient) {
     try {
       _supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-    } catch(e) {
+    } catch (e) {
       console.warn('Supabase client init failed:', e);
     }
   }
   return _supabaseClient;
 }
 
+const PROGRESS_FIELDS = [
+  'completedLessons', 'lastActiveLesson', 'bookmarks', 'wordProgress',
+  'customWords', 'streak', 'lastActiveDate', 'quizHighScores', 'updatedAt'
+];
+
+function emptyProgress() {
+  return {
+    completedLessons: [],
+    lastActiveLesson: 1,
+    bookmarks: [],
+    wordProgress: {},
+    customWords: [],
+    streak: 1,
+    lastActiveDate: new Date().toISOString().slice(0, 10),
+    quizHighScores: { totalQuizzes: 0, totalCorrect: 0, bestScore: 0 },
+    updatedAt: 0
+  };
+}
+
+function pickProgress(src) {
+  const base = emptyProgress();
+  if (!src) return base;
+  PROGRESS_FIELDS.forEach(k => {
+    if (src[k] !== undefined && src[k] !== null) base[k] = src[k];
+  });
+  return base;
+}
+
 const StorageManager = {
   KEY_USERS: 'chinese_app_users_v3',
   KEY_CURRENT_USER: 'chinese_app_session_v3',
+  useProgressTable: null,   // null = unknown, true/false after first probe
+  _syncTimer: null,
+  _pendingSync: null,
+  syncState: 'idle',        // 'idle' | 'saving' | 'saved' | 'offline'
 
   getAllUsers() {
     try {
       const raw = localStorage.getItem(this.KEY_USERS);
       return raw ? JSON.parse(raw) : {};
-    } catch(e) {
+    } catch (e) {
       return {};
     }
   },
@@ -43,7 +78,7 @@ const StorageManager = {
   saveAllUsers(users) {
     try {
       localStorage.setItem(this.KEY_USERS, JSON.stringify(users));
-    } catch(e) {
+    } catch (e) {
       console.error('Error saving users:', e);
     }
   },
@@ -59,255 +94,259 @@ const StorageManager = {
     return this.getCurrentUser() || {};
   },
 
-  saveCurrentUser(user) {
-    if (!user) return;
+  _cacheUser(user) {
     const key = (user.email || user.username || '').toLowerCase();
     if (!key) return;
     const users = this.getAllUsers();
+    // Never keep passwords in local cache
+    delete user.password;
     users[key] = user;
     this.saveAllUsers(users);
-    this.syncToCloud(user);
+    localStorage.setItem(this.KEY_CURRENT_USER, key);
+  },
+
+  /** Save locally + schedule a debounced cloud sync. */
+  saveCurrentUser(user) {
+    if (!user) return;
+    user.updatedAt = Date.now();
+    this._cacheUser(user);
+    this.scheduleSync(user);
+  },
+
+  setSyncState(state) {
+    this.syncState = state;
+    const el = document.getElementById('sync-indicator');
+    if (!el) return;
+    const map = {
+      saving: ['⏳', 'Đang lưu lên đám mây...'],
+      saved: ['☁️', 'Đã đồng bộ đám mây'],
+      offline: ['⚠️', 'Chưa đồng bộ (mất kết nối) - sẽ thử lại'],
+      idle: ['☁️', 'Đã đồng bộ đám mây']
+    };
+    const [icon, title] = map[state] || map.idle;
+    el.textContent = icon;
+    el.title = title;
+    el.dataset.state = state;
+  },
+
+  scheduleSync(user) {
+    this._pendingSync = user;
+    clearTimeout(this._syncTimer);
+    this.setSyncState('saving');
+    this._syncTimer = setTimeout(() => this.flushSync(), 1200);
+  },
+
+  async flushSync() {
+    clearTimeout(this._syncTimer);
+    const user = this._pendingSync;
+    this._pendingSync = null;
+    if (!user) return;
+    const ok = await this.syncToCloud(user);
+    this.setSyncState(ok ? 'saved' : 'offline');
+    if (!ok) {
+      // retry later
+      this._pendingSync = this._pendingSync || user;
+      this._syncTimer = setTimeout(() => this.flushSync(), 15000);
+    }
+  },
+
+  async _probeTable(sb, uid) {
+    const { data, error } = await sb.from('user_progress').select('data, updated_at').eq('user_id', uid).maybeSingle();
+    if (error) {
+      // Table missing / not exposed -> fall back to user_metadata
+      this.useProgressTable = false;
+      return { ok: false };
+    }
+    this.useProgressTable = true;
+    return { ok: true, row: data };
   },
 
   async syncToCloud(user) {
     const sb = getSupabase();
-    if (!sb || !user) return;
+    if (!sb || !user || !user.id) return false;
     try {
-      await sb.auth.updateUser({
-        data: {
-          full_name: user.fullName,
-          username: user.username,
-          completedLessons: user.completedLessons || [],
-          lastActiveLesson: user.lastActiveLesson || 1,
-          bookmarks: user.bookmarks || [],
-          wordProgress: user.wordProgress || {},
-          customWords: user.customWords || [],
-          streak: user.streak || 1,
-          lastActiveDate: user.lastActiveDate,
-          quizHighScores: user.quizHighScores || {}
-        }
+      const progress = pickProgress(user);
+      if (this.useProgressTable === null) await this._probeTable(sb, user.id);
+
+      if (this.useProgressTable) {
+        const { error } = await sb.from('user_progress').upsert({
+          user_id: user.id,
+          data: progress,
+          updated_at: new Date().toISOString()
+        });
+        if (error) throw error;
+        return true;
+      }
+
+      // Fallback: store in user_metadata (kept compact)
+      const { error } = await sb.auth.updateUser({
+        data: { full_name: user.fullName, username: user.username, ...progress }
       });
-    } catch(e) {
-      // Quiet fail if not online
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.warn('Cloud sync failed:', e && e.message);
+      return false;
     }
+  },
+
+  /** Build the app user object from a Supabase auth user + cloud progress. */
+  async _hydrateFromCloud(authUser) {
+    const sb = getSupabase();
+    const meta = authUser.user_metadata || {};
+    const cached = this.getAllUsers()[(authUser.email || '').toLowerCase()];
+
+    let cloudProgress = null;
+    let migrateFromMeta = false;
+    const probe = await this._probeTable(sb, authUser.id);
+    if (probe.ok && probe.row && probe.row.data) {
+      cloudProgress = probe.row.data;
+    } else {
+      cloudProgress = meta;               // legacy / fallback storage
+      migrateFromMeta = probe.ok;         // table exists but empty -> migrate
+    }
+
+    let progress = pickProgress(cloudProgress);
+    // Keep whichever copy is newer (local edits made while offline win)
+    if (cached && (cached.updatedAt || 0) > (progress.updatedAt || 0)) {
+      progress = pickProgress(cached);
+      migrateFromMeta = true;
+    }
+
+    const user = {
+      id: authUser.id,
+      email: authUser.email,
+      fullName: meta.full_name || meta.fullName || (cached && cached.fullName) || 'Học viên',
+      username: meta.username || authUser.email.split('@')[0],
+      ...progress
+    };
+    this._cacheUser(user);
+
+    if (migrateFromMeta) {
+      await this.syncToCloud(user);
+      // Remove heavy progress data from the JWT once it lives in the table
+      if (this.useProgressTable && meta.wordProgress) {
+        try {
+          const cleared = {};
+          PROGRESS_FIELDS.forEach(k => { cleared[k] = null; });
+          await sb.auth.updateUser({ data: cleared });
+        } catch (e) { /* non-critical */ }
+      }
+    }
+    this.setSyncState('saved');
+    return user;
   },
 
   async checkSession() {
     const sb = getSupabase();
-    if (sb) {
-      try {
-        const { data } = await sb.auth.getSession();
-        if (data && data.session && data.session.user) {
-          const u = data.session.user;
-          const meta = u.user_metadata || {};
-          const loadedUser = {
-            id: u.id,
-            email: u.email,
-            fullName: meta.full_name || meta.fullName || 'Học viên Hán Ngữ',
-            username: meta.username || u.email.split('@')[0],
-            completedLessons: meta.completedLessons || [],
-            lastActiveLesson: meta.lastActiveLesson || 1,
-            bookmarks: meta.bookmarks || [],
-            wordProgress: meta.wordProgress || {},
-            customWords: meta.customWords || [],
-            streak: meta.streak || 1,
-            lastActiveDate: meta.lastActiveDate || new Date().toISOString().slice(0, 10),
-            quizHighScores: meta.quizHighScores || { totalQuizzes: 0, totalCorrect: 0, bestScore: 0 }
-          };
-          this.saveCurrentUser(loadedUser);
-          localStorage.setItem(this.KEY_CURRENT_USER, loadedUser.email.toLowerCase());
-          return loadedUser;
-        }
-      } catch(e) {
-        console.warn('Supabase getSession failed:', e);
+    if (!sb) return this.getCurrentUser();   // offline: use cached session
+    try {
+      const { data } = await sb.auth.getSession();
+      if (data && data.session && data.session.user) {
+        return await this._hydrateFromCloud(data.session.user);
       }
+      // No valid cloud session -> forget stale local session
+      localStorage.removeItem(this.KEY_CURRENT_USER);
+      return null;
+    } catch (e) {
+      console.warn('Supabase getSession failed:', e);
+      return this.getCurrentUser();
     }
-    return this.getCurrentUser();
+  },
+
+  translateError(msg) {
+    const m = (msg || '').toLowerCase();
+    if (m.includes('already registered') || m.includes('already been registered')) return 'Email này đã được đăng ký. Hãy chọn Đăng nhập hoặc Quên mật khẩu.';
+    if (m.includes('invalid login credentials')) return 'Sai email hoặc mật khẩu. Vui lòng kiểm tra lại.';
+    if (m.includes('email not confirmed')) return 'Email chưa được xác nhận. Hãy mở hộp thư (kể cả mục Spam) để xác nhận.';
+    if (m.includes('rate limit')) return 'Bạn thao tác quá nhanh. Vui lòng đợi 1 phút rồi thử lại.';
+    if (m.includes('password should be at least')) return 'Mật khẩu tối thiểu 6 ký tự.';
+    if (m.includes('invalid') && m.includes('email')) return 'Địa chỉ email không hợp lệ.';
+    if (m.includes('failed to fetch') || m.includes('network')) return 'Không kết nối được máy chủ. Vui lòng kiểm tra Internet.';
+    if (m.includes('same password') || m.includes('different from the old')) return 'Mật khẩu mới phải khác mật khẩu cũ.';
+    return msg || 'Đã có lỗi xảy ra, vui lòng thử lại.';
   },
 
   async register(fullName, email, username, password) {
-    const cleanName = fullName.trim();
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanUser = username.trim().toLowerCase();
+    const cleanName = (fullName || '').trim();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanUser = (username || '').trim().toLowerCase();
 
     if (!cleanName) return { success: false, message: 'Vui lòng nhập họ và tên của bạn!' };
-    if (!cleanEmail || !cleanEmail.includes('@')) return { success: false, message: 'Vui lòng nhập địa chỉ Email hợp lệ!' };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return { success: false, message: 'Vui lòng nhập địa chỉ Email hợp lệ!' };
     if (!cleanUser || cleanUser.length < 3) return { success: false, message: 'Tên hiển thị tối thiểu 3 ký tự!' };
     if (!password || password.length < 6) return { success: false, message: 'Mật khẩu tối thiểu 6 ký tự!' };
 
     const sb = getSupabase();
-    if (sb) {
-      try {
-        const { data, error } = await sb.auth.signUp({
-          email: cleanEmail,
-          password: password,
-          options: {
-            data: {
-              full_name: cleanName,
-              username: cleanUser,
-              completedLessons: [],
-              lastActiveLesson: 1,
-              bookmarks: [],
-              wordProgress: {},
-              customWords: [],
-              streak: 1,
-              lastActiveDate: new Date().toISOString().slice(0, 10),
-              quizHighScores: { totalQuizzes: 0, totalCorrect: 0, bestScore: 0 }
-            }
-          }
-        });
+    if (!sb) return { success: false, message: 'Không kết nối được máy chủ. Vui lòng kiểm tra Internet và tải lại trang.' };
 
-        if (error) {
-          if (error.message.includes('already registered')) {
-            return { success: false, message: 'Email này đã được đăng ký. Bạn vui lòng chọn Đăng nhập hoặc Quên mật khẩu!' };
-          }
-          return { success: false, message: error.message };
-        }
+    try {
+      const { data, error } = await sb.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: { data: { full_name: cleanName, username: cleanUser } }
+      });
+      if (error) return { success: false, message: this.translateError(error.message) };
 
-        const newUser = {
-          id: data.user ? data.user.id : 'usr_' + Date.now(),
-          fullName: cleanName,
-          email: cleanEmail,
-          username: cleanUser,
-          completedLessons: [],
-          lastActiveLesson: 1,
-          bookmarks: [],
-          wordProgress: {},
-          customWords: [],
-          streak: 1,
-          lastActiveDate: new Date().toISOString().slice(0, 10),
-          quizHighScores: { totalQuizzes: 0, totalCorrect: 0, bestScore: 0 }
-        };
-
-        this.saveCurrentUser(newUser);
-        localStorage.setItem(this.KEY_CURRENT_USER, cleanEmail);
-
-        return { 
-          success: true, 
-          user: newUser,
-          hasSession: !!data.session
-        };
-      } catch(err) {
-        return { success: false, message: 'Lỗi kết nối máy chủ: ' + err.message };
+      // Supabase returns a user with empty identities when the email already exists
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        return { success: false, message: this.translateError('already registered') };
       }
-    }
 
-    // Local fallback
-    const newUser = {
-      fullName: cleanName,
-      email: cleanEmail,
-      username: cleanUser,
-      password: password,
-      completedLessons: [],
-      lastActiveLesson: 1,
-      bookmarks: [],
-      wordProgress: {},
-      customWords: [],
-      streak: 1,
-      lastActiveDate: new Date().toISOString().slice(0, 10),
-      quizHighScores: { totalQuizzes: 0, totalCorrect: 0, bestScore: 0 }
-    };
-    this.saveCurrentUser(newUser);
-    localStorage.setItem(this.KEY_CURRENT_USER, cleanEmail);
-    return { success: true, user: newUser, hasSession: true };
+      if (!data.session) {
+        return { success: true, needsConfirm: true };
+      }
+
+      const user = await this._hydrateFromCloud(data.user);
+      return { success: true, user, needsConfirm: false };
+    } catch (err) {
+      return { success: false, message: this.translateError(err.message) };
+    }
   },
 
-  async login(emailOrUser, password) {
-    const cleanInput = emailOrUser.trim().toLowerCase();
-    if (!cleanInput) return { success: false, message: 'Vui lòng nhập Email hoặc tên đăng nhập!' };
+  async login(email, password) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) return { success: false, message: 'Vui lòng nhập Email!' };
     if (!password) return { success: false, message: 'Vui lòng nhập mật khẩu!' };
 
     const sb = getSupabase();
-    if (sb) {
-      try {
-        let targetEmail = cleanInput;
-        if (!targetEmail.includes('@')) {
-          const allUsers = this.getAllUsers();
-          const found = Object.values(allUsers).find(u => (u.username && u.username.toLowerCase() === cleanInput) || (u.email && u.email.toLowerCase() === cleanInput));
-          if (found && found.email) {
-            targetEmail = found.email;
-          } else {
-            return { success: false, message: 'Vui lòng đăng nhập bằng địa chỉ Email bạn đã đăng ký để đồng bộ đám mây!' };
-          }
-        }
+    if (!sb) return { success: false, message: 'Không kết nối được máy chủ. Vui lòng kiểm tra Internet và tải lại trang.' };
 
-        const { data, error } = await sb.auth.signInWithPassword({
-          email: targetEmail,
-          password: password
-        });
-
-        if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            return { success: false, message: 'Sai email hoặc mật khẩu! Vui lòng kiểm tra lại.' };
-          }
-          if (error.message.includes('Email not confirmed')) {
-            return { success: false, message: 'Email chưa được xác nhận. Vui lòng mở hộp thư email (hoặc hòm Spam) để bấm xác nhận tài khoản!' };
-          }
-          return { success: false, message: error.message };
-        }
-
-        const meta = data.user.user_metadata || {};
-        const loadedUser = {
-          id: data.user.id,
-          email: data.user.email,
-          fullName: meta.full_name || meta.fullName || 'Học viên Hán Ngữ',
-          username: meta.username || targetEmail.split('@')[0],
-          completedLessons: meta.completedLessons || [],
-          lastActiveLesson: meta.lastActiveLesson || 1,
-          bookmarks: meta.bookmarks || [],
-          wordProgress: meta.wordProgress || {},
-          customWords: meta.customWords || [],
-          streak: meta.streak || 1,
-          lastActiveDate: meta.lastActiveDate || new Date().toISOString().slice(0, 10),
-          quizHighScores: meta.quizHighScores || { totalQuizzes: 0, totalCorrect: 0, bestScore: 0 }
-        };
-
-        this.saveCurrentUser(loadedUser);
-        localStorage.setItem(this.KEY_CURRENT_USER, loadedUser.email.toLowerCase());
-        this.updateStreak();
-        return { success: true, user: loadedUser };
-      } catch(err) {
-        return { success: false, message: 'Lỗi đăng nhập: ' + err.message };
-      }
+    let targetEmail = cleanEmail;
+    if (!targetEmail.includes('@')) {
+      const found = Object.values(this.getAllUsers()).find(u => u.username && u.username.toLowerCase() === cleanEmail);
+      if (!found || !found.email) return { success: false, message: 'Vui lòng đăng nhập bằng địa chỉ Email bạn đã dùng khi đăng ký.' };
+      targetEmail = found.email;
     }
 
-    // Local fallback
-    const allUsers = this.getAllUsers();
-    const user = allUsers[cleanInput];
-    if (!user || user.password !== password) {
-      return { success: false, message: 'Sai tên đăng nhập hoặc mật khẩu!' };
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({ email: targetEmail, password });
+      if (error) return { success: false, message: this.translateError(error.message) };
+      const user = await this._hydrateFromCloud(data.user);
+      this.updateStreak();
+      return { success: true, user };
+    } catch (err) {
+      return { success: false, message: this.translateError(err.message) };
     }
-    localStorage.setItem(this.KEY_CURRENT_USER, cleanInput);
-    this.updateStreak();
-    return { success: true, user };
   },
 
   async forgotPassword(email) {
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       return { success: false, message: 'Vui lòng nhập địa chỉ Email hợp lệ!' };
     }
-
     const sb = getSupabase();
-    if (sb) {
-      try {
-        const { error } = await sb.auth.resetPasswordForEmail(cleanEmail, {
-          redirectTo: window.location.origin
-        });
-
-        if (error) {
-          return { success: false, message: error.message };
-        }
-
-        return { 
-          success: true, 
-          message: `Đã gửi liên kết khôi phục mật khẩu vào hòm thư ${cleanEmail}. Bạn vui lòng kiểm tra Hộp thư đến (hoặc hòm thư Spam) để đặt lại mật khẩu nhé!` 
-        };
-      } catch(err) {
-        return { success: false, message: 'Lỗi kết nối máy chủ: ' + err.message };
-      }
+    if (!sb) return { success: false, message: 'Không kết nối được máy chủ.' };
+    try {
+      const { error } = await sb.auth.resetPasswordForEmail(cleanEmail, { redirectTo: window.location.origin });
+      if (error) return { success: false, message: this.translateError(error.message) };
+      return {
+        success: true,
+        message: `Đã gửi liên kết đặt lại mật khẩu tới ${cleanEmail}. Hãy kiểm tra Hộp thư đến (hoặc mục Spam).`
+      };
+    } catch (err) {
+      return { success: false, message: this.translateError(err.message) };
     }
-    return { success: false, message: 'Chưa thể kết nối tới dịch vụ khôi phục mật khẩu.' };
   },
 
   async updateNewPassword(newPassword) {
@@ -315,24 +354,21 @@ const StorageManager = {
       return { success: false, message: 'Mật khẩu mới tối thiểu 6 ký tự!' };
     }
     const sb = getSupabase();
-    if (sb) {
-      try {
-        const { data, error } = await sb.auth.updateUser({ password: newPassword });
-        if (error) return { success: false, message: error.message };
-        return { success: true, user: data.user };
-      } catch(e) {
-        return { success: false, message: e.message };
-      }
+    if (!sb) return { success: false, message: 'Không kết nối được máy chủ.' };
+    try {
+      const { data, error } = await sb.auth.updateUser({ password: newPassword });
+      if (error) return { success: false, message: this.translateError(error.message) };
+      return { success: true, user: data.user };
+    } catch (e) {
+      return { success: false, message: this.translateError(e.message) };
     }
-    return { success: false, message: 'Không thể kết nối máy chủ.' };
   },
 
   async logout() {
+    if (this._pendingSync) await this.flushSync();
     const sb = getSupabase();
     if (sb) {
-      try {
-        await sb.auth.signOut();
-      } catch(e) {}
+      try { await sb.auth.signOut(); } catch (e) { /* ignore */ }
     }
     localStorage.removeItem(this.KEY_CURRENT_USER);
   },
@@ -534,9 +570,36 @@ const AudioEngine = {
     }
   },
 
+  _voice: null,
+
+  getMandarinVoice() {
+    if (this._voice) return this._voice;
+    const voices = window.speechSynthesis.getVoices() || [];
+    if (!voices.length) return null;
+    const norm = v => (v.lang || '').toLowerCase().replace('_', '-');
+    const score = v => {
+      const l = norm(v);
+      const n = (v.name || '').toLowerCase();
+      let s = 0;
+      if (l === 'zh-cn' || l.startsWith('cmn')) s += 100;
+      else if (l.startsWith('zh-hans')) s += 90;
+      else if (l === 'zh-tw') s += 40;
+      else if (l.startsWith('zh-hk') || l.startsWith('yue')) s -= 50;
+      else if (l.startsWith('zh')) s += 30;
+      else return -1000;
+      if (/google|tingting|ting-ting|xiaoxiao|yunxi|lili|meijia/.test(n)) s += 10;
+      if (v.localService) s += 2;
+      return s;
+    };
+    const best = voices.map(v => [score(v), v]).filter(x => x[0] > -1000).sort((a, b) => b[0] - a[0])[0];
+    this._voice = best ? best[1] : null;
+    return this._voice;
+  },
+
   speak(text, onEnd) {
+    if (!text) return;
     if (!('speechSynthesis' in window)) {
-      console.warn('SpeechSynthesis is not supported in this browser.');
+      if (typeof App !== 'undefined' && App.toast) App.toast('Trình duyệt này không hỗ trợ phát âm.', 'warning');
       return;
     }
     window.speechSynthesis.cancel(); // Stop any pending speech
@@ -546,9 +609,8 @@ const AudioEngine = {
     utterance.lang = 'zh-CN';
     utterance.rate = this.speechRate;
 
-    // Pick a high-quality Chinese voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const zhVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('cmn'));
+    // Pick a Mandarin (Mainland) voice; avoid Cantonese (zh-HK) when possible
+    const zhVoice = this.getMandarinVoice();
     if (zhVoice) {
       utterance.voice = zhVoice;
     }
@@ -656,8 +718,21 @@ const AudioEngine = {
 // Pre-load voices on browser
 if ('speechSynthesis' in window) {
   window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
+    AudioEngine._voice = null;
+    AudioEngine.getMandarinVoice();
   };
+}
+
+/** Escape user-provided text before injecting into HTML. */
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** Escape text for use inside a single-quoted JS string within an HTML attribute. */
+function jsArg(str) {
+  return escapeHtml(String(str == null ? '' : str).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 }
 
 
@@ -689,16 +764,17 @@ const HanziController = {
       try {
         const frameWidth = el.clientWidth || 270;
         const targetSize = Math.max(220, Math.min(280, frameWidth - 10));
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         this.writerInstance = HanziWriter.create(this.containerId, target, {
           width: targetSize,
           height: targetSize,
           padding: 20,
           strokeAnimationSpeed: 1,
           delayBetweenStrokes: 150,
-          strokeColor: '#1e293b',
-          radicalColor: '#c23b22',
-          outlineColor: '#e2e8f0',
-          drawingColor: '#c23b22',
+          strokeColor: isDark ? '#f1f5f9' : '#0f172a',
+          radicalColor: '#ef4444',
+          outlineColor: isDark ? '#334155' : '#e2e8f0',
+          drawingColor: '#ef4444',
           showOutline: true,
           showCharacter: true
         });
@@ -713,7 +789,14 @@ const HanziController = {
     // Update character details in UI
     const charDisplay = document.getElementById('writer-char-info');
     if (charDisplay) {
-      charDisplay.innerText = target;
+      let infoText = target;
+      if (window.CHINESE_DATA && window.CHINESE_DATA.all_words) {
+        const found = window.CHINESE_DATA.all_words.find(w => w.hanzi === target || w.hanzi.includes(target));
+        if (found) {
+          infoText = `${found.hanzi} [ ${found.pinyin} ] • ${found.hanviet ? `Hán Việt: ${found.hanviet} • ` : ''}${found.meaning}`;
+        }
+      }
+      charDisplay.innerText = infoText;
     }
   },
 
@@ -973,6 +1056,7 @@ const FlashcardController = {
           <div class="flashcard-hanviet">Hán Việt: ${w.hanviet || '—'}</div>
           ${w.pos ? `<span class="flashcard-pos">${w.pos}</span>` : ''}
           <div class="flashcard-meaning">${w.meaning}</div>
+          ${w.example ? `<div class="flashcard-example" style="margin-top:0.65rem; font-size:0.85rem; color:var(--text-muted); font-style:italic; border-top:1px dashed var(--border); padding-top:0.45rem;">💡 ${typeof escapeHtml === 'function' ? escapeHtml(w.example) : w.example}</div>` : ''}
 
           <div style="display:flex; gap:0.5rem; margin-top:1rem;">
             <button id="flashcard-draw-btn" class="btn btn-outline btn-sm">
@@ -1407,7 +1491,11 @@ const MatchGame = {
           if (this.matchedCount === this.cards.length / 2) {
             clearInterval(this.timerInterval);
             AudioEngine.playVictorySound();
-            alert(`🎉 Chúc mừng! Bạn đã hoàn thành trong ${this.secondsElapsed} giây!`);
+            if (typeof App !== 'undefined' && App.toast) {
+              App.toast(`🎉 Chúc mừng! Bạn đã ghép đúng tất cả trong ${this.secondsElapsed} giây!`, 'success', 5000);
+            } else {
+              alert(`🎉 Chúc mừng! Bạn đã hoàn thành trong ${this.secondsElapsed} giây!`);
+            }
           }
         }, 150);
       } else {
@@ -1572,6 +1660,7 @@ const LessonBrowser = {
                     <span class="vocab-item-py">${w.pinyin}</span>
                   </div>
                   <div class="vocab-item-mean">${w.meaning}</div>
+                  ${w.example ? `<div style="font-size:0.78rem; color:var(--text-muted); font-style:italic; margin-top:0.25rem;">💡 ${typeof escapeHtml === 'function' ? escapeHtml(w.example) : w.example}</div>` : ''}
                   <div class="vocab-item-meta">${w.pos ? `<span class="flashcard-pos" style="margin:0.15rem 0.35rem 0 0;">${w.pos}</span>` : ''}${w.hanviet ? `Hán Việt: ${w.hanviet}` : ''}</div>
                 </div>
               </div>
@@ -1734,6 +1823,7 @@ const DictionaryController = {
                     ${w.isCustom ? '<span style="font-size:0.65rem; background:#fef3c7; color:#b45309; padding:0.1rem 0.3rem; border-radius:3px;">Tự thêm</span>' : ''}
                   </div>
                   <div class="vocab-item-mean">${w.meaning}</div>
+                  ${w.example ? `<div style="font-size:0.78rem; color:var(--text-muted); font-style:italic; margin-top:0.25rem;">💡 ${typeof escapeHtml === 'function' ? escapeHtml(w.example) : w.example}</div>` : ''}
                   <div class="vocab-item-meta">${w.pos ? `<span class="flashcard-pos" style="margin:0.15rem 0.35rem 0 0;">${w.pos}</span>` : ''}${w.hanviet ? `Hán Việt: ${w.hanviet}` : ''}</div>
                 </div>
               </div>
@@ -2080,11 +2170,51 @@ const App = {
     }
   },
 
-  handleLogout() {
-    if (confirm('Bạn có chắc muốn đăng xuất khỏi tài khoản này? Toàn bộ tiến độ của bạn đã được lưu an toàn.')) {
-      StorageManager.logout();
+  handleUserBadgeClick() {
+    const user = StorageManager.getCurrentUser();
+    if (!user) {
+      this.showAuthModal('login');
+      return;
+    }
+    const email = user.email || 'Chưa liên kết email';
+    const isCloud = user.id && user.id.length > 20;
+    const msg = `👤 Tài khoản: ${user.fullName} (@${user.username})\n📧 Email: ${email}\n☁️ Trạng thái: ${isCloud ? 'Đã liên kết Cloud Supabase' : 'Lưu cục bộ'}\n\nBạn có muốn đăng xuất không?`;
+    if (confirm(msg)) {
+      this.handleLogout(true);
+    }
+  },
+
+  async handleLogout(skipConfirm = false) {
+    if (skipConfirm || confirm('Bạn có chắc muốn đăng xuất khỏi tài khoản này? Toàn bộ tiến độ của bạn đã được lưu an toàn trên đám mây.')) {
+      await StorageManager.logout();
       location.reload();
     }
+  },
+
+  toast(message, type = 'info', duration = 3000) {
+    let container = document.getElementById('app-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'app-toast-container';
+      container.style.cssText = 'position:fixed; bottom:80px; left:50%; transform:translateX(-50%); z-index:99999; display:flex; flex-direction:column; gap:8px; pointer-events:none; max-width:90vw; width:max-content;';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    const bg = type === 'success' ? '#10b981' : (type === 'error' ? '#ef4444' : (type === 'warning' ? '#f59e0b' : '#1e293b'));
+    toast.style.cssText = `background:${bg}; color:#fff; padding:10px 18px; border-radius:30px; font-size:0.9rem; font-weight:600; box-shadow:0 10px 25px rgba(0,0,0,0.25); opacity:0; transform:translateY(15px); transition:all 0.25s ease; text-align:center; pointer-events:auto; display:flex; align-items:center; gap:8px;`;
+    const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : (type === 'warning' ? '⚠️' : 'ℹ️'));
+    const safeMsg = typeof escapeHtml === 'function' ? escapeHtml(message) : message;
+    toast.innerHTML = `<span>${icon}</span> <span>${safeMsg}</span>`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0)';
+    });
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(10px)';
+      setTimeout(() => toast.remove(), 250);
+    }, duration);
   },
 
   initTheme() {

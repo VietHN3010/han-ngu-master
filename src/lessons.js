@@ -127,6 +127,7 @@ const LessonBrowser = {
                     <span class="vocab-item-py">${w.pinyin}</span>
                   </div>
                   <div class="vocab-item-mean">${w.meaning}</div>
+                  ${w.example ? `<div style="font-size:0.78rem; color:var(--text-muted); font-style:italic; margin-top:0.25rem;">💡 ${typeof escapeHtml === 'function' ? escapeHtml(w.example) : w.example}</div>` : ''}
                   <div class="vocab-item-meta">${w.pos ? `<span class="flashcard-pos" style="margin:0.15rem 0.35rem 0 0;">${w.pos}</span>` : ''}${w.hanviet ? `Hán Việt: ${w.hanviet}` : ''}</div>
                 </div>
               </div>

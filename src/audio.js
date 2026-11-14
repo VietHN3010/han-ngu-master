@@ -17,9 +17,36 @@ const AudioEngine = {
     }
   },
 
+  _voice: null,
+
+  getMandarinVoice() {
+    if (this._voice) return this._voice;
+    const voices = window.speechSynthesis.getVoices() || [];
+    if (!voices.length) return null;
+    const norm = v => (v.lang || '').toLowerCase().replace('_', '-');
+    const score = v => {
+      const l = norm(v);
+      const n = (v.name || '').toLowerCase();
+      let s = 0;
+      if (l === 'zh-cn' || l.startsWith('cmn')) s += 100;
+      else if (l.startsWith('zh-hans')) s += 90;
+      else if (l === 'zh-tw') s += 40;
+      else if (l.startsWith('zh-hk') || l.startsWith('yue')) s -= 50;
+      else if (l.startsWith('zh')) s += 30;
+      else return -1000;
+      if (/google|tingting|ting-ting|xiaoxiao|yunxi|lili|meijia/.test(n)) s += 10;
+      if (v.localService) s += 2;
+      return s;
+    };
+    const best = voices.map(v => [score(v), v]).filter(x => x[0] > -1000).sort((a, b) => b[0] - a[0])[0];
+    this._voice = best ? best[1] : null;
+    return this._voice;
+  },
+
   speak(text, onEnd) {
+    if (!text) return;
     if (!('speechSynthesis' in window)) {
-      console.warn('SpeechSynthesis is not supported in this browser.');
+      if (typeof App !== 'undefined' && App.toast) App.toast('Trình duyệt này không hỗ trợ phát âm.', 'warning');
       return;
     }
     window.speechSynthesis.cancel(); // Stop any pending speech
@@ -29,9 +56,8 @@ const AudioEngine = {
     utterance.lang = 'zh-CN';
     utterance.rate = this.speechRate;
 
-    // Pick a high-quality Chinese voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const zhVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('cmn'));
+    // Pick a Mandarin (Mainland) voice; avoid Cantonese (zh-HK) when possible
+    const zhVoice = this.getMandarinVoice();
     if (zhVoice) {
       utterance.voice = zhVoice;
     }
@@ -139,6 +165,19 @@ const AudioEngine = {
 // Pre-load voices on browser
 if ('speechSynthesis' in window) {
   window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
+    AudioEngine._voice = null;
+    AudioEngine.getMandarinVoice();
   };
+}
+
+/** Escape user-provided text before injecting into HTML. */
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** Escape text for use inside a single-quoted JS string within an HTML attribute. */
+function jsArg(str) {
+  return escapeHtml(String(str == null ? '' : str).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 }

@@ -1852,8 +1852,11 @@ body {
 
       <!-- Header Controls -->
       <div class="header-right">
+        <!-- Cloud Sync status indicator -->
+        <span id="sync-indicator" title="Đã đồng bộ đám mây" style="font-size:0.9rem; cursor:help; margin-right:0.15rem;" data-state="idle">☁️</span>
+
         <!-- User Profile Pill -->
-        <button id="header-user-btn" class="user-profile-badge" onclick="App.handleLogout()" title="Bấm để đăng xuất">
+        <button id="header-user-btn" class="user-profile-badge" onclick="App.handleUserBadgeClick()" title="Tài khoản / Đăng xuất">
           <span>👤</span> <span>Tài khoản</span>
         </button>
 
@@ -2259,6 +2262,8 @@ body {
           <input id="writer-input-char" type="text" maxlength="2" placeholder="Nhập 1 chữ (VD: 好, 学, 我...)" class="btn btn-outline" style="flex:1; text-align:center; font-size:1.05rem;">
           <button class="btn btn-speaker" onclick="AudioEngine.speak(HanziController.currentChar)" title="Nghe âm" style="font-size:1.3rem;">🔊</button>
         </div>
+
+        <div id="writer-char-info" style="font-size:0.88rem; font-weight:700; color:var(--primary); text-align:center; min-height:22px; max-width:400px; padding:0 0.5rem; word-break:break-word;"></div>
 
         <div class="migrid-frame">
           <div class="migrid-lines"></div>

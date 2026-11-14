@@ -141,6 +141,7 @@ const FlashcardController = {
           <div class="flashcard-hanviet">Hán Việt: ${w.hanviet || '—'}</div>
           ${w.pos ? `<span class="flashcard-pos">${w.pos}</span>` : ''}
           <div class="flashcard-meaning">${w.meaning}</div>
+          ${w.example ? `<div class="flashcard-example" style="margin-top:0.65rem; font-size:0.85rem; color:var(--text-muted); font-style:italic; border-top:1px dashed var(--border); padding-top:0.45rem;">💡 ${typeof escapeHtml === 'function' ? escapeHtml(w.example) : w.example}</div>` : ''}
 
           <div style="display:flex; gap:0.5rem; margin-top:1rem;">
             <button id="flashcard-draw-btn" class="btn btn-outline btn-sm">

@@ -270,11 +270,51 @@ const App = {
     }
   },
 
-  handleLogout() {
-    if (confirm('Bạn có chắc muốn đăng xuất khỏi tài khoản này? Toàn bộ tiến độ của bạn đã được lưu an toàn.')) {
-      StorageManager.logout();
+  handleUserBadgeClick() {
+    const user = StorageManager.getCurrentUser();
+    if (!user) {
+      this.showAuthModal('login');
+      return;
+    }
+    const email = user.email || 'Chưa liên kết email';
+    const isCloud = user.id && user.id.length > 20;
+    const msg = `👤 Tài khoản: ${user.fullName} (@${user.username})\n📧 Email: ${email}\n☁️ Trạng thái: ${isCloud ? 'Đã liên kết Cloud Supabase' : 'Lưu cục bộ'}\n\nBạn có muốn đăng xuất không?`;
+    if (confirm(msg)) {
+      this.handleLogout(true);
+    }
+  },
+
+  async handleLogout(skipConfirm = false) {
+    if (skipConfirm || confirm('Bạn có chắc muốn đăng xuất khỏi tài khoản này? Toàn bộ tiến độ của bạn đã được lưu an toàn trên đám mây.')) {
+      await StorageManager.logout();
       location.reload();
     }
+  },
+
+  toast(message, type = 'info', duration = 3000) {
+    let container = document.getElementById('app-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'app-toast-container';
+      container.style.cssText = 'position:fixed; bottom:80px; left:50%; transform:translateX(-50%); z-index:99999; display:flex; flex-direction:column; gap:8px; pointer-events:none; max-width:90vw; width:max-content;';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    const bg = type === 'success' ? '#10b981' : (type === 'error' ? '#ef4444' : (type === 'warning' ? '#f59e0b' : '#1e293b'));
+    toast.style.cssText = `background:${bg}; color:#fff; padding:10px 18px; border-radius:30px; font-size:0.9rem; font-weight:600; box-shadow:0 10px 25px rgba(0,0,0,0.25); opacity:0; transform:translateY(15px); transition:all 0.25s ease; text-align:center; pointer-events:auto; display:flex; align-items:center; gap:8px;`;
+    const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : (type === 'warning' ? '⚠️' : 'ℹ️'));
+    const safeMsg = typeof escapeHtml === 'function' ? escapeHtml(message) : message;
+    toast.innerHTML = `<span>${icon}</span> <span>${safeMsg}</span>`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0)';
+    });
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(10px)';
+      setTimeout(() => toast.remove(), 250);
+    }, duration);
   },
 
   initTheme() {

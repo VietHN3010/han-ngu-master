@@ -25,16 +25,17 @@ const HanziController = {
       try {
         const frameWidth = el.clientWidth || 270;
         const targetSize = Math.max(220, Math.min(280, frameWidth - 10));
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         this.writerInstance = HanziWriter.create(this.containerId, target, {
           width: targetSize,
           height: targetSize,
           padding: 20,
           strokeAnimationSpeed: 1,
           delayBetweenStrokes: 150,
-          strokeColor: '#1e293b',
-          radicalColor: '#c23b22',
-          outlineColor: '#e2e8f0',
-          drawingColor: '#c23b22',
+          strokeColor: isDark ? '#f1f5f9' : '#0f172a',
+          radicalColor: '#ef4444',
+          outlineColor: isDark ? '#334155' : '#e2e8f0',
+          drawingColor: '#ef4444',
           showOutline: true,
           showCharacter: true
         });
@@ -49,7 +50,14 @@ const HanziController = {
     // Update character details in UI
     const charDisplay = document.getElementById('writer-char-info');
     if (charDisplay) {
-      charDisplay.innerText = target;
+      let infoText = target;
+      if (window.CHINESE_DATA && window.CHINESE_DATA.all_words) {
+        const found = window.CHINESE_DATA.all_words.find(w => w.hanzi === target || w.hanzi.includes(target));
+        if (found) {
+          infoText = `${found.hanzi} [ ${found.pinyin} ] • ${found.hanviet ? `Hán Việt: ${found.hanviet} • ` : ''}${found.meaning}`;
+        }
+      }
+      charDisplay.innerText = infoText;
     }
   },
 

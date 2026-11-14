@@ -88,7 +88,11 @@ const MatchGame = {
           if (this.matchedCount === this.cards.length / 2) {
             clearInterval(this.timerInterval);
             AudioEngine.playVictorySound();
-            alert(`🎉 Chúc mừng! Bạn đã hoàn thành trong ${this.secondsElapsed} giây!`);
+            if (typeof App !== 'undefined' && App.toast) {
+              App.toast(`🎉 Chúc mừng! Bạn đã ghép đúng tất cả trong ${this.secondsElapsed} giây!`, 'success', 5000);
+            } else {
+              alert(`🎉 Chúc mừng! Bạn đã hoàn thành trong ${this.secondsElapsed} giây!`);
+            }
           }
         }, 150);
       } else {
