@@ -1151,36 +1151,43 @@ const QuizController = {
     if (!promptCard || !optionsContainer) return;
 
     // Render prompt based on mode
+    const cleanHanzi = q.word.hanzi;
+    const cleanMeaning = (q.word.meaning || '').replace(/\s+,/g, ',');
+    const cleanPinyin = q.word.pinyin || '';
+    const cleanHanviet = q.word.hanviet || '—';
+
     if (this.mode === 'hanzi_to_vi') {
       promptCard.innerHTML = `
         <div class="quiz-prompt-label">Hãy chọn nghĩa tiếng Việt chính xác của chữ Hán sau:</div>
-        <div class="quiz-prompt-hanzi">${q.word.hanzi}</div>
-        <div style="font-size:1.2rem; color:var(--primary); font-weight:600;">${q.word.pinyin}</div>
-        <button class="btn-speaker" onclick="AudioEngine.speak('${q.word.hanzi}')" title="Nghe" style="margin-top:0.4rem; font-size:1.3rem;">🔊</button>
+        <div class="quiz-prompt-hanzi">${cleanHanzi}</div>
+        <div style="font-size:1.15rem; color:var(--primary); font-weight:700; margin-bottom:0.35rem;">${cleanPinyin}</div>
+        <div>
+          <button class="btn-speaker-circle" onclick="AudioEngine.speak('${cleanHanzi}')" title="Nghe phát âm">🔊</button>
+        </div>
       `;
     } else if (this.mode === 'hanzi_to_pinyin') {
       promptCard.innerHTML = `
         <div class="quiz-prompt-label">Hãy chọn Phiên âm (Pinyin) đúng của chữ Hán:</div>
-        <div class="quiz-prompt-hanzi">${q.word.hanzi}</div>
-        <div style="font-size:1rem; color:var(--text-muted);">${q.word.meaning}</div>
+        <div class="quiz-prompt-hanzi">${cleanHanzi}</div>
+        <div style="font-size:0.95rem; color:var(--text-muted);">${cleanMeaning}</div>
       `;
     } else if (this.mode === 'listen_to_hanzi') {
       promptCard.innerHTML = `
         <div class="quiz-prompt-label">Nghe phát âm và chọn Chữ Hán tương ứng:</div>
-        <div style="margin: 1.5rem 0;">
-          <button class="btn btn-primary" onclick="AudioEngine.speak('${q.word.hanzi}')" style="font-size:1.1rem; padding: 0.85rem 1.75rem;">
+        <div style="margin: 0.85rem 0;">
+          <button class="btn btn-primary" onclick="AudioEngine.speak('${cleanHanzi}')" style="font-size:1rem; padding: 0.65rem 1.4rem;">
             🔊 Nghe lại phát âm
           </button>
         </div>
-        <div class="quiz-prompt-label">Gợi ý: ${q.word.meaning}</div>
+        <div class="quiz-prompt-label" style="font-size:0.82rem;">Gợi ý: ${cleanMeaning}</div>
       `;
       // Auto-play audio on question load
-      setTimeout(() => AudioEngine.speak(q.word.hanzi), 300);
+      setTimeout(() => AudioEngine.speak(cleanHanzi), 300);
     } else if (this.mode === 'vi_to_hanzi') {
       promptCard.innerHTML = `
         <div class="quiz-prompt-label">Chọn Chữ Hán có nghĩa là:</div>
-        <div style="font-size:1.85rem; font-weight:700; color:var(--secondary); margin: 0.5rem 0;">"${q.word.meaning}"</div>
-        <div style="font-size:1.05rem; color:var(--text-muted);">Hán Việt: ${q.word.hanviet || '—'}</div>
+        <div style="font-size:1.6rem; font-weight:700; color:var(--secondary); margin: 0.35rem 0;">"${cleanMeaning}"</div>
+        <div style="font-size:0.95rem; color:var(--text-muted);">Hán Việt: ${cleanHanviet}</div>
       `;
     }
 
@@ -1190,9 +1197,10 @@ const QuizController = {
       const btn = document.createElement('button');
       btn.className = 'quiz-option-btn';
 
+      const choiceMeaning = (choice.meaning || '').replace(/\s+,/g, ',');
       let text = '';
       if (this.mode === 'hanzi_to_vi') {
-        text = `<span><strong>${String.fromCharCode(65 + idx)}.</strong> ${choice.meaning}</span>`;
+        text = `<span><strong>${String.fromCharCode(65 + idx)}.</strong> ${choiceMeaning}</span>`;
       } else if (this.mode === 'hanzi_to_pinyin') {
         text = `<span><strong>${String.fromCharCode(65 + idx)}.</strong> ${choice.pinyin}</span>`;
       } else if (this.mode === 'listen_to_hanzi' || this.mode === 'vi_to_hanzi') {

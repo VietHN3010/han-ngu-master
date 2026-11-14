@@ -1441,65 +1441,117 @@ body {
   }
 }
 
-/* Header Responsiveness on Small Screens (< 520px) */
-@media (max-width: 520px) {
+/* ==========================================================================
+   ADVANCED MOBILE & DESKTOP RESPONSIVE DESIGN POLISH
+   ========================================================================== */
+
+/* Speaker circle button */
+.btn-speaker-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.15rem;
+  transition: transform 0.15s, border-color 0.15s, background-color 0.15s;
+  box-shadow: var(--shadow-sm);
+  margin-top: 0.35rem;
+  color: var(--primary);
+}
+
+.btn-speaker-circle:hover, .btn-speaker-circle:active {
+  border-color: var(--primary);
+  transform: scale(1.08);
+  background: var(--primary-light);
+}
+
+/* Header Responsiveness on Mobile (< 640px) */
+@media (max-width: 640px) {
   .header-container {
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 0.65rem !important;
+    gap: 0.4rem !important;
   }
-  .brand-text p {
-    display: none !important;
-  }
-  .brand-text h1 {
-    font-size: 0.95rem !important;
+  .brand {
+    gap: 0.4rem !important;
   }
   .brand-logo {
     width: 32px !important;
     height: 32px !important;
     font-size: 1.15rem !important;
   }
-  .user-profile-badge {
-    padding: 0.25rem 0.55rem !important;
-    font-size: 0.72rem !important;
+  .brand-text h1 {
+    font-size: 0.92rem !important;
   }
-  .user-profile-badge span:first-child {
-    font-size: 0.85rem !important;
+  .brand-text p {
+    display: none !important;
   }
-  .streak-badge {
-    padding: 0.25rem 0.5rem !important;
-    font-size: 0.7rem !important;
+  .header-right {
+    gap: 0.35rem !important;
   }
   #audio-speed-select {
-    padding: 0.2rem 0.4rem !important;
+    display: none !important; /* Hide on mobile header to make space for theme toggle */
+  }
+  .user-profile-badge {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.72rem !important;
+    max-width: 95px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .streak-badge {
+    padding: 0.25rem 0.45rem !important;
     font-size: 0.7rem !important;
   }
   .btn-icon-small {
-    width: 30px !important;
-    height: 30px !important;
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.9rem !important;
+    flex-shrink: 0 !important;
   }
 }
 
-/* Ultra Small Screens (< 380px) */
-@media (max-width: 380px) {
-  #audio-speed-select {
-    display: none !important; /* Hide to avoid wrapping */
-  }
-}
-
-/* Mobile Bottom Navigation Bar Polish */
+/* Mobile Bottom Navigation Bar */
 .mobile-bottom-nav {
-  padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom)) !important;
+  height: auto !important;
+  padding: 0.35rem 0.2rem calc(0.35rem + env(safe-area-inset-bottom)) !important;
+  background: var(--bg-card) !important;
+  border-top: 1px solid var(--border) !important;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .mobile-nav-btn {
+  flex: 1 1 0 !important;
   min-width: 0 !important;
-  padding: 0.25rem 0.25rem !important;
-  font-size: 0.65rem !important;
+  padding: 0.2rem 0.1rem !important;
+  font-size: 0.62rem !important;
+  font-weight: 600 !important;
   letter-spacing: -0.02em !important;
   white-space: nowrap !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.1rem !important;
+  color: var(--text-muted);
+  transition: color 0.15s, transform 0.15s;
 }
 
 .mobile-nav-icon {
-  font-size: 1.2rem !important;
+  font-size: 1.15rem !important;
+  line-height: 1 !important;
+}
+
+.mobile-nav-btn.active {
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+}
+
+.mobile-nav-btn.active .mobile-nav-icon {
+  transform: scale(1.1);
 }
 
 /* Symmetrical Match Game Grid */
@@ -1521,18 +1573,39 @@ body {
   font-size: clamp(3.2rem, 12vw, 4.8rem) !important;
 }
 
-.quiz-prompt-hanzi {
-  font-size: clamp(2.4rem, 9vw, 3.8rem) !important;
-}
-
-/* Touch Friendly Tap Targets */
-.btn-speaker {
-  min-width: 38px;
-  min-height: 38px;
-}
-
-/* Lesson detail action bar on mobile */
+/* Quiz layout mobile polish */
 @media (max-width: 600px) {
+  .quiz-card {
+    padding: 0.85rem !important;
+    border-radius: var(--radius-lg) !important;
+  }
+  .quiz-prompt-card {
+    padding: 0.85rem 0.65rem !important;
+    margin-bottom: 0.65rem !important;
+  }
+  .quiz-prompt-hanzi {
+    font-size: 2.2rem !important;
+    margin-bottom: 0.2rem !important;
+  }
+  .quiz-options {
+    gap: 0.45rem !important;
+  }
+  .quiz-option-btn {
+    padding: 0.75rem 0.85rem !important;
+    font-size: 0.88rem !important;
+    border-radius: var(--radius-md) !important;
+  }
+  .flashcard {
+    min-height: 260px !important;
+  }
+  .srs-buttons {
+    gap: 0.4rem !important;
+    margin-top: 0.75rem !important;
+  }
+  .btn-srs {
+    padding: 0.6rem 0.3rem !important;
+    font-size: 0.75rem !important;
+  }
   .lesson-card-zh {
     font-size: 1.05rem !important;
   }
@@ -1541,6 +1614,30 @@ body {
   }
   .stat-num {
     font-size: 1.35rem !important;
+  }
+}
+
+/* Quiz Next Button prominence */
+#quiz-next-btn {
+  width: 100% !important;
+  padding: 0.85rem !important;
+  font-size: 0.98rem !important;
+  font-weight: 700 !important;
+  margin-top: 0.75rem !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 4px 12px rgba(217, 56, 41, 0.25) !important;
+}
+
+/* Lesson cards & grids on Desktop */
+@media (min-width: 768px) {
+  .lesson-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1rem !important;
+  }
+  .vocab-cards-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
   }
 }
 
