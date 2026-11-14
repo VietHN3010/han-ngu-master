@@ -1079,8 +1079,8 @@ const QuizController = {
       pool = pool.filter(w => StorageManager.isBookmarked(w.id));
     }
 
-    if (pool.length < 4) {
-      alert('Không đủ từ vựng để tạo bài thi trắc nghiệm (Cần tối thiểu 4 từ). Hãy chọn phạm vi rộng hơn!');
+    if (pool.length === 0) {
+      alert('Không tìm thấy từ vựng nào trong phạm vi đã chọn. Hãy chọn phạm vi khác!');
       return;
     }
 
@@ -1091,8 +1091,12 @@ const QuizController = {
 
     // Generate questions with 4 distinct choices
     this.currentQuestions = selectedWords.map(word => {
-      // Find 3 distractors
-      const otherWords = pool.filter(w => w.id !== word.id).sort(() => 0.5 - Math.random()).slice(0, 3);
+      // Find 3 distractors (prefer from pool, fallback to allWords)
+      let candidateDistractors = pool.filter(w => w.id !== word.id);
+      if (candidateDistractors.length < 3) {
+        candidateDistractors = this.allWords.filter(w => w.id !== word.id);
+      }
+      const otherWords = candidateDistractors.sort(() => 0.5 - Math.random()).slice(0, 3);
       const choices = [word, ...otherWords].sort(() => 0.5 - Math.random());
       const correctIdx = choices.findIndex(c => c.id === word.id);
 
@@ -1108,28 +1112,43 @@ const QuizController = {
     this.missedQuestions = [];
     this.isAnswered = false;
 
-    document.getElementById('quiz-setup-view').style.display = 'none';
-    document.getElementById('quiz-results-view').style.display = 'none';
-    document.getElementById('quiz-play-view').style.display = 'block';
+    const setupView = document.getElementById('quiz-setup-view');
+    const resultsView = document.getElementById('quiz-results-view');
+    const playView = document.getElementById('quiz-play-view');
+    if (setupView) setupView.style.display = 'none';
+    if (resultsView) resultsView.style.display = 'none';
+    if (playView) playView.style.display = 'block';
 
     this.renderQuestion();
   },
 
   renderQuestion() {
     this.isAnswered = false;
+    if (!this.currentQuestions || this.currentQuestions.length === 0) return;
     const q = this.currentQuestions[this.currentIndex];
+    if (!q) return;
     const total = this.currentQuestions.length;
 
-    // Update progress
-    document.getElementById('quiz-current-num').innerText = this.currentIndex + 1;
-    document.getElementById('quiz-total-num').innerText = total;
-    document.getElementById('quiz-live-score').innerText = this.score;
-    document.getElementById('quiz-progress-bar').style.width = `${((this.currentIndex) / total) * 100}%`;
+    // Update progress safely
+    const curNum = document.getElementById('quiz-current-num');
+    if (curNum) curNum.innerText = this.currentIndex + 1;
+    const totNum = document.getElementById('quiz-total-num');
+    if (totNum) totNum.innerText = total;
+    const liveScore = document.getElementById('quiz-live-score');
+    if (liveScore) liveScore.innerText = this.score;
+
+    // Support both quiz-progress-fill and quiz-progress-bar
+    const progressBar = document.getElementById('quiz-progress-fill') || document.getElementById('quiz-progress-bar');
+    if (progressBar) {
+      progressBar.style.width = `${((this.currentIndex) / total) * 100}%`;
+    }
 
     const promptCard = document.getElementById('quiz-prompt-area');
     const optionsContainer = document.getElementById('quiz-options-grid');
     const nextBtn = document.getElementById('quiz-next-btn');
-    nextBtn.style.display = 'none';
+    if (nextBtn) nextBtn.style.display = 'none';
+
+    if (!promptCard || !optionsContainer) return;
 
     // Render prompt based on mode
     if (this.mode === 'hanzi_to_vi') {
@@ -1143,7 +1162,7 @@ const QuizController = {
       promptCard.innerHTML = `
         <div class="quiz-prompt-label">Hãy chọn Phiên âm (Pinyin) đúng của chữ Hán:</div>
         <div class="quiz-prompt-hanzi">${q.word.hanzi}</div>
-        <div style="font-size:1rem; color:var(--text-secondary);">${q.word.meaning}</div>
+        <div style="font-size:1rem; color:var(--text-muted);">${q.word.meaning}</div>
       `;
     } else if (this.mode === 'listen_to_hanzi') {
       promptCard.innerHTML = `
@@ -1160,8 +1179,8 @@ const QuizController = {
     } else if (this.mode === 'vi_to_hanzi') {
       promptCard.innerHTML = `
         <div class="quiz-prompt-label">Chọn Chữ Hán có nghĩa là:</div>
-        <div style="font-size:2rem; font-weight:700; color:var(--secondary); margin: 0.5rem 0;">"${q.word.meaning}"</div>
-        <div style="font-size:1.1rem; color:var(--text-secondary);">Hán Việt: ${q.word.hanviet || '—'}</div>
+        <div style="font-size:1.85rem; font-weight:700; color:var(--secondary); margin: 0.5rem 0;">"${q.word.meaning}"</div>
+        <div style="font-size:1.05rem; color:var(--text-muted);">Hán Việt: ${q.word.hanviet || '—'}</div>
       `;
     }
 
@@ -1209,7 +1228,8 @@ const QuizController = {
     if (isCorrect) {
       this.score++;
       AudioEngine.playCorrectSound();
-      document.getElementById('quiz-live-score').innerText = this.score;
+      const scoreEl = document.getElementById('quiz-live-score');
+      if (scoreEl) scoreEl.innerText = this.score;
     } else {
       AudioEngine.playWrongSound();
       this.missedQuestions.push(q);
@@ -1217,8 +1237,10 @@ const QuizController = {
 
     // Show Next Button
     const nextBtn = document.getElementById('quiz-next-btn');
-    nextBtn.style.display = 'inline-flex';
-    nextBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (nextBtn) {
+      nextBtn.style.display = 'inline-flex';
+      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   },
 
   nextQuestion() {
@@ -1231,46 +1253,51 @@ const QuizController = {
   },
 
   showResults() {
-    document.getElementById('quiz-play-view').style.display = 'none';
+    const playView = document.getElementById('quiz-play-view');
+    if (playView) playView.style.display = 'none';
     const resultsView = document.getElementById('quiz-results-view');
-    resultsView.style.display = 'block';
+    if (resultsView) resultsView.style.display = 'block';
 
     const total = this.currentQuestions.length;
-    const pct = Math.round((this.score / total) * 100);
+    const pct = total > 0 ? Math.round((this.score / total) * 100) : 0;
 
     StorageManager.recordQuiz(this.score, total);
     if (pct >= 80) {
       AudioEngine.playVictorySound();
     }
 
-    document.getElementById('quiz-res-score').innerText = `${this.score} / ${total}`;
-    document.getElementById('quiz-res-pct').innerText = `${pct}%`;
+    const resScore = document.getElementById('quiz-res-score');
+    if (resScore) resScore.innerText = `${this.score} / ${total}`;
+    const resPct = document.getElementById('quiz-res-pct');
+    if (resPct) resPct.innerText = `${pct}%`;
 
     let badge = 'Cố gắng thêm nhé!';
     if (pct === 100) badge = '🌟 Xuất sắc tuyệt đối!';
     else if (pct >= 80) badge = '🎉 Rất xuất sắc!';
     else if (pct >= 60) badge = '👍 Khá tốt!';
-    document.getElementById('quiz-res-badge').innerText = badge;
+    const badgeEl = document.getElementById('quiz-res-badge');
+    if (badgeEl) badgeEl.innerText = badge;
 
     // Render missed words
+    const missedArea = document.getElementById('quiz-missed-area');
     const missedContainer = document.getElementById('quiz-missed-list');
-    if (this.missedQuestions.length > 0) {
-      document.getElementById('quiz-missed-area').style.display = 'block';
+    if (this.missedQuestions.length > 0 && missedContainer && missedArea) {
+      missedArea.style.display = 'block';
       missedContainer.innerHTML = this.missedQuestions.map(m => `
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem; border-bottom:1px solid var(--border-subtle);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem; border-bottom:1px solid var(--border);">
           <div>
-            <span class="hanzi" style="font-size:1.4rem; font-weight:600; color:var(--text-primary); margin-right:0.5rem;">${m.word.hanzi}</span>
+            <span class="hanzi" style="font-size:1.4rem; font-weight:600; color:var(--text-main); margin-right:0.5rem;">${m.word.hanzi}</span>
             <span style="color:var(--primary); font-weight:500;">${m.word.pinyin}</span>
-            <span style="color:var(--text-secondary); margin-left:0.5rem;">(${m.word.hanviet})</span>
-            <div style="color:var(--text-primary); font-size:0.9rem;">${m.word.meaning}</div>
+            <span style="color:var(--text-muted); margin-left:0.5rem;">(${m.word.hanviet || '—'})</span>
+            <div style="color:var(--text-main); font-size:0.9rem;">${m.word.meaning}</div>
           </div>
           <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${m.word.hanzi}');">
             ✍️ Luyện viết
           </button>
         </div>
       `).join('');
-    } else {
-      document.getElementById('quiz-missed-area').style.display = 'none';
+    } else if (missedArea) {
+      missedArea.style.display = 'none';
     }
   }
 };
