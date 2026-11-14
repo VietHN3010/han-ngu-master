@@ -14,7 +14,8 @@ const DictionaryController = {
   setTab(tab) {
     this.activeTab = tab;
     document.querySelectorAll('.dict-tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(`dict-tab-${tab}`).classList.add('active');
+    const btn = document.getElementById(`dict-tab-${tab}`);
+    if (btn) btn.classList.add('active');
     
     const query = document.getElementById('dict-search-input').value;
     this.search(query);
@@ -47,50 +48,52 @@ const DictionaryController = {
   },
 
   render() {
-    const tbody = document.getElementById('dict-tbody');
+    const container = document.getElementById('dict-container');
     const countEl = document.getElementById('dict-result-count');
-    if (!tbody) return;
+    if (!container) return;
 
     if (countEl) countEl.innerText = `${this.currentResults.length} từ`;
 
     if (!this.currentResults.length) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">
-            Không tìm thấy từ vựng nào phù hợp.
-          </td>
-        </tr>
+      container.innerHTML = `
+        <div style="text-align:center; padding:2rem 1rem; color:var(--text-muted); font-size:0.85rem;">
+          Không tìm thấy từ vựng nào phù hợp.
+        </div>
       `;
       return;
     }
 
-    tbody.innerHTML = this.currentResults.map(w => {
-      const isFav = StorageManager.isBookmarked(w.id);
-      return `
-        <tr>
-          <td>
-            <div style="display:flex; align-items:center; gap:0.5rem;">
-              <button class="btn-speaker" onclick="AudioEngine.speak('${w.hanzi}')">🔊</button>
-              <span class="hanzi" style="font-size:1.3rem; font-weight:600; color:var(--text-primary);">${w.hanzi}</span>
-              ${w.isCustom ? '<span style="font-size:0.68rem; background:#fef3c7; color:#b45309; padding:0.1rem 0.35rem; border-radius:4px;">Tự thêm</span>' : ''}
+    container.innerHTML = `
+      <div class="vocab-cards-list">
+        ${this.currentResults.slice(0, 100).map(w => {
+          const isFav = StorageManager.isBookmarked(w.id);
+          return `
+            <div class="vocab-item-card">
+              <div class="vocab-item-left">
+                <button class="btn-speaker" onclick="AudioEngine.speak('${w.hanzi}')">🔊</button>
+                <div class="vocab-item-info">
+                  <div style="display:flex; align-items:baseline; gap:0.4rem;">
+                    <span class="vocab-item-hanzi">${w.hanzi}</span>
+                    <span class="vocab-item-py">${w.pinyin}</span>
+                    ${w.isCustom ? '<span style="font-size:0.65rem; background:#fef3c7; color:#b45309; padding:0.1rem 0.3rem; border-radius:3px;">Tự thêm</span>' : ''}
+                  </div>
+                  <div class="vocab-item-mean">${w.meaning}</div>
+                  <div class="vocab-item-meta">${w.pos ? `<span class="flashcard-pos" style="margin:0.15rem 0.35rem 0 0;">${w.pos}</span>` : ''}${w.hanviet ? `Hán Việt: ${w.hanviet}` : ''}</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:0.3rem; flex-shrink:0;">
+                <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${w.hanzi}');" title="Tập viết">✍️</button>
+                <button class="btn btn-outline btn-sm" onclick="DictionaryController.toggleBookmark('${w.id}', this)" title="Lưu">
+                  ${isFav ? '★' : '☆'}
+                </button>
+                ${w.isCustom ? `<button class="btn btn-outline btn-sm" onclick="DictionaryController.deleteCustom('${w.id}')" title="Xóa" style="color:#ef4444;">🗑️</button>` : ''}
+              </div>
             </div>
-          </td>
-          <td style="color:var(--primary); font-weight:600;">${w.pinyin}</td>
-          <td style="color:var(--text-secondary); text-transform:uppercase; font-size:0.85rem;">${w.hanviet || '—'}</td>
-          <td><span class="flashcard-pos" style="margin:0;">${w.pos || 'Từ vựng'}</span></td>
-          <td style="font-weight:500;">${w.meaning}</td>
-          <td>
-            <div style="display:flex; gap:0.35rem;">
-              <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${w.hanzi}');" title="Luyện viết">✍️</button>
-              <button class="btn btn-outline btn-sm" onclick="DictionaryController.toggleBookmark('${w.id}', this)" title="Lưu từ">
-                ${isFav ? '★' : '☆'}
-              </button>
-              ${w.isCustom ? `<button class="btn btn-outline btn-sm" onclick="DictionaryController.deleteCustom('${w.id}')" title="Xóa từ" style="color:#ef4444;">🗑️</button>` : ''}
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
+          `;
+        }).join('')}
+      </div>
+      ${this.currentResults.length > 100 ? '<p style="text-align:center; padding:1rem; font-size:0.8rem; color:var(--text-muted);">Hiển thị 100 từ đầu tiên. Hãy gõ từ khóa để lọc chi tiết hơn.</p>' : ''}
+    `;
   },
 
   toggleBookmark(wordId, btn) {
@@ -99,7 +102,7 @@ const DictionaryController = {
   },
 
   deleteCustom(wordId) {
-    if (confirm('Bạn có chắc muốn xóa từ vựng này khỏi sổ tay cá nhân?')) {
+    if (confirm('Bạn có chắc muốn xóa từ vựng này khỏi sổ tay?')) {
       StorageManager.deleteCustomWord(wordId);
       this.search(document.getElementById('dict-search-input').value);
       App.updateDashboardStats();
@@ -123,17 +126,15 @@ const DictionaryController = {
     const pos = document.getElementById('custom-pos').value;
 
     if (!hanzi || !meaning) {
-      alert('Vui lòng nhập ít nhất Chữ Hán và Nghĩa tiếng Việt!');
+      alert('Vui lòng nhập Chữ Hán và Nghĩa!');
       return;
     }
 
     StorageManager.addCustomWord({ hanzi, pinyin, hanviet, meaning, pos });
     this.closeAddModal();
-    // Reset form
     document.getElementById('add-word-form').reset();
     this.search(document.getElementById('dict-search-input').value);
     App.updateDashboardStats();
-    alert('Đã thêm từ vựng mới vào sổ tay thành công!');
   },
 
   exportBackup() {
@@ -146,26 +147,5 @@ const DictionaryController = {
     a.download = `chinese_app_backup_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  },
-
-  importBackup(fileInput) {
-    const file = fileInput.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const parsed = JSON.parse(e.target.result);
-        if (parsed.streak !== undefined || parsed.bookmarks) {
-          StorageManager.saveData(parsed);
-          alert('Khôi phục dữ liệu tiến độ thành công!');
-          location.reload();
-        } else {
-          alert('Tệp sao lưu không hợp lệ!');
-        }
-      } catch(err) {
-        alert('Lỗi đọc tệp sao lưu JSON!');
-      }
-    };
-    reader.readAsText(file);
   }
 };

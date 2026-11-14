@@ -2,288 +2,377 @@
 <html lang="vi" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hán Ngữ Master - Ứng dụng Luyện tập Tiếng Trung HSK 1 & 2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Hán Ngữ Master - Học Tiếng Trung HSK 1 & 2</title>
   
-  <!-- Google Fonts: Noto Serif SC, Noto Sans SC, Plus Jakarta Sans -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- App Stylesheet -->
+  <!-- Inlined Mobile-First Stylesheet -->
   <style>
 /* ==========================================================================
-   CHINESE LEARNING APP - MODERN ASIAN ELEGANCE & CLEAN UI
+   HÁN NGỮ MASTER - MODERN MOBILE-FIRST EDTECH DESIGN SYSTEM
    ========================================================================== */
 
 :root {
-  --primary: #c23b22;         /* Chinese Vermilion / Cinnabar */
-  --primary-hover: #a82e18;
-  --primary-light: #fff1f0;
-  --primary-border: #ffccc7;
-  
-  --secondary: #1d3557;       /* Scholar Navy */
-  --secondary-hover: #14243b;
-  --secondary-light: #f0f4f8;
+  --primary: #d93829;          /* Royal Chinese Cinnabar */
+  --primary-hover: #b82a1c;
+  --primary-light: #fff5f5;
+  --primary-border: #fecaca;
+  --primary-gradient: linear-gradient(135deg, #e63946, #c1121f);
 
-  --accent-gold: #d4a373;     /* Warm Sand / Antique Gold */
-  --accent-jade: #2a9d8f;     /* Jade Green */
-  --accent-jade-light: #e6f4f1;
-  
+  --secondary: #1e3a8a;        /* Oxford Academy Blue */
+  --secondary-hover: #172554;
+  --secondary-light: #eff6ff;
+
+  --accent-gold: #f59e0b;
+  --accent-gold-light: #fef3c7;
+  --accent-jade: #059669;
+  --accent-jade-light: #ecfdf5;
+
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
-  --bg-elevated: #ffffff;
-  
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --border-color: #e2e8f0;
-  --border-subtle: #f1f5f9;
-  
+  --bg-card-hover: #fafafa;
+  --bg-subtle: #f1f5f9;
+
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
-  
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.07);
-  --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.04);
-  --shadow-xl: 0 20px 30px -10px rgba(0,0,0,0.15);
-  
-  --font-hanzi: "Noto Serif SC", "Kaiti SC", "STKaiti", "Songti SC", "SimSun", serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 2px 8px rgba(15, 23, 42, 0.06);
+
+  --font-hanzi: "Noto Serif SC", "STKaiti", "Songti SC", "SimSun", serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 [data-theme="dark"] {
-  --primary: #e0563f;
-  --primary-hover: #f1705c;
-  --primary-light: #2c1a18;
-  --primary-border: #4d2621;
-  
-  --secondary: #38bdf8;
-  --secondary-hover: #7dd3fc;
-  --secondary-light: #132738;
-  
-  --bg-main: #0f172a;
-  --bg-card: #1e293b;
-  --bg-elevated: #334155;
-  
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: #334155;
-  --border-subtle: #1e293b;
-  
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.5);
+  --primary: #f87171;
+  --primary-hover: #ef4444;
+  --primary-light: #2b1717;
+  --primary-border: #451a1a;
+  --primary-gradient: linear-gradient(135deg, #ef4444, #991b1b);
+
+  --secondary: #60a5fa;
+  --secondary-hover: #3b82f6;
+  --secondary-light: #172554;
+
+  --bg-main: #090d16;
+  --bg-card: #131b2e;
+  --bg-card-hover: #1e293b;
+  --bg-subtle: #1e293b;
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --border: #1e293b;
+  --border-light: #162032;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.6);
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-main);
-  color: var(--text-primary);
+  color: var(--text-main);
   line-height: 1.5;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   transition: background-color 0.2s, color 0.2s;
+  padding-bottom: 72px; /* Space for Mobile Bottom Nav */
 }
 
-/* Hanzi Typography */
+@media (min-width: 900px) {
+  body {
+    padding-bottom: 0;
+  }
+}
+
 .hanzi {
   font-family: var(--font-hanzi);
 }
 
-/* Container & Header */
+/* ==========================================================================
+   HEADER & TOP NAVBAR
+   ========================================================================== */
 .app-header {
   background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 50;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .header-container {
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0.75rem 1.25rem;
+  padding: 0.65rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .brand-logo {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary), #e63946);
+  background: var(--primary-gradient);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-hanzi);
-  font-size: 1.5rem;
-  font-weight: bold;
-  box-shadow: 0 4px 10px rgba(194, 59, 34, 0.3);
+  font-size: 1.4rem;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(217, 56, 41, 0.3);
 }
 
 .brand-text h1 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.brand-text p {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-/* Navigation Tabs */
-.nav-tabs {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  overflow-x: auto;
-  padding: 0.25rem 0;
-  scrollbar-width: none;
-}
-.nav-tabs::-webkit-scrollbar {
-  display: none;
 }
 
-.nav-tab {
+.brand-text p {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Desktop Navigation Bar */
+.desktop-nav {
+  display: none;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--bg-subtle);
+  padding: 0.25rem 0.35rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+}
+
+@media (min-width: 900px) {
+  .desktop-nav {
+    display: flex;
+  }
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.nav-item:hover {
+  color: var(--text-main);
+}
+
+.nav-item.active {
+  color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.header-right {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.55rem 0.95rem;
-  border-radius: var(--radius-full);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
-.nav-tab:hover {
-  color: var(--text-primary);
-  background: var(--border-subtle);
-}
-
-.nav-tab.active {
-  color: var(--primary);
-  background: var(--primary-light);
-  border-color: var(--primary-border);
-  font-weight: 600;
-}
-
-.header-actions {
+.streak-badge {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.25rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: var(--accent-gold-light);
+  color: #b45309;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid #fde68a;
 }
 
-.btn-icon {
-  width: 38px;
-  height: 38px;
+.btn-icon-small {
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s;
+  font-size: 0.95rem;
 }
 
-.btn-icon:hover {
+.btn-icon-small:hover {
   color: var(--primary);
   border-color: var(--primary);
 }
 
-.streak-pill {
+/* ==========================================================================
+   MOBILE BOTTOM NAVIGATION BAR
+   ========================================================================== */
+.mobile-bottom-nav {
   display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom));
+  justify-content: space-around;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: var(--radius-full);
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  color: #c2410c;
-  font-size: 0.8rem;
-  font-weight: 600;
+  z-index: 100;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-/* Main Content Area */
+@media (min-width: 900px) {
+  .mobile-bottom-nav {
+    display: none;
+  }
+}
+
+.mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  gap: 0.15rem;
+  min-width: 58px;
+  transition: all 0.15s;
+}
+
+.mobile-nav-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.mobile-nav-btn.active {
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.mobile-nav-btn.active .mobile-nav-icon {
+  filter: drop-shadow(0 2px 4px rgba(217, 56, 41, 0.3));
+}
+
+/* ==========================================================================
+   APP MAIN CONTAINER & SECTIONS
+   ========================================================================== */
 .app-main {
-  max-width: 1280px;
+  max-width: 1140px;
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 4rem;
+  padding: 1rem 1rem 3rem;
   width: 100%;
   flex: 1;
 }
 
+@media (min-width: 768px) {
+  .app-main {
+    padding: 1.5rem 1.25rem 4rem;
+  }
+}
+
 .view-section {
   display: none;
-  animation: fadeIn 0.2s ease-in-out;
+  animation: viewFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .view-section.active {
   display: block;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+@keyframes viewFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Standard Buttons */
+/* Common Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1.25rem;
+  gap: 0.45rem;
+  padding: 0.6rem 1.15rem;
   border-radius: var(--radius-md);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   border: none;
   transition: all 0.15s ease;
   text-decoration: none;
+  user-select: none;
 }
 
 .btn-primary {
   background: var(--primary);
   color: white;
-  box-shadow: 0 2px 6px rgba(194, 59, 34, 0.25);
+  box-shadow: 0 2px 6px rgba(217, 56, 41, 0.25);
 }
-.btn-primary:hover {
+.btn-primary:active, .btn-primary:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
 }
@@ -293,13 +382,13 @@ body {
   color: var(--secondary);
 }
 .btn-secondary:hover {
-  background: var(--border-color);
+  background: #dbeafe;
 }
 
 .btn-outline {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-main);
 }
 .btn-outline:hover {
   border-color: var(--primary);
@@ -307,162 +396,313 @@ body {
 }
 
 .btn-sm {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.8rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
   border-radius: var(--radius-sm);
 }
 
+.btn-speaker {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+  font-size: 1.2rem;
+}
+.btn-speaker:active {
+  transform: scale(1.25);
+}
+
 /* ==========================================================================
-   DASHBOARD / HOME
+   VIEW: DASHBOARD / HOME (COMPACT & MODERN)
    ========================================================================== */
-.hero-card {
-  background: linear-gradient(135deg, #1d3557, #152238);
+.home-welcome-card {
+  background: linear-gradient(135deg, #1e3a8a, #0f172a);
   color: white;
-  border-radius: var(--radius-lg);
-  padding: 2.25rem 2rem;
+  border-radius: var(--radius-xl);
+  padding: 1.5rem 1.25rem;
   position: relative;
   overflow: hidden;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
   box-shadow: var(--shadow-lg);
 }
 
-.hero-card::after {
-  content: "汉";
+@media (min-width: 768px) {
+  .home-welcome-card {
+    padding: 2rem 2.25rem;
+    margin-bottom: 1.75rem;
+  }
+}
+
+.home-welcome-card::after {
+  content: "学";
   position: absolute;
-  right: 1.5rem;
-  bottom: -2.5rem;
+  right: -0.5rem;
+  bottom: -2rem;
   font-family: var(--font-hanzi);
-  font-size: 15rem;
-  color: rgba(255, 255, 255, 0.05);
+  font-size: 12rem;
+  color: rgba(255, 255, 255, 0.04);
   line-height: 1;
   pointer-events: none;
 }
 
-.hero-badge {
+.welcome-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
-  background: rgba(255, 255, 255, 0.15);
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
+  background: rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-full);
-  font-size: 0.8rem;
-  margin-bottom: 1rem;
-}
-
-.hero-title {
-  font-size: 2rem;
-  font-weight: 800;
-  margin-bottom: 0.5rem;
-  line-height: 1.2;
-}
-
-.hero-subtitle {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 1rem;
-  max-width: 620px;
-  margin-bottom: 1.5rem;
-}
-
-.hero-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 1rem;
-  max-width: 650px;
-}
-
-.hero-stat-item {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-md);
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
   backdrop-filter: blur(4px);
 }
 
-.hero-stat-num {
-  font-size: 1.6rem;
-  font-weight: 700;
-  display: block;
+.welcome-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+  line-height: 1.25;
 }
 
-.hero-stat-label {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.75);
+@media (min-width: 768px) {
+  .welcome-title {
+    font-size: 1.85rem;
+  }
 }
 
-/* Feature Grid Cards */
-.feature-grid {
+.welcome-desc {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.85rem;
+  max-width: 580px;
+  margin-bottom: 1.25rem;
+  line-height: 1.45;
+}
+
+.welcome-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.welcome-actions .btn {
+  font-size: 0.82rem;
+  padding: 0.55rem 1rem;
+}
+
+/* Mini KPI Stats Grid */
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 2.5rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
 }
 
-.feature-card {
+@media (min-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+}
+
+.stat-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  position: relative;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s;
 }
 
-.feature-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--primary-border);
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 0.2rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Level Curriculum Cards */
+.section-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.levels-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  margin-bottom: 1.75rem;
+}
+
+@media (min-width: 640px) {
+  .levels-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+.level-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.level-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
-.feature-icon-wrapper {
-  width: 50px;
-  height: 50px;
+.level-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.level-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+}
+
+.level-tag-hsk1 {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.level-tag-hsk2 {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.level-card h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.level-card p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Feature Training Hub Grid */
+.features-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 500px) {
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 850px) {
+  .features-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.training-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.15rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+
+.training-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.training-icon-box {
+  width: 42px;
+  height: 42px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
+  flex-shrink: 0;
 }
 
-.feature-card h3 {
-  font-size: 1.15rem;
+.training-info h4 {
+  font-size: 0.95rem;
   font-weight: 700;
-  color: var(--text-primary);
+  margin-bottom: 0.2rem;
 }
 
-.feature-card p {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  flex: 1;
+.training-info p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
 }
 
 /* ==========================================================================
-   FLASHCARD 3D
+   VIEW: FLASHCARD 3D (MOBILE FRIENDLY)
    ========================================================================== */
 .flashcard-wrapper {
-  max-width: 650px;
+  max-width: 520px;
   margin: 0 auto;
   perspective: 1200px;
 }
 
-.flashcard-controls-top {
+.flashcard-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
-  gap: 1rem;
-  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+  gap: 0.5rem;
 }
 
 .flashcard {
   width: 100%;
-  min-height: 380px;
+  aspect-ratio: 4 / 3;
+  min-height: 320px;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
 }
 
 .flashcard.flipped {
@@ -476,11 +716,11 @@ body {
   height: 100%;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--bg-card);
-  border: 2px solid var(--border-color);
-  box-shadow: var(--shadow-lg);
-  padding: 2rem;
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem 1.25rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -490,111 +730,111 @@ body {
 
 .flashcard-back {
   transform: rotateY(180deg);
-  background: linear-gradient(to bottom, var(--bg-card), var(--bg-main));
-  border-color: var(--accent-gold);
+  background: linear-gradient(to bottom, var(--bg-card), var(--bg-subtle));
+  border-color: #cbd5e1;
 }
 
 .flashcard-badge {
   position: absolute;
-  top: 1.25rem;
-  left: 1.25rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.3rem 0.65rem;
+  top: 1rem;
+  left: 1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
   border-radius: var(--radius-full);
-  background: var(--border-subtle);
-  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
 }
 
 .flashcard-fav {
   position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
+  top: 0.85rem;
+  right: 1rem;
   background: transparent;
   border: none;
   font-size: 1.4rem;
   cursor: pointer;
-  color: var(--text-muted);
-  transition: color 0.15s;
+  color: var(--text-subtle);
+  padding: 0.2rem;
 }
 
 .flashcard-fav.active {
-  color: #f59e0b;
+  color: var(--accent-gold);
 }
 
 .flashcard-hanzi {
   font-family: var(--font-hanzi);
-  font-size: 5rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin: 1rem 0 0.5rem;
+  font-size: 4rem;
+  font-weight: 600;
+  color: var(--text-main);
   line-height: 1.1;
-  letter-spacing: 0.05em;
+  margin: 0.5rem 0;
+}
+
+@media (min-width: 600px) {
+  .flashcard-hanzi {
+    font-size: 5rem;
+  }
 }
 
 .flashcard-pinyin {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   color: var(--primary);
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
 }
 
 .flashcard-hanviet {
-  font-size: 1rem;
-  color: var(--text-secondary);
+  font-size: 0.85rem;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
 }
 
 .flashcard-meaning {
-  font-size: 1.35rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 0.75rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
 }
 
 .flashcard-pos {
   display: inline-block;
-  padding: 0.25rem 0.65rem;
+  padding: 0.15rem 0.5rem;
   border-radius: var(--radius-sm);
   background: var(--secondary-light);
   color: var(--secondary);
-  font-size: 0.8rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 .flashcard-hint {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--text-subtle);
+  margin-top: 1rem;
 }
 
-/* SRS Answer Rating Buttons */
 .srs-buttons {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-top: 1.5rem;
+  gap: 0.6rem;
+  margin-top: 1rem;
 }
 
 .btn-srs {
-  padding: 0.85rem 0.5rem;
+  padding: 0.75rem 0.4rem;
   border-radius: var(--radius-md);
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-size: 0.82rem;
   border: 1px solid transparent;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
-  transition: all 0.15s;
+  gap: 0.15rem;
 }
 
 .btn-srs-again {
@@ -602,204 +842,104 @@ body {
   color: #dc2626;
   border-color: #fecaca;
 }
-.btn-srs-again:hover {
-  background: #fee2e2;
-}
-
 .btn-srs-good {
   background: #eff6ff;
   color: #2563eb;
   border-color: #bfdbfe;
 }
-.btn-srs-good:hover {
-  background: #dbeafe;
-}
-
 .btn-srs-easy {
   background: #f0fdf4;
   color: #16a34a;
   border-color: #bbf7d0;
 }
-.btn-srs-easy:hover {
-  background: #dcfce7;
-}
 
 .srs-interval {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: normal;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 /* ==========================================================================
-   HANZI WRITER / MI-GRID (米字格)
+   VIEW: QUIZ INTERACTIVE (MOBILE OPTIMIZED)
    ========================================================================== */
-.writer-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.migrid-frame {
-  width: 320px;
-  height: 320px;
-  border: 4px solid var(--primary);
-  border-radius: var(--radius-md);
-  position: relative;
-  background-color: #ffffff;
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-  user-select: none;
-  touch-action: none;
-}
-
-/* Traditional Mi Grid Background */
-.migrid-lines {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.migrid-lines::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  border-top: 1px dashed rgba(194, 59, 34, 0.25);
-}
-
-.migrid-lines::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  border-left: 1px dashed rgba(194, 59, 34, 0.25);
-}
-
-.migrid-diagonal {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(to top right, transparent calc(50% - 0.5px), rgba(194, 59, 34, 0.15) 50%, transparent calc(50% + 0.5px)),
-    linear-gradient(to bottom right, transparent calc(50% - 0.5px), rgba(194, 59, 34, 0.15) 50%, transparent calc(50% + 0.5px));
-  pointer-events: none;
-}
-
-#hanzi-writer-target {
-  width: 100%;
-  height: 100%;
-}
-
-.writer-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-/* ==========================================================================
-   QUIZ INTERACTIVE
-   ========================================================================== */
-.quiz-box {
-  max-width: 720px;
+.quiz-card {
+  max-width: 620px;
   margin: 0 auto;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 2rem;
-  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-card);
 }
 
-.quiz-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
+@media (min-width: 600px) {
+  .quiz-card {
+    padding: 2rem;
+  }
 }
 
 .quiz-progress-bar {
   width: 100%;
-  height: 8px;
-  background: var(--border-color);
+  height: 6px;
+  background: var(--border);
   border-radius: var(--radius-full);
   overflow: hidden;
-  margin-bottom: 1.5rem;
+  margin: 1rem 0;
 }
 
 .quiz-progress-fill {
   height: 100%;
   background: var(--primary);
   width: 0%;
-  transition: width 0.3s ease;
+  transition: width 0.25s ease;
 }
 
 .quiz-prompt-card {
   text-align: center;
-  padding: 2rem 1rem;
-  background: var(--bg-main);
-  border-radius: var(--radius-md);
-  margin-bottom: 1.5rem;
+  padding: 1.5rem 1rem;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.25rem;
 }
 
 .quiz-prompt-hanzi {
   font-family: var(--font-hanzi);
-  font-size: 4rem;
-  color: var(--text-primary);
+  font-size: 3.5rem;
+  color: var(--text-main);
   line-height: 1.1;
-  margin-bottom: 0.5rem;
-}
-
-.quiz-prompt-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
 }
 
 .quiz-options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.85rem;
-}
-
-@media (max-width: 600px) {
-  .quiz-options {
-    grid-template-columns: 1fr;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
 }
 
 .quiz-option-btn {
-  padding: 1.15rem 1rem;
+  padding: 0.95rem 1rem;
   border-radius: var(--radius-md);
   background: var(--bg-card);
-  border: 2px solid var(--border-color);
-  color: var(--text-primary);
-  font-size: 1rem;
-  font-weight: 500;
+  border: 1.5px solid var(--border);
+  color: var(--text-main);
+  font-size: 0.92rem;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.quiz-option-btn:hover:not(:disabled) {
-  border-color: var(--primary);
-  background: var(--primary-light);
-  transform: translateY(-1px);
+.quiz-option-btn:active {
+  transform: scale(0.99);
 }
 
 .quiz-option-btn.correct {
   background: #f0fdf4 !important;
   border-color: #22c55e !important;
   color: #15803d !important;
-  font-weight: 700;
 }
 
 .quiz-option-btn.wrong {
@@ -809,28 +949,109 @@ body {
 }
 
 /* ==========================================================================
-   LESSON BROWSER (BÀI 1 - 30)
+   VIEW: HANZI WRITER (RESPONSIVE CALLIGRAPHY)
+   ========================================================================== */
+.writer-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.migrid-frame {
+  width: min(290px, 80vw);
+  height: min(290px, 80vw);
+  border: 3px solid var(--primary);
+  border-radius: var(--radius-lg);
+  position: relative;
+  background-color: #ffffff;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+}
+
+.migrid-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.migrid-lines::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed rgba(217, 56, 41, 0.25);
+}
+.migrid-lines::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed rgba(217, 56, 41, 0.25);
+}
+.migrid-diagonal {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top right, transparent calc(50% - 0.5px), rgba(217, 56, 41, 0.15) 50%, transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom right, transparent calc(50% - 0.5px), rgba(217, 56, 41, 0.15) 50%, transparent calc(50% + 0.5px));
+  pointer-events: none;
+}
+
+#hanzi-writer-target {
+  width: 100%;
+  height: 100%;
+}
+
+.writer-controls {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+/* ==========================================================================
+   VIEW: LESSONS & DICTIONARY (RESPONSIVE CARDS)
    ========================================================================== */
 .lesson-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+@media (min-width: 600px) {
+  .lesson-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .lesson-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .lesson-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
+  padding: 1.15rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
 }
 
 .lesson-card:hover {
+  border-color: var(--primary);
   transform: translateY(-2px);
-  border-color: var(--primary-border);
   box-shadow: var(--shadow-md);
 }
 
@@ -838,13 +1059,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .lesson-num-pill {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.25rem 0.6rem;
+  padding: 0.2rem 0.55rem;
   border-radius: var(--radius-full);
   background: var(--secondary-light);
   color: var(--secondary);
@@ -852,106 +1073,113 @@ body {
 
 .lesson-card-zh {
   font-family: var(--font-hanzi);
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 0.2rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .lesson-card-vi {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
+  font-size: 0.85rem;
+  color: var(--text-muted);
   flex: 1;
 }
 
-.lesson-card-meta {
+/* Responsive Vocab Cards List (Mobile-friendly) */
+.vocab-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
   margin-top: 1rem;
+}
+
+.vocab-item-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.78rem;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.vocab-item-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vocab-item-hanzi {
+  font-family: var(--font-hanzi);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1;
+}
+
+.vocab-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.vocab-item-py {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.vocab-item-mean {
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.vocab-item-meta {
   color: var(--text-muted);
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 0.75rem;
+  font-size: 0.75rem;
 }
 
-/* Table styles for Vocabulary */
-.vocab-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin-top: 1rem;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-}
-
-.vocab-table th {
-  background: var(--bg-main);
-  padding: 0.75rem 1rem;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  text-align: left;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.vocab-table td {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: 0.9rem;
-}
-
-.vocab-table tr:last-child td {
-  border-bottom: none;
-}
-
-.vocab-table tr:hover td {
-  background: var(--primary-light);
-}
-
-/* Matching Game */
+/* Match Game Grid */
 .match-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.75rem;
-  max-width: 680px;
-  margin: 1.5rem auto;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  max-width: 500px;
+  margin: 1rem auto;
 }
 
-@media (max-width: 500px) {
+@media (min-width: 500px) {
   .match-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
 .match-card {
   aspect-ratio: 1;
   background: var(--bg-card);
-  border: 2px solid var(--border-color);
+  border: 2px solid var(--border);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
+  padding: 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
   box-shadow: var(--shadow-sm);
   user-select: none;
 }
 
-.match-card:hover {
-  border-color: var(--primary);
-  transform: scale(1.03);
+.match-card:active {
+  transform: scale(0.96);
 }
 
 .match-card.selected {
   border-color: var(--primary);
   background: var(--primary-light);
-  transform: scale(1.05);
   box-shadow: var(--shadow-md);
 }
 
@@ -961,16 +1189,15 @@ body {
   color: #15803d;
   opacity: 0.4;
   pointer-events: none;
-  transform: scale(0.95);
 }
 
 /* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
-  z-index: 100;
+  z-index: 200;
   display: none;
   align-items: center;
   justify-content: center;
@@ -983,46 +1210,14 @@ body {
 
 .modal-content {
   background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  max-width: 520px;
+  border-radius: var(--radius-xl);
+  max-width: 480px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 85vh;
   overflow-y: auto;
-  padding: 1.75rem;
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--border-color);
-}
-
-/* Audio button */
-.btn-speaker {
-  background: transparent;
-  border: none;
-  color: var(--primary);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: var(--radius-full);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.15s;
-}
-
-.btn-speaker:hover {
-  transform: scale(1.15);
-}
-
-/* Responsive tweaks */
-@media (max-width: 768px) {
-  .hero-title {
-    font-size: 1.5rem;
-  }
-  .flashcard-hanzi {
-    font-size: 4rem;
-  }
-  .migrid-frame {
-    width: 270px;
-    height: 270px;
-  }
+  padding: 1.5rem;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
 }
 
   </style>
@@ -1039,210 +1234,231 @@ body {
         <div class="brand-logo">汉</div>
         <div class="brand-text">
           <h1>Hán Ngữ Master</h1>
-          <p>Luyện tập Tiếng Trung HSK 1 & 2 (30 Bài)</p>
+          <p>HSK 1 & 2 • 30 Bài học</p>
         </div>
       </div>
 
-      <!-- Navigation Tabs -->
-      <nav class="nav-tabs">
-        <button class="nav-tab active" data-target="home">🏠 Tổng quan</button>
-        <button class="nav-tab" data-target="lessons">📚 Bài học (1-30)</button>
-        <button class="nav-tab" data-target="flashcard">🎴 Thẻ Flashcard</button>
-        <button class="nav-tab" data-target="quiz">📝 Trắc nghiệm</button>
-        <button class="nav-tab" data-target="writer">✍️ Luyện viết</button>
-        <button class="nav-tab" data-target="match">🧩 Ghép từ</button>
-        <button class="nav-tab" data-target="dict">📖 Sổ tay từ vựng</button>
+      <!-- Desktop Navigation Tabs (Hidden on Mobile) -->
+      <nav class="desktop-nav">
+        <button class="nav-item active" data-target="home">🏠 Trang chủ</button>
+        <button class="nav-item" data-target="lessons">📚 Bài học</button>
+        <button class="nav-item" data-target="flashcard">🎴 Flashcard</button>
+        <button class="nav-item" data-target="quiz">📝 Trắc nghiệm</button>
+        <button class="nav-item" data-target="writer">✍️ Luyện viết</button>
+        <button class="nav-item" data-target="match">🧩 Ghép từ</button>
+        <button class="nav-item" data-target="dict">📖 Sổ tay</button>
       </nav>
 
-      <!-- Header Quick Actions -->
-      <div class="header-actions">
-        <div class="streak-pill" title="Chuỗi ngày liên tiếp học tập">
+      <!-- Header Controls -->
+      <div class="header-right">
+        <div class="streak-badge" title="Chuỗi ngày liên tiếp">
           <span>🔥</span> <span id="header-streak-count">1 ngày</span>
         </div>
 
-        <select id="audio-speed-select" class="btn btn-outline btn-sm" style="padding:0.35rem 0.6rem;" title="Tốc độ đọc phát âm">
-          <option value="0.75">Tốc độ: 0.75x</option>
-          <option value="0.9" selected>Tốc độ: 0.9x</option>
-          <option value="1.0">Tốc độ: 1.0x</option>
+        <select id="audio-speed-select" class="btn btn-outline btn-sm" style="padding:0.25rem 0.5rem; font-size:0.75rem;" title="Tốc độ đọc">
+          <option value="0.75">0.75x</option>
+          <option value="0.9" selected>0.9x</option>
+          <option value="1.0">1.0x</option>
         </select>
 
-        <button id="btn-toggle-theme" class="btn-icon" title="Đổi giao diện Sáng / Tối">
+        <button id="btn-toggle-theme" class="btn-icon-small" title="Đổi giao diện Sáng / Tối">
           🌙
         </button>
       </div>
     </div>
   </header>
 
-  <!-- ================= MAIN CONTENT VIEWS ================= -->
+  <!-- ================= MAIN CONTENT ================= -->
   <main class="app-main">
 
-    <!-- 1. VIEW: DASHBOARD (HOME) -->
+    <!-- 1. VIEW: HOME / DASHBOARD -->
     <section id="view-home" class="view-section active">
-      <div class="hero-card">
-        <div class="hero-badge">🌟 Giáo trình Hán ngữ Quyển 1 & Quyển 2</div>
-        <h2 class="hero-title">Chào mừng bạn đến với Hán Ngữ Master!</h2>
-        <p class="hero-subtitle">
-          Hệ thống luyện tập tiếng Trung toàn diện: Thẻ ghi nhớ 3D, Trắc nghiệm phản xạ, Mô phỏng thứ tự nét viết chữ Hán, và Bài khóa chuẩn từ Bài 1 đến Bài 30.
+      <!-- Compact Welcome Banner -->
+      <div class="home-welcome-card">
+        <div class="welcome-badge">🌟 Giáo trình Hán ngữ Chuẩn 30 Bài</div>
+        <h2 class="welcome-title">Chào mừng bạn học Tiếng Trung!</h2>
+        <p class="welcome-desc">
+          Hệ thống luyện tập thông minh: Flashcards 3D lặp lại ngắt quãng, trắc nghiệm phản xạ, mô phỏng bút thuận nét viết chữ Hán và hội thoại thực tế.
         </p>
 
-        <div class="hero-stats">
-          <div class="hero-stat-item">
-            <span id="stat-total" class="hero-stat-num">744</span>
-            <span class="hero-stat-label">Tổng từ vựng</span>
-          </div>
-          <div class="hero-stat-item">
-            <span id="stat-mastered" class="hero-stat-num" style="color:#4ade80;">0</span>
-            <span class="hero-stat-label">Đã thuộc vững</span>
-          </div>
-          <div class="hero-stat-item">
-            <span id="stat-learning" class="hero-stat-num" style="color:#38bdf8;">0</span>
-            <span class="hero-stat-label">Đang rèn luyện</span>
-          </div>
-          <div class="hero-stat-item">
-            <span id="stat-streak" class="hero-stat-num" style="color:#fbbf24;">1</span>
-            <span class="hero-stat-label">Ngày liên tiếp 🔥</span>
-          </div>
-        </div>
-
-        <div style="margin-top: 1.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <div class="welcome-actions">
           <button class="btn btn-primary" onclick="App.startDailyReview()">
-            ⚡ Bắt đầu ôn tập hôm nay
+            ⚡ Ôn từ vựng hôm nay
           </button>
-          <button class="btn btn-outline" style="color:white; border-color:rgba(255,255,255,0.4);" onclick="App.navigateTo('quiz')">
-            🎯 Thi trắc nghiệm thử thách
+          <button class="btn btn-outline" style="color:white; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.1);" onclick="App.navigateTo('quiz')">
+            🎯 Thi trắc nghiệm
           </button>
         </div>
       </div>
 
-      <!-- Feature Navigation Grid -->
-      <h3 style="font-size:1.3rem; font-weight:700; margin-bottom:1rem;">Các chế độ luyện tập</h3>
-      <div class="feature-grid">
-        <div class="feature-card" onclick="App.navigateTo('flashcard')">
-          <div class="feature-icon-wrapper" style="background:#fff1f0; color:#c23b22;">🎴</div>
-          <h3>Thẻ ghi nhớ Flashcards 3D</h3>
-          <p>Lật thẻ tương tác 3 chiều, phát âm chuẩn Bắc Kinh, Hán Việt và phân loại lặp lại ngắt quãng (Leitner Box).</p>
-          <span style="color:var(--primary); font-weight:600; font-size:0.85rem;">Vào học ngay &rarr;</span>
+      <!-- 4 Mini KPI Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span id="stat-total" class="stat-num" style="color:var(--secondary);">744</span>
+          <span class="stat-label">Tổng từ vựng HSK</span>
+        </div>
+        <div class="stat-card">
+          <span id="stat-mastered" class="stat-num" style="color:#16a34a;">0</span>
+          <span class="stat-label">Đã thuộc vững</span>
+        </div>
+        <div class="stat-card">
+          <span id="stat-learning" class="stat-num" style="color:#0284c7;">0</span>
+          <span class="stat-label">Đang rèn luyện</span>
+        </div>
+        <div class="stat-card">
+          <span id="stat-streak" class="stat-num" style="color:#ea580c;">1</span>
+          <span class="stat-label">Ngày streak 🔥</span>
+        </div>
+      </div>
+
+      <!-- Level Curriculum Section -->
+      <div class="section-title">
+        <span>Lộ trình Cấp độ HSK</span>
+        <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal; cursor:pointer;" onclick="App.navigateTo('lessons')">Xem tất cả 30 bài &rarr;</span>
+      </div>
+
+      <div class="levels-row">
+        <div class="level-card" onclick="App.navigateTo('lessons'); LessonBrowser.setFilter('hsk1');">
+          <div class="level-card-header">
+            <span class="level-tag level-tag-hsk1">HSK 1 • Sơ cấp 1</span>
+            <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">15 Bài học</span>
+          </div>
+          <h4>Khóa học HSK 1 (Bài 1 – 15)</h4>
+          <p>Nền tảng phiên âm Pinyin, quy tắc bút thuận, chữ Hán cơ bản và giao tiếp chào hỏi hằng ngày (329 từ vựng).</p>
+          <div style="font-size:0.8rem; font-weight:700; color:var(--primary); margin-top:auto;">
+            Khám phá HSK 1 &rarr;
+          </div>
         </div>
 
-        <div class="feature-card" onclick="App.navigateTo('quiz')">
-          <div class="feature-icon-wrapper" style="background:#eff6ff; color:#2563eb;">📝</div>
-          <h3>Luyện thi trắc nghiệm</h3>
-          <p>4 chế độ câu hỏi linh hoạt: Nhìn Hán tự đoán nghĩa, đoán Pinyin, nghe âm thanh chọn chữ Hán, và đua điểm số.</p>
-          <span style="color:var(--secondary); font-weight:600; font-size:0.85rem;">Làm bài kiểm tra &rarr;</span>
+        <div class="level-card" onclick="App.navigateTo('lessons'); LessonBrowser.setFilter('hsk2');">
+          <div class="level-card-header">
+            <span class="level-tag level-tag-hsk2">HSK 2 • Sơ cấp 2</span>
+            <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">15 Bài học</span>
+          </div>
+          <h4>Khóa học HSK 2 (Bài 16 – 30)</h4>
+          <p>Nâng cao ngữ pháp: bổ ngữ trạng thái, câu kiêm ngữ, hành động tiếp diễn và từ vựng mở rộng (415 từ vựng).</p>
+          <div style="font-size:0.8rem; font-weight:700; color:var(--secondary); margin-top:auto;">
+            Khám phá HSK 2 &rarr;
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Hub Grid -->
+      <div class="section-title">
+        <span>Các chế độ luyện tập</span>
+      </div>
+
+      <div class="features-grid">
+        <div class="training-card" onclick="App.navigateTo('flashcard')">
+          <div class="training-icon-box" style="background:#fff1f0; color:#d93829;">🎴</div>
+          <div class="training-info">
+            <h4>Flashcard 3D</h4>
+            <p>Lật thẻ 3 chiều, phát âm chuẩn Bắc Kinh và lặp lại ngắt quãng.</p>
+          </div>
         </div>
 
-        <div class="feature-card" onclick="App.navigateTo('writer')">
-          <div class="feature-icon-wrapper" style="background:#f0fdf4; color:#16a34a;">✍️</div>
-          <h3>Luyện viết chữ Hán (Hanzi Writer)</h3>
-          <p>Khung vẽ trên lưới chữ Mễ (米字格), xem mô phỏng bút thuận từng nét và chấm điểm độ chuẩn xác nét vẽ.</p>
-          <span style="color:#16a34a; font-weight:600; font-size:0.85rem;">Tập viết chữ &rarr;</span>
+        <div class="training-card" onclick="App.navigateTo('quiz')">
+          <div class="training-icon-box" style="background:#eff6ff; color:#2563eb;">📝</div>
+          <div class="training-info">
+            <h4>Trắc nghiệm</h4>
+            <p>4 chế độ câu hỏi linh hoạt: đoán nghĩa, đoán pinyin, nghe âm thanh.</p>
+          </div>
         </div>
 
-        <div class="feature-card" onclick="App.navigateTo('lessons')">
-          <div class="feature-icon-wrapper" style="background:#fef3c7; color:#d97706;">📚</div>
-          <h3>Giáo trình 30 Bài học (HSK 1 - 2)</h3>
-          <p>Toàn bộ từ vựng, hội thoại bài đọc (课文) và điểm ngữ pháp trọng tâm được trích xuất chi tiết theo từng bài.</p>
-          <span style="color:#d97706; font-weight:600; font-size:0.85rem;">Khám phá bài học &rarr;</span>
+        <div class="training-card" onclick="App.navigateTo('writer')">
+          <div class="training-icon-box" style="background:#f0fdf4; color:#16a34a;">✍️</div>
+          <div class="training-info">
+            <h4>Luyện viết chữ Hán</h4>
+            <p>Mô phỏng thứ tự nét trên lưới chữ Mễ và tự kiểm tra chấm điểm.</p>
+          </div>
         </div>
 
-        <div class="feature-card" onclick="App.navigateTo('match')">
-          <div class="feature-icon-wrapper" style="background:#faf5ff; color:#9333ea;">🧩</div>
-          <h3>Game phản xạ ghép từ</h3>
-          <p>Lật cặp thẻ ghép Hán tự với Nghĩa tiếng Việt trong thời gian nhanh nhất để rèn luyện phản xạ đọc nhanh.</p>
-          <span style="color:#9333ea; font-weight:600; font-size:0.85rem;">Chơi ngay &rarr;</span>
+        <div class="training-card" onclick="App.navigateTo('match')">
+          <div class="training-icon-box" style="background:#faf5ff; color:#9333ea;">🧩</div>
+          <div class="training-info">
+            <h4>Game ghép từ</h4>
+            <p>Ghép cặp chữ Hán với nghĩa tiếng Việt rèn phản xạ nhận diện nhanh.</p>
+          </div>
         </div>
 
-        <div class="feature-card" onclick="App.navigateTo('dict')">
-          <div class="feature-icon-wrapper" style="background:#f1f5f9; color:#475569;">📖</div>
-          <h3>Sổ tay từ điển & Tự thêm từ</h3>
-          <p>Tra cứu nhanh hơn 744 từ vựng HSK1 & 2, tự thêm từ mới cá nhân và sao lưu tiến độ học tập an toàn.</p>
-          <span style="color:#475569; font-weight:600; font-size:0.85rem;">Mở sổ tay &rarr;</span>
+        <div class="training-card" onclick="App.navigateTo('lessons')">
+          <div class="training-icon-box" style="background:#fef3c7; color:#d97706;">📚</div>
+          <div class="training-info">
+            <h4>Bài học & Ngữ pháp</h4>
+            <p>Toàn bộ bài khóa hội thoại, điểm ngữ pháp và từ vựng 30 bài.</p>
+          </div>
+        </div>
+
+        <div class="training-card" onclick="App.navigateTo('dict')">
+          <div class="training-icon-box" style="background:#f1f5f9; color:#475569;">📖</div>
+          <div class="training-info">
+            <h4>Sổ tay & Tự thêm từ</h4>
+            <p>Tra cứu 744 từ vựng, tự thêm từ mới và lưu trữ an toàn.</p>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- 2. VIEW: LESSONS (1-30) -->
     <section id="view-lessons" class="view-section">
-      <!-- Lesson List View -->
       <div id="lesson-list-view">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
           <div>
-            <h2 style="font-size:1.6rem; font-weight:800;">Giáo trình 30 Bài học</h2>
-            <p style="color:var(--text-secondary); font-size:0.9rem;">Chọn một bài học để xem từ vựng, hội thoại bài đọc và ngữ pháp</p>
+            <h2 style="font-size:1.35rem; font-weight:800;">Giáo trình 30 Bài học</h2>
+            <p style="color:var(--text-muted); font-size:0.8rem;">Bấm vào một bài để xem từ vựng, hội thoại và ngữ pháp</p>
           </div>
-          <div style="display:flex; gap:0.5rem;">
-            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.setFilter('all')">Tất cả (30 bài)</button>
-            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.setFilter('hsk1')">HSK 1 (Bài 1 - 15)</button>
-            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.setFilter('hsk2')">HSK 2 (Bài 16 - 30)</button>
+          <div style="display:flex; gap:0.35rem;">
+            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.setFilter('all')">Tất cả</button>
+            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.setFilter('hsk1')">HSK 1</button>
+            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.setFilter('hsk2')">HSK 2</button>
           </div>
         </div>
 
-        <div id="lesson-grid-container" class="lesson-grid">
-          <!-- Populated by lessons.js -->
-        </div>
+        <div id="lesson-grid-container" class="lesson-grid"></div>
       </div>
 
       <!-- Lesson Detail View -->
       <div id="lesson-detail-view" style="display:none;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
           <button class="btn btn-outline btn-sm" onclick="LessonBrowser.closeLesson()">
-            &larr; Quay lại danh sách bài
+            &larr; Danh sách bài
           </button>
-          <div style="display:flex; gap:0.5rem;">
+          <div style="display:flex; gap:0.4rem;">
             <button class="btn btn-primary btn-sm" onclick="LessonBrowser.studyCurrentLessonFlashcards()">
-              🎴 Ôn Flashcard bài này
+              🎴 Ôn Flashcard
             </button>
             <button class="btn btn-secondary btn-sm" onclick="LessonBrowser.quizCurrentLesson()">
-              📝 Thi trắc nghiệm bài này
+              📝 Thi trắc nghiệm
             </button>
           </div>
         </div>
 
-        <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:1.5rem; margin-bottom:1.5rem;">
-          <h2 id="lesson-detail-title" style="font-size:1.5rem; font-weight:800; color:var(--text-primary); margin-bottom:0.25rem;"></h2>
-          <p id="lesson-detail-subtitle" style="color:var(--text-secondary); font-size:1rem;"></p>
+        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1rem 1.25rem; margin-bottom:1rem;">
+          <h2 id="lesson-detail-title" style="font-size:1.25rem; font-weight:800; color:var(--text-main); margin-bottom:0.15rem;"></h2>
+          <p id="lesson-detail-subtitle" style="color:var(--text-muted); font-size:0.88rem;"></p>
         </div>
 
         <!-- Subtabs -->
-        <div style="display:flex; gap:0.5rem; border-bottom:1px solid var(--border-color); margin-bottom:1.25rem; padding-bottom:0.5rem;">
+        <div style="display:flex; gap:0.4rem; border-bottom:1px solid var(--border); margin-bottom:1rem; padding-bottom:0.5rem; overflow-x:auto;">
           <button id="lesson-tab-btn-vocab" class="btn btn-outline btn-sm lesson-subtab active" onclick="LessonBrowser.switchLessonTab('vocab')">
-            📖 Từ vựng bài học
+            📖 Từ vựng
           </button>
           <button id="lesson-tab-btn-dialogue" class="btn btn-outline btn-sm lesson-subtab" onclick="LessonBrowser.switchLessonTab('dialogue')">
-            💬 Bài đọc & Hội thoại (课文)
+            💬 Bài khóa (课文)
           </button>
           <button id="lesson-tab-btn-grammar" class="btn btn-outline btn-sm lesson-subtab" onclick="LessonBrowser.switchLessonTab('grammar')">
             💡 Trọng tâm ngữ pháp
           </button>
         </div>
 
-        <!-- Subview: Vocab -->
         <div id="lesson-subview-vocab">
-          <div style="overflow-x:auto;">
-            <table class="vocab-table">
-              <thead>
-                <tr>
-                  <th>Chữ Hán</th>
-                  <th>Pinyin</th>
-                  <th>Hán Việt</th>
-                  <th>Từ loại</th>
-                  <th>Nghĩa tiếng Việt</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody id="lesson-vocab-tbody">
-                <!-- Populated dynamically -->
-              </tbody>
-            </table>
-          </div>
+          <div id="lesson-vocab-container"></div>
         </div>
 
-        <!-- Subview: Dialogue -->
         <div id="lesson-subview-dialogue" style="display:none;">
           <div id="lesson-dialogue-content"></div>
         </div>
 
-        <!-- Subview: Grammar -->
         <div id="lesson-subview-grammar" style="display:none;">
           <div id="lesson-grammar-content"></div>
         </div>
@@ -1252,54 +1468,45 @@ body {
     <!-- 3. VIEW: FLASHCARD 3D -->
     <section id="view-flashcard" class="view-section">
       <div class="flashcard-wrapper">
-        <div class="flashcard-controls-top">
+        <div class="flashcard-topbar">
           <div>
-            <h2 style="font-size:1.5rem; font-weight:800;">Thẻ ghi nhớ Flashcard 3D</h2>
-            <p style="color:var(--text-secondary); font-size:0.85rem;">Nhấn vào thẻ hoặc bấm phím Cách (Space) để lật mặt sau</p>
+            <h2 style="font-size:1.35rem; font-weight:800;">Flashcard 3D</h2>
+            <p style="color:var(--text-muted); font-size:0.78rem;">Chạm thẻ để lật mặt sau</p>
           </div>
           
-          <div style="display:flex; align-items:center; gap:0.75rem;">
-            <select id="fc-scope-select" class="btn btn-outline btn-sm">
-              <option value="all">Tất cả từ vựng (744 từ)</option>
-              <option value="hsk1">Chỉ HSK 1 (Bài 1 - 15)</option>
-              <option value="hsk2">Chỉ HSK 2 (Bài 16 - 30)</option>
-              <option value="bookmarks">⭐ Từ yêu thích / Đã lưu</option>
-              <!-- Lessons added by JS -->
-            </select>
-          </div>
+          <select id="fc-scope-select" class="btn btn-outline btn-sm" style="max-width:180px;">
+            <option value="all">Tất cả từ (744 từ)</option>
+            <option value="hsk1">HSK 1 (Bài 1 - 15)</option>
+            <option value="hsk2">HSK 2 (Bài 16 - 30)</option>
+            <option value="bookmarks">⭐ Đã lưu sao</option>
+          </select>
         </div>
 
-        <!-- Flashcard Progress Bar -->
-        <div style="width:100%; height:6px; background:var(--border-color); border-radius:var(--radius-full); overflow:hidden; margin-bottom:1rem;">
+        <div style="width:100%; height:5px; background:var(--border); border-radius:var(--radius-full); overflow:hidden; margin-bottom:0.85rem;">
           <div id="flashcard-progress-fill" style="height:100%; width:0%; background:var(--primary); transition:width 0.2s;"></div>
         </div>
 
-        <!-- 3D Card -->
-        <div id="main-flashcard" class="flashcard">
-          <!-- Populated by flashcard.js -->
-        </div>
+        <div id="main-flashcard" class="flashcard"></div>
 
-        <!-- Next / Prev Controls -->
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:1.25rem;">
-          <button class="btn btn-outline" onclick="FlashcardController.prev()">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:1rem;">
+          <button class="btn btn-outline btn-sm" onclick="FlashcardController.prev()">
             &larr; Thẻ trước
           </button>
-          <span id="flashcard-counter" style="font-weight:600; color:var(--text-secondary); font-size:0.95rem;">
+          <span id="flashcard-counter" style="font-weight:700; color:var(--text-muted); font-size:0.85rem;">
             1 / 744
           </span>
-          <button class="btn btn-outline" onclick="FlashcardController.next()">
-            Thẻ tiếp theo &rarr;
+          <button class="btn btn-outline btn-sm" onclick="FlashcardController.next()">
+            Thẻ sau &rarr;
           </button>
         </div>
 
-        <!-- SRS Buttons -->
         <div class="srs-buttons">
           <button class="btn-srs btn-srs-again" onclick="FlashcardController.rateSRS('again')" title="Phím tắt: 1">
             <span>🔴 Chưa nhớ</span>
             <span class="srs-interval">Ôn lại sớm</span>
           </button>
           <button class="btn-srs btn-srs-good" onclick="FlashcardController.rateSRS('good')" title="Phím tắt: 2">
-            <span>🟡 Nhớ sơ sơ</span>
+            <span>🟡 Tạm nhớ</span>
             <span class="srs-interval">+1 Cấp độ</span>
           </button>
           <button class="btn-srs btn-srs-easy" onclick="FlashcardController.rateSRS('easy')" title="Phím tắt: 3">
@@ -1312,106 +1519,98 @@ body {
 
     <!-- 4. VIEW: QUIZ INTERACTIVE -->
     <section id="view-quiz" class="view-section">
-      <div class="quiz-box">
-        <!-- 4.1 Setup Screen -->
+      <div class="quiz-card">
+        <!-- Setup Screen -->
         <div id="quiz-setup-view">
-          <h2 style="font-size:1.6rem; font-weight:800; margin-bottom:0.5rem; text-align:center;">Luyện thi Trắc nghiệm Tiếng Trung</h2>
-          <p style="color:var(--text-secondary); text-align:center; font-size:0.9rem; margin-bottom:2rem;">
-            Tùy biến chế độ kiểm tra phản xạ, kiểm tra nghe hoặc đoán chữ Hán
+          <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem; text-align:center;">Luyện thi Trắc nghiệm</h2>
+          <p style="color:var(--text-muted); text-align:center; font-size:0.82rem; margin-bottom:1.5rem;">
+            Rèn luyện phản xạ dịch nghĩa, nhớ âm Pinyin và nhận diện mặt chữ
           </p>
 
-          <form id="quiz-setup-form" style="display:flex; flex-direction:column; gap:1.25rem; max-width:480px; margin:0 auto;">
+          <form id="quiz-setup-form" style="display:flex; flex-direction:column; gap:1rem;">
             <div>
-              <label style="display:block; font-weight:600; margin-bottom:0.4rem; font-size:0.9rem;">Chế độ câu hỏi:</label>
-              <select id="quiz-mode-select" class="btn btn-outline" style="width:100%; text-align:left;">
-                <option value="hanzi_to_vi">1. Chữ Hán ➔ Chọn Nghĩa tiếng Việt (Phổ biến nhất)</option>
+              <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.82rem;">Chế độ câu hỏi:</label>
+              <select id="quiz-mode-select" class="btn btn-outline" style="width:100%; text-align:left; font-size:0.85rem;">
+                <option value="hanzi_to_vi">1. Chữ Hán ➔ Chọn Nghĩa tiếng Việt</option>
                 <option value="hanzi_to_pinyin">2. Chữ Hán ➔ Chọn Phiên âm Pinyin</option>
-                <option value="listen_to_hanzi">3. Nghe phát âm Audio ➔ Chọn Chữ Hán</option>
-                <option value="vi_to_hanzi">4. Nghĩa tiếng Việt ➔ Chọn Chữ Hán tương ứng</option>
+                <option value="listen_to_hanzi">3. Nghe Audio ➔ Chọn Chữ Hán</option>
+                <option value="vi_to_hanzi">4. Nghĩa tiếng Việt ➔ Chọn Chữ Hán</option>
               </select>
             </div>
 
             <div>
-              <label style="display:block; font-weight:600; margin-bottom:0.4rem; font-size:0.9rem;">Phạm vi kiểm tra:</label>
-              <select id="quiz-scope-select" class="btn btn-outline" style="width:100%; text-align:left;">
+              <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.82rem;">Phạm vi:</label>
+              <select id="quiz-scope-select" class="btn btn-outline" style="width:100%; text-align:left; font-size:0.85rem;">
                 <option value="all">Toàn bộ 30 bài HSK 1 & 2</option>
                 <option value="hsk1">Toàn bộ HSK 1 (Bài 1 - 15)</option>
                 <option value="hsk2">Toàn bộ HSK 2 (Bài 16 - 30)</option>
-                <option value="bookmarks">⭐ Chỉ các từ đã đánh dấu sao</option>
-                <!-- Lessons populated by JS -->
+                <option value="bookmarks">⭐ Từ đã lưu sao</option>
               </select>
             </div>
 
             <div>
-              <label style="display:block; font-weight:600; margin-bottom:0.4rem; font-size:0.9rem;">Số lượng câu:</label>
-              <select id="quiz-count-select" class="btn btn-outline" style="width:100%; text-align:left;">
-                <option value="10">10 câu hỏi ngắn</option>
-                <option value="20" selected>20 câu hỏi tiêu chuẩn</option>
-                <option value="30">30 câu hỏi thử thách cao</option>
+              <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.82rem;">Số câu:</label>
+              <select id="quiz-count-select" class="btn btn-outline" style="width:100%; text-align:left; font-size:0.85rem;">
+                <option value="10">10 câu ngắn</option>
+                <option value="20" selected>20 câu tiêu chuẩn</option>
+                <option value="30">30 câu thử thách</option>
               </select>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="padding:0.95rem; font-size:1.05rem; margin-top:0.5rem;">
+            <button type="submit" class="btn btn-primary" style="padding:0.85rem; font-size:0.95rem; margin-top:0.5rem;">
               🚀 Bắt đầu làm bài thi
             </button>
           </form>
         </div>
 
-        <!-- 4.2 Play View -->
+        <!-- Play View -->
         <div id="quiz-play-view" style="display:none;">
-          <div class="quiz-header">
-            <div>Câu hỏi: <strong id="quiz-current-num">1</strong> / <span id="quiz-total-num">10</span></div>
-            <div>Điểm hiện tại: <strong id="quiz-live-score" style="color:var(--primary);">0</strong></div>
+          <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.82rem; color:var(--text-muted); margin-bottom:0.5rem;">
+            <div>Câu: <strong id="quiz-current-num">1</strong> / <span id="quiz-total-num">10</span></div>
+            <div>Điểm: <strong id="quiz-live-score" style="color:var(--primary);">0</strong></div>
           </div>
 
           <div class="quiz-progress-bar">
             <div id="quiz-progress-fill" class="quiz-progress-fill"></div>
           </div>
 
-          <!-- Prompt Area -->
-          <div id="quiz-prompt-area" class="quiz-prompt-card">
-            <!-- Rendered by quiz.js -->
-          </div>
+          <div id="quiz-prompt-area" class="quiz-prompt-card"></div>
+          <div id="quiz-options-grid" class="quiz-options"></div>
 
-          <!-- 4 Options Grid -->
-          <div id="quiz-options-grid" class="quiz-options">
-            <!-- Rendered by quiz.js -->
-          </div>
-
-          <div style="text-align:right; margin-top:1.5rem;">
+          <div style="text-align:right; margin-top:1.25rem;">
             <button id="quiz-next-btn" class="btn btn-primary" onclick="QuizController.nextQuestion()" style="display:none;">
               Câu tiếp theo &rarr;
             </button>
           </div>
         </div>
 
-        <!-- 4.3 Results View -->
+        <!-- Results View -->
         <div id="quiz-results-view" style="display:none; text-align:center;">
-          <div style="font-size:3.5rem; margin-bottom:0.5rem;">🏆</div>
-          <h2 style="font-size:1.8rem; font-weight:800; margin-bottom:0.25rem;">Kết quả bài thi</h2>
-          <p id="quiz-res-badge" style="font-size:1.15rem; font-weight:600; color:var(--primary); margin-bottom:1.5rem;"></p>
+          <div style="font-size:3rem; margin-bottom:0.25rem;">🏆</div>
+          <h2 style="font-size:1.5rem; font-weight:800; margin-bottom:0.2rem;">Kết quả bài thi</h2>
+          <p id="quiz-res-badge" style="font-size:1rem; font-weight:700; color:var(--primary); margin-bottom:1.25rem;"></p>
 
-          <div style="display:flex; justify-content:center; gap:2rem; margin-bottom:2rem;">
-            <div style="background:var(--bg-main); padding:1.25rem 2rem; border-radius:var(--radius-md);">
-              <span id="quiz-res-score" style="font-size:2rem; font-weight:800; display:block; color:var(--secondary);"></span>
-              <span style="font-size:0.85rem; color:var(--text-secondary);">Số câu đúng</span>
+          <div style="display:flex; justify-content:center; gap:1.25rem; margin-bottom:1.5rem;">
+            <div style="background:var(--bg-subtle); padding:0.85rem 1.5rem; border-radius:var(--radius-md);">
+              <span id="quiz-res-score" style="font-size:1.6rem; font-weight:800; display:block; color:var(--secondary);"></span>
+              <span style="font-size:0.75rem; color:var(--text-muted);">Số câu đúng</span>
             </div>
-            <div style="background:var(--bg-main); padding:1.25rem 2rem; border-radius:var(--radius-md);">
-              <span id="quiz-res-pct" style="font-size:2rem; font-weight:800; display:block; color:var(--primary);"></span>
-              <span style="font-size:0.85rem; color:var(--text-secondary);">Tỷ lệ chính xác</span>
+            <div style="background:var(--bg-subtle); padding:0.85rem 1.5rem; border-radius:var(--radius-md);">
+              <span id="quiz-res-pct" style="font-size:1.6rem; font-weight:800; display:block; color:var(--primary);"></span>
+              <span style="font-size:0.75rem; color:var(--text-muted);">Tỷ lệ chính xác</span>
             </div>
           </div>
 
-          <div id="quiz-missed-area" style="text-align:left; margin-bottom:2rem; display:none;">
-            <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.75rem; color:#dc2626;">Các từ bạn làm sai:</h3>
-            <div id="quiz-missed-list" style="border:1px solid var(--border-color); border-radius:var(--radius-md); max-height:220px; overflow-y:auto;"></div>
+          <div id="quiz-missed-area" style="text-align:left; margin-bottom:1.5rem; display:none;">
+            <h3 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:#dc2626;">Các từ cần ôn lại:</h3>
+            <div id="quiz-missed-list" style="border:1px solid var(--border); border-radius:var(--radius-md); max-height:180px; overflow-y:auto;"></div>
           </div>
 
-          <div style="display:flex; justify-content:center; gap:0.75rem;">
-            <button class="btn btn-primary" onclick="document.getElementById('quiz-results-view').style.display='none'; document.getElementById('quiz-setup-view').style.display='block';">
-              🔄 Làm bài thi khác
+          <div style="display:flex; justify-content:center; gap:0.5rem;">
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('quiz-results-view').style.display='none'; document.getElementById('quiz-setup-view').style.display='block';">
+              🔄 Thi lại
             </button>
-            <button class="btn btn-outline" onclick="App.navigateTo('home')">
+            <button class="btn btn-outline btn-sm" onclick="App.navigateTo('home')">
               🏠 Về trang chủ
             </button>
           </div>
@@ -1421,182 +1620,170 @@ body {
 
     <!-- 5. VIEW: HANZI WRITER -->
     <section id="view-writer" class="view-section">
-      <div class="writer-container">
+      <div class="writer-box">
         <div style="text-align:center;">
-          <h2 style="font-size:1.6rem; font-weight:800;">Luyện viết Chữ Hán (Bút thuận)</h2>
-          <p style="color:var(--text-secondary); font-size:0.9rem;">Khung vẽ chữ trên Lưới Mễ (米字格) chuẩn thư pháp</p>
+          <h2 style="font-size:1.35rem; font-weight:800;">Luyện viết chữ Hán</h2>
+          <p style="color:var(--text-muted); font-size:0.8rem;">Vẽ nét theo Lưới Mễ (米字格) chuẩn thư pháp</p>
         </div>
 
-        <!-- Search Character Bar -->
-        <div style="display:flex; align-items:center; gap:0.5rem; max-width:360px; width:100%;">
-          <input id="writer-input-char" type="text" maxlength="2" placeholder="Nhập 1 chữ Hán để viết (VD: 好, 学, 中...)" class="btn btn-outline" style="flex:1; padding:0.65rem 1rem; text-align:center; font-size:1.1rem;">
-          <button class="btn btn-speaker" onclick="AudioEngine.speak(HanziController.currentChar)" title="Phát âm chữ này" style="font-size:1.5rem;">🔊</button>
+        <div style="display:flex; align-items:center; gap:0.4rem; max-width:320px; width:100%;">
+          <input id="writer-input-char" type="text" maxlength="2" placeholder="Nhập 1 chữ (VD: 好, 学, 我...)" class="btn btn-outline" style="flex:1; text-align:center; font-size:1.05rem;">
+          <button class="btn btn-speaker" onclick="AudioEngine.speak(HanziController.currentChar)" title="Nghe âm" style="font-size:1.3rem;">🔊</button>
         </div>
 
-        <!-- Traditional Calligraphy Mi-Grid Frame -->
         <div class="migrid-frame">
           <div class="migrid-lines"></div>
           <div class="migrid-diagonal"></div>
           <div id="hanzi-writer-target"></div>
         </div>
 
-        <!-- Live Feedback -->
-        <div id="writer-feedback" style="min-height:28px; font-weight:600; font-size:0.95rem; text-align:center; color:var(--text-secondary);">
-          Nhấn "Xem mô phỏng" để xem thứ tự nét hoặc "Tự kiểm tra viết" để vẽ thử!
+        <div id="writer-feedback" style="min-height:24px; font-weight:700; font-size:0.85rem; text-align:center; color:var(--text-muted);">
+          Nhấn "Mô phỏng nét" hoặc "Tự viết" để bắt đầu!
         </div>
 
-        <!-- Action Controls -->
         <div class="writer-controls">
-          <button id="btn-writer-animate" class="btn btn-primary">
-            ▶️ Xem mô phỏng nét
-          </button>
-          <button id="btn-writer-loop" class="btn btn-outline">
-            🔁 Lặp lại liên tục
-          </button>
-          <button id="btn-writer-quiz" class="btn btn-secondary">
-            🎯 Tự kiểm tra viết
-          </button>
-          <button id="btn-writer-clear" class="btn btn-outline" title="Xóa nét vẽ tự do">
-            🧹 Xóa bảng vẽ
-          </button>
+          <button id="btn-writer-animate" class="btn btn-primary btn-sm">▶️ Mô phỏng nét</button>
+          <button id="btn-writer-loop" class="btn btn-outline btn-sm">🔁 Lặp lại</button>
+          <button id="btn-writer-quiz" class="btn btn-secondary btn-sm">🎯 Tự viết</button>
+          <button id="btn-writer-clear" class="btn btn-outline btn-sm">🧹 Xóa nét</button>
         </div>
 
-        <!-- Quick Pick Suggestions -->
-        <div style="text-align:center; margin-top:1rem;">
-          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">Gợi ý chữ phổ biến:</p>
-          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:center;">
-            <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('你')">你</button>
-            <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('好')">好</button>
-            <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('学')">学</button>
-            <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('中')">中</button>
-            <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('国')">国</button>
-            <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('我')">我</button>
-            <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('家')">家</button>
-            <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('爱')">爱</button>
-          </div>
+        <div style="display:flex; gap:0.35rem; flex-wrap:wrap; justify-content:center; margin-top:0.5rem;">
+          <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('你')">你</button>
+          <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('好')">好</button>
+          <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('学')">学</button>
+          <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('中')">中</button>
+          <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('我')">我</button>
+          <button class="btn btn-outline btn-sm hanzi" onclick="HanziController.loadCharacter('爱')">爱</button>
         </div>
       </div>
     </section>
 
     <!-- 6. VIEW: MATCH GAME -->
     <section id="view-match" class="view-section">
-      <div style="max-width:680px; margin:0 auto; text-align:center;">
-        <h2 style="font-size:1.6rem; font-weight:800;">Game Ghép từ Phản xạ nhanh</h2>
-        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">
-          Ghép cặp Chữ Hán với Nghĩa tiếng Việt tương ứng thật nhanh tay!
+      <div style="max-width:520px; margin:0 auto; text-align:center;">
+        <h2 style="font-size:1.35rem; font-weight:800;">Game Ghép từ</h2>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:0.75rem;">
+          Ghép cặp Chữ Hán với Nghĩa tiếng Việt thật nhanh tay!
         </p>
 
-        <div style="display:flex; align-items:center; justify-content:center; gap:1.5rem; margin-bottom:1.5rem;">
-          <span style="font-weight:600; font-size:1.1rem;">⏱️ Thời gian: <strong id="match-timer" style="color:var(--primary);">0s</strong></span>
+        <div style="display:flex; align-items:center; justify-content:center; gap:1.25rem; margin-bottom:1rem;">
+          <span style="font-weight:700; font-size:0.95rem;">⏱️ <strong id="match-timer" style="color:var(--primary);">0s</strong></span>
           <button class="btn btn-outline btn-sm" onclick="MatchGame.startGame('hsk1')">
-            🔄 Bắt đầu ván mới
+            🔄 Ván mới
           </button>
         </div>
 
-        <div id="match-game-grid" class="match-grid">
-          <!-- Populated by match.js -->
-        </div>
+        <div id="match-game-grid" class="match-grid"></div>
       </div>
     </section>
 
-    <!-- 7. VIEW: DICTIONARY & CUSTOM WORDS NOTEBOOK -->
+    <!-- 7. VIEW: DICTIONARY & CUSTOM WORDS -->
     <section id="view-dict" class="view-section">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
         <div>
-          <h2 style="font-size:1.6rem; font-weight:800;">Sổ tay từ điển & Quản lý từ vựng</h2>
-          <p style="color:var(--text-secondary); font-size:0.9rem;">Tra cứu hơn 744+ từ vựng hoặc tự thêm từ mới của riêng bạn</p>
+          <h2 style="font-size:1.35rem; font-weight:800;">Sổ tay từ điển</h2>
+          <p style="color:var(--text-muted); font-size:0.8rem;">Tra cứu từ vựng và tự thêm từ mới</p>
         </div>
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
           <button class="btn btn-primary btn-sm" onclick="DictionaryController.openAddModal()">
-            ➕ Thêm từ mới
+            ➕ Thêm từ
           </button>
           <button class="btn btn-outline btn-sm" onclick="DictionaryController.exportBackup()">
-            💾 Sao lưu dữ liệu
+            💾 Sao lưu
           </button>
-          <label class="btn btn-outline btn-sm" style="cursor:pointer; margin:0;">
-            📂 Khôi phục <input type="file" accept=".json" style="display:none;" onchange="DictionaryController.importBackup(this)">
-          </label>
         </div>
       </div>
 
-      <!-- Search & Filters -->
-      <div style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;">
-        <input id="dict-search-input" type="text" placeholder="Tìm theo chữ Hán, Pinyin, Hán Việt hoặc Nghĩa tiếng Việt..." class="btn btn-outline" style="flex:1; min-width:260px; text-align:left;" oninput="DictionaryController.search(this.value)">
-        <div style="display:flex; gap:0.35rem;">
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+        <input id="dict-search-input" type="text" placeholder="Tìm theo Hán tự, Pinyin, Hán Việt, Nghĩa..." class="btn btn-outline" style="flex:1; min-width:200px; text-align:left; font-size:0.85rem;" oninput="DictionaryController.search(this.value)">
+        <div style="display:flex; gap:0.25rem;">
           <button id="dict-tab-all" class="btn btn-outline btn-sm dict-tab-btn active" onclick="DictionaryController.setTab('all')">Tất cả</button>
-          <button id="dict-tab-bookmarks" class="btn btn-outline btn-sm dict-tab-btn" onclick="DictionaryController.setTab('bookmarks')">⭐ Yêu thích</button>
+          <button id="dict-tab-bookmarks" class="btn btn-outline btn-sm dict-tab-btn" onclick="DictionaryController.setTab('bookmarks')">⭐ Sao</button>
           <button id="dict-tab-custom" class="btn btn-outline btn-sm dict-tab-btn" onclick="DictionaryController.setTab('custom')">📝 Tự thêm</button>
         </div>
       </div>
 
-      <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">
-        Kết quả tìm thấy: <strong id="dict-result-count" style="color:var(--text-primary);">744 từ</strong>
+      <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem;">
+        Kết quả: <strong id="dict-result-count" style="color:var(--text-main);">744 từ</strong>
       </div>
 
-      <div style="overflow-x:auto;">
-        <table class="vocab-table">
-          <thead>
-            <tr>
-              <th>Chữ Hán</th>
-              <th>Pinyin</th>
-              <th>Hán Việt</th>
-              <th>Từ loại</th>
-              <th>Nghĩa tiếng Việt</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody id="dict-tbody">
-            <!-- Populated by dictionary.js -->
-          </tbody>
-        </table>
-      </div>
+      <div id="dict-container"></div>
     </section>
 
   </main>
 
+  <!-- ================= MOBILE BOTTOM NAVIGATION ================= -->
+  <nav class="mobile-bottom-nav">
+    <button class="mobile-nav-btn active" data-target="home">
+      <span class="mobile-nav-icon">🏠</span>
+      <span>Trang chủ</span>
+    </button>
+    <button class="mobile-nav-btn" data-target="lessons">
+      <span class="mobile-nav-icon">📚</span>
+      <span>Bài học</span>
+    </button>
+    <button class="mobile-nav-btn" data-target="flashcard">
+      <span class="mobile-nav-icon">🎴</span>
+      <span>Flashcard</span>
+    </button>
+    <button class="mobile-nav-btn" data-target="quiz">
+      <span class="mobile-nav-icon">📝</span>
+      <span>Trắc nghiệm</span>
+    </button>
+    <button class="mobile-nav-btn" data-target="writer">
+      <span class="mobile-nav-icon">✍️</span>
+      <span>Tập viết</span>
+    </button>
+    <button class="mobile-nav-btn" data-target="dict">
+      <span class="mobile-nav-icon">📖</span>
+      <span>Sổ tay</span>
+    </button>
+  </nav>
+
   <!-- ================= MODAL: ADD CUSTOM WORD ================= -->
   <div id="add-word-modal" class="modal-overlay">
     <div class="modal-content">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem;">
-        <h3 style="font-size:1.25rem; font-weight:700;">Thêm từ vựng mới vào Sổ tay</h3>
-        <button onclick="DictionaryController.closeAddModal()" style="background:transparent; border:none; font-size:1.4rem; cursor:pointer;">&times;</button>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+        <h3 style="font-size:1.15rem; font-weight:800;">Thêm từ vựng mới</h3>
+        <button onclick="DictionaryController.closeAddModal()" style="background:transparent; border:none; font-size:1.3rem; cursor:pointer;">&times;</button>
       </div>
 
       <form id="add-word-form" onsubmit="DictionaryController.handleSaveCustomWord(event)">
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:0.25rem;">Chữ Hán (Hanzi) *</label>
-          <input id="custom-hanzi" type="text" required placeholder="VD: 喝茶" class="btn btn-outline hanzi" style="width:100%; text-align:left; font-size:1.15rem;">
+        <div style="margin-bottom:0.85rem;">
+          <label style="display:block; font-weight:700; font-size:0.8rem; margin-bottom:0.2rem;">Chữ Hán *</label>
+          <input id="custom-hanzi" type="text" required placeholder="VD: 喝茶" class="btn btn-outline hanzi" style="width:100%; text-align:left; font-size:1.1rem;">
         </div>
 
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:0.25rem;">Phiên âm (Pinyin) *</label>
+        <div style="margin-bottom:0.85rem;">
+          <label style="display:block; font-weight:700; font-size:0.8rem; margin-bottom:0.2rem;">Pinyin *</label>
           <input id="custom-pinyin" type="text" required placeholder="VD: hē chá" class="btn btn-outline" style="width:100%; text-align:left;">
         </div>
 
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:0.25rem;">Âm Hán Việt</label>
+        <div style="margin-bottom:0.85rem;">
+          <label style="display:block; font-weight:700; font-size:0.8rem; margin-bottom:0.2rem;">Hán Việt</label>
           <input id="custom-hanviet" type="text" placeholder="VD: Hạt trà" class="btn btn-outline" style="width:100%; text-align:left;">
         </div>
 
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:0.25rem;">Từ loại</label>
+        <div style="margin-bottom:0.85rem;">
+          <label style="display:block; font-weight:700; font-size:0.8rem; margin-bottom:0.2rem;">Từ loại</label>
           <input id="custom-pos" type="text" placeholder="VD: Cụm động từ" class="btn btn-outline" style="width:100%; text-align:left;">
         </div>
 
-        <div style="margin-bottom:1.5rem;">
-          <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:0.25rem;">Nghĩa tiếng Việt *</label>
+        <div style="margin-bottom:1.25rem;">
+          <label style="display:block; font-weight:700; font-size:0.8rem; margin-bottom:0.2rem;">Nghĩa tiếng Việt *</label>
           <input id="custom-meaning" type="text" required placeholder="VD: Uống trà" class="btn btn-outline" style="width:100%; text-align:left;">
         </div>
 
-        <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
-          <button type="button" class="btn btn-outline" onclick="DictionaryController.closeAddModal()">Hủy bỏ</button>
-          <button type="submit" class="btn btn-primary">Lưu từ vựng</button>
+        <div style="display:flex; justify-content:flex-end; gap:0.4rem;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="DictionaryController.closeAddModal()">Hủy</button>
+          <button type="submit" class="btn btn-primary btn-sm">Lưu từ</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Application Scripts (Bundled) -->
+  <!-- Application Bundle -->
   <script src="app.bundle.js"></script>
 </body>
 </html>

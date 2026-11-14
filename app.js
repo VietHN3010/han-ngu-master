@@ -6,14 +6,12 @@ const App = {
   currentTab: 'home',
 
   init() {
-    // Check if data is loaded
     if (!window.CHINESE_DATA) {
-      console.error('CHINESE_DATA not found. Please ensure data.js is loaded.');
+      console.error('CHINESE_DATA not found.');
       return;
     }
     this.data = window.CHINESE_DATA;
 
-    // Initialize Submodules
     StorageManager.updateStreak();
     FlashcardController.init(this.data.all_words);
     QuizController.init(this.data.all_words);
@@ -22,29 +20,31 @@ const App = {
     LessonBrowser.init(this.data.lessons);
     DictionaryController.init(this.data.all_words);
 
-    // Setup Theme & Audio Settings
     this.initTheme();
     this.initAudioSettings();
     this.updateDashboardStats();
     this.setupEventListeners();
-
-    console.log('App initialized with', this.data.total_words, 'words across', this.data.total_lessons, 'lessons.');
   },
 
   navigateTo(tabId) {
     this.currentTab = tabId;
 
-    // Update Tab UI
-    document.querySelectorAll('.nav-tab').forEach(tab => {
+    // Sync Desktop Top Navigation
+    document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.target === tabId);
     });
 
-    // Update View Sections
+    // Sync Mobile Bottom Navigation
+    document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.target === tabId);
+    });
+
+    // Toggle Section Views
     document.querySelectorAll('.view-section').forEach(view => {
       view.classList.toggle('active', view.id === `view-${tabId}`);
     });
 
-    // Tab-specific lifecycle hooks
+    // Tab hooks
     if (tabId === 'home') {
       this.updateDashboardStats();
     } else if (tabId === 'writer') {
@@ -75,9 +75,6 @@ const App = {
 
     const totalEl = document.getElementById('stat-total');
     if (totalEl) totalEl.innerText = this.data.total_words + stats.customCount;
-
-    const bestScoreEl = document.getElementById('stat-best-score');
-    if (bestScoreEl) bestScoreEl.innerText = `${stats.bestScore}%`;
   },
 
   initTheme() {
@@ -115,7 +112,6 @@ const App = {
     const data = StorageManager.getData();
     const progress = data.wordProgress;
     
-    // Words due for review or not mastered
     const dueWords = this.data.all_words.filter(w => {
       const p = progress[w.id];
       return p && (p.srsLevel < 3 || (p.nextReview && p.nextReview <= Date.now()));
@@ -130,16 +126,21 @@ const App = {
   },
 
   setupEventListeners() {
-    // Navigation bar click handling
-    document.querySelectorAll('.nav-tab').forEach(tab => {
+    // Desktop Nav Clicks
+    document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
       tab.onclick = () => this.navigateTo(tab.dataset.target);
     });
 
-    // Theme toggle button
+    // Mobile Bottom Nav Clicks
+    document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn').forEach(btn => {
+      btn.onclick = () => this.navigateTo(btn.dataset.target);
+    });
+
+    // Theme toggle
     const themeBtn = document.getElementById('btn-toggle-theme');
     if (themeBtn) themeBtn.onclick = () => this.toggleTheme();
 
-    // Flashcard filters
+    // Flashcard Scope
     const fcFilterSelect = document.getElementById('fc-scope-select');
     if (fcFilterSelect) {
       fcFilterSelect.onchange = (e) => {
@@ -159,20 +160,19 @@ const App = {
       };
     }
 
-    // Populate Lesson Options in Quiz and Flashcard Scope Selectors
+    // Populate Lessons in Selects
     const quizScopeSelect = document.getElementById('quiz-scope-select');
     if (quizScopeSelect && fcFilterSelect) {
       this.data.lessons.forEach(l => {
         const opt = document.createElement('option');
         opt.value = `lesson_${l.id}`;
-        opt.innerText = `Bài ${l.id}: ${l.zh_title} (${l.title})`;
-        
+        opt.innerText = `Bài ${l.id}: ${l.zh_title}`;
         quizScopeSelect.appendChild(opt.cloneNode(true));
         fcFilterSelect.appendChild(opt);
       });
     }
 
-    // Quiz Start form
+    // Quiz form
     const quizForm = document.getElementById('quiz-setup-form');
     if (quizForm) {
       quizForm.onsubmit = (e) => {
@@ -207,7 +207,6 @@ const App = {
   }
 };
 
-// Start application when DOM is ready
 window.addEventListener('DOMContentLoaded', () => {
   App.init();
 });

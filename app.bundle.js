@@ -1079,13 +1079,13 @@ const LessonBrowser = {
       <div class="lesson-card" onclick="LessonBrowser.openLesson(${l.id})">
         <div class="lesson-card-header">
           <span class="lesson-num-pill">Bài ${l.id} • HSK ${l.hsk}</span>
-          <span style="font-size:0.8rem; color:var(--text-muted);">${l.words ? l.words.length : 0} từ</span>
+          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">${l.words ? l.words.length : 0} từ</span>
         </div>
         <div class="lesson-card-zh">${l.zh_title}</div>
         <div class="lesson-card-vi">${l.title}</div>
-        <div class="lesson-card-meta">
-          <span>📖 ${l.dialogue ? l.dialogue.length : 0} câu hội thoại</span>
-          <span>💡 ${l.grammar ? l.grammar.length : 0} điểm ngữ pháp</span>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid var(--border-light);">
+          <span>💬 ${l.dialogue ? l.dialogue.length : 0} câu thoại</span>
+          <span>💡 ${l.grammar ? l.grammar.length : 0} ngữ pháp</span>
         </div>
       </div>
     `).join('');
@@ -1100,18 +1100,14 @@ const LessonBrowser = {
     const detailView = document.getElementById('lesson-detail-view');
     detailView.style.display = 'block';
 
-    document.getElementById('lesson-detail-title').innerText = `Bài ${lesson.id}: ${lesson.zh_title} (${lesson.pinyin_title || ''})`;
-    document.getElementById('lesson-detail-subtitle').innerText = lesson.title;
+    document.getElementById('lesson-detail-title').innerText = `Bài ${lesson.id}: ${lesson.zh_title}`;
+    document.getElementById('lesson-detail-subtitle').innerText = `${lesson.pinyin_title || ''} • ${lesson.title}`;
 
-    // Render Vocabulary Tab
     this.renderVocabTab();
-    // Render Dialogue Tab
     this.renderDialogueTab();
-    // Render Grammar Tab
     this.renderGrammarTab();
-
-    // Default to vocab tab
     this.switchLessonTab('vocab');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
   closeLesson() {
@@ -1121,7 +1117,8 @@ const LessonBrowser = {
 
   switchLessonTab(tab) {
     document.querySelectorAll('.lesson-subtab').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`lesson-tab-btn-${tab}`).classList.add('active');
+    const activeBtn = document.getElementById(`lesson-tab-btn-${tab}`);
+    if (activeBtn) activeBtn.classList.add('active');
 
     document.getElementById('lesson-subview-vocab').style.display = tab === 'vocab' ? 'block' : 'none';
     document.getElementById('lesson-subview-dialogue').style.display = tab === 'dialogue' ? 'block' : 'none';
@@ -1129,34 +1126,37 @@ const LessonBrowser = {
   },
 
   renderVocabTab() {
-    const tbody = document.getElementById('lesson-vocab-tbody');
-    if (!tbody || !this.currentLesson) return;
+    const container = document.getElementById('lesson-vocab-container');
+    if (!container || !this.currentLesson) return;
 
-    tbody.innerHTML = this.currentLesson.words.map(w => {
-      const isFav = StorageManager.isBookmarked(w.id);
-      return `
-        <tr>
-          <td>
-            <div style="display:flex; align-items:center; gap:0.5rem;">
-              <button class="btn-speaker" onclick="AudioEngine.speak('${w.hanzi}')">🔊</button>
-              <span class="hanzi" style="font-size:1.35rem; font-weight:600; color:var(--text-primary);">${w.hanzi}</span>
+    container.innerHTML = `
+      <div class="vocab-cards-list">
+        ${this.currentLesson.words.map(w => {
+          const isFav = StorageManager.isBookmarked(w.id);
+          return `
+            <div class="vocab-item-card">
+              <div class="vocab-item-left">
+                <button class="btn-speaker" onclick="AudioEngine.speak('${w.hanzi}')">🔊</button>
+                <div class="vocab-item-info">
+                  <div style="display:flex; align-items:baseline; gap:0.4rem;">
+                    <span class="vocab-item-hanzi">${w.hanzi}</span>
+                    <span class="vocab-item-py">${w.pinyin}</span>
+                  </div>
+                  <div class="vocab-item-mean">${w.meaning}</div>
+                  <div class="vocab-item-meta">${w.pos ? `<span class="flashcard-pos" style="margin:0.15rem 0.35rem 0 0;">${w.pos}</span>` : ''}${w.hanviet ? `Hán Việt: ${w.hanviet}` : ''}</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:0.3rem; flex-shrink:0;">
+                <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${w.hanzi}');" title="Tập viết">✍️</button>
+                <button class="btn btn-outline btn-sm" onclick="LessonBrowser.toggleBookmark('${w.id}', this)" title="Lưu">
+                  ${isFav ? '★' : '☆'}
+                </button>
+              </div>
             </div>
-          </td>
-          <td style="color:var(--primary); font-weight:600;">${w.pinyin}</td>
-          <td style="color:var(--text-secondary); text-transform:uppercase; font-size:0.85rem;">${w.hanviet || '—'}</td>
-          <td><span class="flashcard-pos" style="margin:0;">${w.pos || 'Từ vựng'}</span></td>
-          <td style="font-weight:500;">${w.meaning}</td>
-          <td>
-            <div style="display:flex; gap:0.35rem;">
-              <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${w.hanzi}');" title="Luyện viết">✍️</button>
-              <button class="btn btn-outline btn-sm" onclick="LessonBrowser.toggleBookmark('${w.id}', this)" title="Lưu từ">
-                ${isFav ? '★' : '☆'}
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
+          `;
+        }).join('')}
+      </div>
+    `;
   },
 
   renderDialogueTab() {
@@ -1164,19 +1164,19 @@ const LessonBrowser = {
     if (!container || !this.currentLesson) return;
 
     if (!this.currentLesson.dialogue || !this.currentLesson.dialogue.length) {
-      container.innerHTML = '<p style="color:var(--text-secondary); padding:1rem;">Chưa có dữ liệu bài khóa cho bài học này.</p>';
+      container.innerHTML = '<p style="color:var(--text-muted); padding:1rem; font-size:0.85rem;">Chưa có dữ liệu bài khóa cho bài học này.</p>';
       return;
     }
 
     container.innerHTML = this.currentLesson.dialogue.map((d, idx) => `
-      <div style="padding:1rem; border-radius:var(--radius-md); background:var(--bg-main); margin-bottom:0.75rem; display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;">
+      <div style="padding:0.85rem 1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); margin-bottom:0.6rem; display:flex; align-items:flex-start; justify-content:space-between; gap:0.75rem;">
         <div>
-          <div style="font-weight:700; color:var(--secondary); font-size:0.85rem; margin-bottom:0.25rem;">${d.speaker || `Nhân vật ${idx + 1}`}:</div>
-          <div class="hanzi" style="font-size:1.25rem; color:var(--text-primary); margin-bottom:0.2rem;">${d.zh}</div>
-          <div style="color:var(--primary); font-size:0.9rem; font-weight:500; margin-bottom:0.2rem;">${d.py}</div>
-          <div style="color:var(--text-secondary); font-size:0.9rem;">${d.vi}</div>
+          <div style="font-weight:700; color:var(--secondary); font-size:0.8rem; margin-bottom:0.15rem;">${d.speaker || `Nhân vật ${idx + 1}`}:</div>
+          <div class="hanzi" style="font-size:1.15rem; color:var(--text-main); font-weight:600; margin-bottom:0.15rem;">${d.zh}</div>
+          <div style="color:var(--primary); font-size:0.82rem; font-weight:600; margin-bottom:0.15rem;">${d.py}</div>
+          <div style="color:var(--text-muted); font-size:0.82rem;">${d.vi}</div>
         </div>
-        <button class="btn-speaker" onclick="AudioEngine.speak('${d.zh}')" title="Nghe câu này" style="font-size:1.3rem;">
+        <button class="btn-speaker" onclick="AudioEngine.speak('${d.zh}')" title="Nghe câu" style="font-size:1.2rem;">
           🔊
         </button>
       </div>
@@ -1188,14 +1188,14 @@ const LessonBrowser = {
     if (!container || !this.currentLesson) return;
 
     if (!this.currentLesson.grammar || !this.currentLesson.grammar.length) {
-      container.innerHTML = '<p style="color:var(--text-secondary); padding:1rem;">Chưa có điểm ngữ pháp nổi bật cho bài học này.</p>';
+      container.innerHTML = '<p style="color:var(--text-muted); padding:1rem; font-size:0.85rem;">Chưa có điểm ngữ pháp nổi bật cho bài này.</p>';
       return;
     }
 
     container.innerHTML = this.currentLesson.grammar.map((g, idx) => `
-      <div style="padding:1.15rem; border-radius:var(--radius-md); background:var(--bg-main); border-left:4px solid var(--primary); margin-bottom:0.85rem;">
-        <div style="font-weight:700; color:var(--text-primary); font-size:1rem; margin-bottom:0.35rem;">Điểm ${idx + 1}: ${g.split(':')[0]}</div>
-        <div style="color:var(--text-secondary); font-size:0.92rem; line-height:1.6;">${g.includes(':') ? g.split(':').slice(1).join(':') : g}</div>
+      <div style="padding:1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--primary); margin-bottom:0.65rem;">
+        <div style="font-weight:700; color:var(--text-main); font-size:0.92rem; margin-bottom:0.25rem;">Điểm ${idx + 1}: ${g.split(':')[0]}</div>
+        <div style="color:var(--text-muted); font-size:0.85rem; line-height:1.5;">${g.includes(':') ? g.split(':').slice(1).join(':') : g}</div>
       </div>
     `).join('');
   },
@@ -1240,7 +1240,8 @@ const DictionaryController = {
   setTab(tab) {
     this.activeTab = tab;
     document.querySelectorAll('.dict-tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(`dict-tab-${tab}`).classList.add('active');
+    const btn = document.getElementById(`dict-tab-${tab}`);
+    if (btn) btn.classList.add('active');
     
     const query = document.getElementById('dict-search-input').value;
     this.search(query);
@@ -1273,50 +1274,52 @@ const DictionaryController = {
   },
 
   render() {
-    const tbody = document.getElementById('dict-tbody');
+    const container = document.getElementById('dict-container');
     const countEl = document.getElementById('dict-result-count');
-    if (!tbody) return;
+    if (!container) return;
 
     if (countEl) countEl.innerText = `${this.currentResults.length} từ`;
 
     if (!this.currentResults.length) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">
-            Không tìm thấy từ vựng nào phù hợp.
-          </td>
-        </tr>
+      container.innerHTML = `
+        <div style="text-align:center; padding:2rem 1rem; color:var(--text-muted); font-size:0.85rem;">
+          Không tìm thấy từ vựng nào phù hợp.
+        </div>
       `;
       return;
     }
 
-    tbody.innerHTML = this.currentResults.map(w => {
-      const isFav = StorageManager.isBookmarked(w.id);
-      return `
-        <tr>
-          <td>
-            <div style="display:flex; align-items:center; gap:0.5rem;">
-              <button class="btn-speaker" onclick="AudioEngine.speak('${w.hanzi}')">🔊</button>
-              <span class="hanzi" style="font-size:1.3rem; font-weight:600; color:var(--text-primary);">${w.hanzi}</span>
-              ${w.isCustom ? '<span style="font-size:0.68rem; background:#fef3c7; color:#b45309; padding:0.1rem 0.35rem; border-radius:4px;">Tự thêm</span>' : ''}
+    container.innerHTML = `
+      <div class="vocab-cards-list">
+        ${this.currentResults.slice(0, 100).map(w => {
+          const isFav = StorageManager.isBookmarked(w.id);
+          return `
+            <div class="vocab-item-card">
+              <div class="vocab-item-left">
+                <button class="btn-speaker" onclick="AudioEngine.speak('${w.hanzi}')">🔊</button>
+                <div class="vocab-item-info">
+                  <div style="display:flex; align-items:baseline; gap:0.4rem;">
+                    <span class="vocab-item-hanzi">${w.hanzi}</span>
+                    <span class="vocab-item-py">${w.pinyin}</span>
+                    ${w.isCustom ? '<span style="font-size:0.65rem; background:#fef3c7; color:#b45309; padding:0.1rem 0.3rem; border-radius:3px;">Tự thêm</span>' : ''}
+                  </div>
+                  <div class="vocab-item-mean">${w.meaning}</div>
+                  <div class="vocab-item-meta">${w.pos ? `<span class="flashcard-pos" style="margin:0.15rem 0.35rem 0 0;">${w.pos}</span>` : ''}${w.hanviet ? `Hán Việt: ${w.hanviet}` : ''}</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:0.3rem; flex-shrink:0;">
+                <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${w.hanzi}');" title="Tập viết">✍️</button>
+                <button class="btn btn-outline btn-sm" onclick="DictionaryController.toggleBookmark('${w.id}', this)" title="Lưu">
+                  ${isFav ? '★' : '☆'}
+                </button>
+                ${w.isCustom ? `<button class="btn btn-outline btn-sm" onclick="DictionaryController.deleteCustom('${w.id}')" title="Xóa" style="color:#ef4444;">🗑️</button>` : ''}
+              </div>
             </div>
-          </td>
-          <td style="color:var(--primary); font-weight:600;">${w.pinyin}</td>
-          <td style="color:var(--text-secondary); text-transform:uppercase; font-size:0.85rem;">${w.hanviet || '—'}</td>
-          <td><span class="flashcard-pos" style="margin:0;">${w.pos || 'Từ vựng'}</span></td>
-          <td style="font-weight:500;">${w.meaning}</td>
-          <td>
-            <div style="display:flex; gap:0.35rem;">
-              <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${w.hanzi}');" title="Luyện viết">✍️</button>
-              <button class="btn btn-outline btn-sm" onclick="DictionaryController.toggleBookmark('${w.id}', this)" title="Lưu từ">
-                ${isFav ? '★' : '☆'}
-              </button>
-              ${w.isCustom ? `<button class="btn btn-outline btn-sm" onclick="DictionaryController.deleteCustom('${w.id}')" title="Xóa từ" style="color:#ef4444;">🗑️</button>` : ''}
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
+          `;
+        }).join('')}
+      </div>
+      ${this.currentResults.length > 100 ? '<p style="text-align:center; padding:1rem; font-size:0.8rem; color:var(--text-muted);">Hiển thị 100 từ đầu tiên. Hãy gõ từ khóa để lọc chi tiết hơn.</p>' : ''}
+    `;
   },
 
   toggleBookmark(wordId, btn) {
@@ -1325,7 +1328,7 @@ const DictionaryController = {
   },
 
   deleteCustom(wordId) {
-    if (confirm('Bạn có chắc muốn xóa từ vựng này khỏi sổ tay cá nhân?')) {
+    if (confirm('Bạn có chắc muốn xóa từ vựng này khỏi sổ tay?')) {
       StorageManager.deleteCustomWord(wordId);
       this.search(document.getElementById('dict-search-input').value);
       App.updateDashboardStats();
@@ -1349,17 +1352,15 @@ const DictionaryController = {
     const pos = document.getElementById('custom-pos').value;
 
     if (!hanzi || !meaning) {
-      alert('Vui lòng nhập ít nhất Chữ Hán và Nghĩa tiếng Việt!');
+      alert('Vui lòng nhập Chữ Hán và Nghĩa!');
       return;
     }
 
     StorageManager.addCustomWord({ hanzi, pinyin, hanviet, meaning, pos });
     this.closeAddModal();
-    // Reset form
     document.getElementById('add-word-form').reset();
     this.search(document.getElementById('dict-search-input').value);
     App.updateDashboardStats();
-    alert('Đã thêm từ vựng mới vào sổ tay thành công!');
   },
 
   exportBackup() {
@@ -1372,27 +1373,6 @@ const DictionaryController = {
     a.download = `chinese_app_backup_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  },
-
-  importBackup(fileInput) {
-    const file = fileInput.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const parsed = JSON.parse(e.target.result);
-        if (parsed.streak !== undefined || parsed.bookmarks) {
-          StorageManager.saveData(parsed);
-          alert('Khôi phục dữ liệu tiến độ thành công!');
-          location.reload();
-        } else {
-          alert('Tệp sao lưu không hợp lệ!');
-        }
-      } catch(err) {
-        alert('Lỗi đọc tệp sao lưu JSON!');
-      }
-    };
-    reader.readAsText(file);
   }
 };
 
@@ -1406,14 +1386,12 @@ const App = {
   currentTab: 'home',
 
   init() {
-    // Check if data is loaded
     if (!window.CHINESE_DATA) {
-      console.error('CHINESE_DATA not found. Please ensure data.js is loaded.');
+      console.error('CHINESE_DATA not found.');
       return;
     }
     this.data = window.CHINESE_DATA;
 
-    // Initialize Submodules
     StorageManager.updateStreak();
     FlashcardController.init(this.data.all_words);
     QuizController.init(this.data.all_words);
@@ -1422,29 +1400,31 @@ const App = {
     LessonBrowser.init(this.data.lessons);
     DictionaryController.init(this.data.all_words);
 
-    // Setup Theme & Audio Settings
     this.initTheme();
     this.initAudioSettings();
     this.updateDashboardStats();
     this.setupEventListeners();
-
-    console.log('App initialized with', this.data.total_words, 'words across', this.data.total_lessons, 'lessons.');
   },
 
   navigateTo(tabId) {
     this.currentTab = tabId;
 
-    // Update Tab UI
-    document.querySelectorAll('.nav-tab').forEach(tab => {
+    // Sync Desktop Top Navigation
+    document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.target === tabId);
     });
 
-    // Update View Sections
+    // Sync Mobile Bottom Navigation
+    document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.target === tabId);
+    });
+
+    // Toggle Section Views
     document.querySelectorAll('.view-section').forEach(view => {
       view.classList.toggle('active', view.id === `view-${tabId}`);
     });
 
-    // Tab-specific lifecycle hooks
+    // Tab hooks
     if (tabId === 'home') {
       this.updateDashboardStats();
     } else if (tabId === 'writer') {
@@ -1475,9 +1455,6 @@ const App = {
 
     const totalEl = document.getElementById('stat-total');
     if (totalEl) totalEl.innerText = this.data.total_words + stats.customCount;
-
-    const bestScoreEl = document.getElementById('stat-best-score');
-    if (bestScoreEl) bestScoreEl.innerText = `${stats.bestScore}%`;
   },
 
   initTheme() {
@@ -1515,7 +1492,6 @@ const App = {
     const data = StorageManager.getData();
     const progress = data.wordProgress;
     
-    // Words due for review or not mastered
     const dueWords = this.data.all_words.filter(w => {
       const p = progress[w.id];
       return p && (p.srsLevel < 3 || (p.nextReview && p.nextReview <= Date.now()));
@@ -1530,16 +1506,21 @@ const App = {
   },
 
   setupEventListeners() {
-    // Navigation bar click handling
-    document.querySelectorAll('.nav-tab').forEach(tab => {
+    // Desktop Nav Clicks
+    document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
       tab.onclick = () => this.navigateTo(tab.dataset.target);
     });
 
-    // Theme toggle button
+    // Mobile Bottom Nav Clicks
+    document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn').forEach(btn => {
+      btn.onclick = () => this.navigateTo(btn.dataset.target);
+    });
+
+    // Theme toggle
     const themeBtn = document.getElementById('btn-toggle-theme');
     if (themeBtn) themeBtn.onclick = () => this.toggleTheme();
 
-    // Flashcard filters
+    // Flashcard Scope
     const fcFilterSelect = document.getElementById('fc-scope-select');
     if (fcFilterSelect) {
       fcFilterSelect.onchange = (e) => {
@@ -1559,20 +1540,19 @@ const App = {
       };
     }
 
-    // Populate Lesson Options in Quiz and Flashcard Scope Selectors
+    // Populate Lessons in Selects
     const quizScopeSelect = document.getElementById('quiz-scope-select');
     if (quizScopeSelect && fcFilterSelect) {
       this.data.lessons.forEach(l => {
         const opt = document.createElement('option');
         opt.value = `lesson_${l.id}`;
-        opt.innerText = `Bài ${l.id}: ${l.zh_title} (${l.title})`;
-        
+        opt.innerText = `Bài ${l.id}: ${l.zh_title}`;
         quizScopeSelect.appendChild(opt.cloneNode(true));
         fcFilterSelect.appendChild(opt);
       });
     }
 
-    // Quiz Start form
+    // Quiz form
     const quizForm = document.getElementById('quiz-setup-form');
     if (quizForm) {
       quizForm.onsubmit = (e) => {
@@ -1607,7 +1587,6 @@ const App = {
   }
 };
 
-// Start application when DOM is ready
 window.addEventListener('DOMContentLoaded', () => {
   App.init();
 });
