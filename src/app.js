@@ -1,5 +1,5 @@
 /**
- * Main Application Orchestrator & View Router
+ * Main Application Orchestrator & Multi-User Auth Controller
  */
 const App = {
   data: null,
@@ -12,7 +12,24 @@ const App = {
     }
     this.data = window.CHINESE_DATA;
 
+    this.initTheme();
+    this.initAudioSettings();
+    this.setupEventListeners();
+
+    // Check User Session
+    const user = StorageManager.getCurrentUser();
+    if (!user) {
+      this.showAuthModal('login');
+    } else {
+      this.onUserLoggedIn(user);
+    }
+  },
+
+  onUserLoggedIn(user) {
+    this.hideAuthModal();
     StorageManager.updateStreak();
+
+    // Initialize all modules with active user state
     FlashcardController.init(this.data.all_words);
     QuizController.init(this.data.all_words);
     HanziController.init('hanzi-writer-target');
@@ -20,33 +37,45 @@ const App = {
     LessonBrowser.init(this.data.lessons);
     DictionaryController.init(this.data.all_words);
 
-    this.initTheme();
-    this.initAudioSettings();
+    // Update Header with User Info
+    const userBadge = document.getElementById('header-user-btn');
+    if (userBadge) {
+      const shortName = user.fullName.split(' ').pop();
+      userBadge.innerHTML = `<span>👤</span> <span>${shortName}</span>`;
+      userBadge.title = `Đang đăng nhập: ${user.fullName} (@${user.username})`;
+    }
+
+    // Update Dashboard Welcome & Progress
+    const welcomeTitle = document.getElementById('welcome-user-name');
+    if (welcomeTitle) {
+      welcomeTitle.innerText = `Chào bạn, ${user.fullName}!`;
+    }
+
     this.updateDashboardStats();
-    this.setupEventListeners();
   },
 
   navigateTo(tabId) {
     this.currentTab = tabId;
 
-    // Sync Desktop Top Navigation
+    // Desktop Nav Sync
     document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.target === tabId);
     });
 
-    // Sync Mobile Bottom Navigation
+    // Mobile Bottom Nav Sync
     document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.target === tabId);
     });
 
-    // Toggle Section Views
+    // Toggle Views
     document.querySelectorAll('.view-section').forEach(view => {
       view.classList.toggle('active', view.id === `view-${tabId}`);
     });
 
-    // Tab hooks
     if (tabId === 'home') {
       this.updateDashboardStats();
+    } else if (tabId === 'lessons') {
+      LessonBrowser.renderLessonList();
     } else if (tabId === 'writer') {
       setTimeout(() => {
         HanziController.loadCharacter(HanziController.currentChar || '好');
@@ -60,7 +89,9 @@ const App = {
 
   updateDashboardStats() {
     const stats = StorageManager.getStats(this.data.total_words);
+    const user = StorageManager.getCurrentUser();
 
+    // Update KPI Numbers
     const streakEl = document.getElementById('stat-streak');
     if (streakEl) streakEl.innerText = stats.streak;
 
@@ -75,6 +106,99 @@ const App = {
 
     const totalEl = document.getElementById('stat-total');
     if (totalEl) totalEl.innerText = this.data.total_words + stats.customCount;
+
+    // Update Course Progress Bar
+    const completedCount = stats.completedLessonsCount || 0;
+    const completedPct = Math.round((completedCount / 30) * 100);
+
+    const progText = document.getElementById('course-progress-text');
+    if (progText) progText.innerText = `Đã hoàn thành ${completedCount}/30 bài (${completedPct}%)`;
+
+    const progFill = document.getElementById('course-progress-fill');
+    if (progFill) progFill.style.width = `${completedPct}%`;
+
+    // Last Active Lesson button
+    const resumeBtn = document.getElementById('btn-resume-lesson');
+    if (resumeBtn && user) {
+      const lId = user.lastActiveLesson || 1;
+      resumeBtn.innerText = `▶️ Tiếp tục: Bài ${lId}`;
+      resumeBtn.onclick = () => {
+        App.navigateTo('lessons');
+        LessonBrowser.openLesson(lId);
+      };
+    }
+  },
+
+  // AUTH MODAL & LOGIC
+  showAuthModal(tab = 'login') {
+    const modal = document.getElementById('auth-gate-modal');
+    if (modal) modal.style.display = 'flex';
+    this.switchAuthTab(tab);
+  },
+
+  hideAuthModal() {
+    const modal = document.getElementById('auth-gate-modal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.remove('active'));
+    const tabBtn = document.getElementById(`auth-tab-btn-${tab}`);
+    if (tabBtn) tabBtn.classList.add('active');
+
+    document.getElementById('auth-form-login').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('auth-form-register').style.display = tab === 'register' ? 'block' : 'none';
+
+    // Hide error messages
+    const errLogin = document.getElementById('auth-error-login');
+    const errReg = document.getElementById('auth-error-register');
+    if (errLogin) errLogin.style.display = 'none';
+    if (errReg) errReg.style.display = 'none';
+  },
+
+  handleLogin(e) {
+    e.preventDefault();
+    const userField = document.getElementById('login-username').value;
+    const passField = document.getElementById('login-password').value;
+    const res = StorageManager.login(userField, passField);
+
+    const errBox = document.getElementById('auth-error-login');
+    if (!res.success) {
+      if (errBox) {
+        errBox.innerText = res.message;
+        errBox.style.display = 'block';
+      }
+    } else {
+      AudioEngine.playCorrectSound();
+      this.onUserLoggedIn(res.user);
+    }
+  },
+
+  handleRegister(e) {
+    e.preventDefault();
+    const nameField = document.getElementById('reg-fullname').value;
+    const userField = document.getElementById('reg-username').value;
+    const passField = document.getElementById('reg-password').value;
+    const res = StorageManager.register(nameField, userField, passField);
+
+    const errBox = document.getElementById('auth-error-register');
+    if (!res.success) {
+      if (errBox) {
+        errBox.innerText = res.message;
+        errBox.style.display = 'block';
+      }
+    } else {
+      AudioEngine.playVictorySound();
+      alert(`🎉 Đăng ký thành công! Chào mừng ${res.user.fullName} đến với Hán Ngữ Master!`);
+      this.onUserLoggedIn(res.user);
+    }
+  },
+
+  handleLogout() {
+    if (confirm('Bạn có chắc muốn đăng xuất khỏi tài khoản này? Toàn bộ tiến độ của bạn đã được lưu an toàn.')) {
+      StorageManager.logout();
+      location.reload();
+    }
   },
 
   initTheme() {
@@ -109,8 +233,9 @@ const App = {
   },
 
   startDailyReview() {
-    const data = StorageManager.getData();
-    const progress = data.wordProgress;
+    const user = StorageManager.getCurrentUser();
+    if (!user) return;
+    const progress = user.wordProgress || {};
     
     const dueWords = this.data.all_words.filter(w => {
       const p = progress[w.id];
@@ -126,12 +251,12 @@ const App = {
   },
 
   setupEventListeners() {
-    // Desktop Nav Clicks
+    // Desktop Nav
     document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
       tab.onclick = () => this.navigateTo(tab.dataset.target);
     });
 
-    // Mobile Bottom Nav Clicks
+    // Mobile Bottom Nav
     document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn').forEach(btn => {
       btn.onclick = () => this.navigateTo(btn.dataset.target);
     });

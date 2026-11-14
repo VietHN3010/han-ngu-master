@@ -24,26 +24,31 @@ const LessonBrowser = {
     if (this.activeFilter === 'hsk1') filtered = filtered.filter(l => l.hsk === 1);
     else if (this.activeFilter === 'hsk2') filtered = filtered.filter(l => l.hsk === 2);
 
-    container.innerHTML = filtered.map(l => `
-      <div class="lesson-card" onclick="LessonBrowser.openLesson(${l.id})">
-        <div class="lesson-card-header">
-          <span class="lesson-num-pill">Bài ${l.id} • HSK ${l.hsk}</span>
-          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">${l.words ? l.words.length : 0} từ</span>
+    container.innerHTML = filtered.map(l => {
+      const isCompleted = StorageManager.isLessonCompleted(l.id);
+      return `
+        <div class="lesson-card ${isCompleted ? 'lesson-card-completed' : ''}" onclick="LessonBrowser.openLesson(${l.id})">
+          <div class="lesson-card-header">
+            <span class="lesson-num-pill">Bài ${l.id} • HSK ${l.hsk}</span>
+            ${isCompleted ? '<span class="lesson-status-completed">✅ Đã học xong</span>' : `<span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">${l.words ? l.words.length : 0} từ</span>`}
+          </div>
+          <div class="lesson-card-zh">${l.zh_title}</div>
+          <div class="lesson-card-vi">${l.title}</div>
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid var(--border-light);">
+            <span>💬 ${l.dialogue ? l.dialogue.length : 0} câu thoại</span>
+            <span>💡 ${l.grammar ? l.grammar.length : 0} ngữ pháp</span>
+          </div>
         </div>
-        <div class="lesson-card-zh">${l.zh_title}</div>
-        <div class="lesson-card-vi">${l.title}</div>
-        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid var(--border-light);">
-          <span>💬 ${l.dialogue ? l.dialogue.length : 0} câu thoại</span>
-          <span>💡 ${l.grammar ? l.grammar.length : 0} ngữ pháp</span>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   },
 
   openLesson(lessonId) {
     const lesson = this.lessons.find(l => l.id === lessonId);
     if (!lesson) return;
     this.currentLesson = lesson;
+
+    StorageManager.setLastActiveLesson(lessonId);
 
     document.getElementById('lesson-list-view').style.display = 'none';
     const detailView = document.getElementById('lesson-detail-view');
@@ -52,6 +57,7 @@ const LessonBrowser = {
     document.getElementById('lesson-detail-title').innerText = `Bài ${lesson.id}: ${lesson.zh_title}`;
     document.getElementById('lesson-detail-subtitle').innerText = `${lesson.pinyin_title || ''} • ${lesson.title}`;
 
+    this.updateCompleteButton();
     this.renderVocabTab();
     this.renderDialogueTab();
     this.renderGrammarTab();
@@ -62,6 +68,35 @@ const LessonBrowser = {
   closeLesson() {
     document.getElementById('lesson-detail-view').style.display = 'none';
     document.getElementById('lesson-list-view').style.display = 'block';
+    this.renderLessonList();
+    App.updateDashboardStats();
+  },
+
+  updateCompleteButton() {
+    if (!this.currentLesson) return;
+    const isCompleted = StorageManager.isLessonCompleted(this.currentLesson.id);
+    const btn = document.getElementById('btn-toggle-complete-lesson');
+    if (btn) {
+      if (isCompleted) {
+        btn.innerHTML = '✅ Đã học xong bài này';
+        btn.className = 'btn btn-sm btn-lesson-done';
+      } else {
+        btn.innerHTML = '⬜ Đánh dấu đã học xong';
+        btn.className = 'btn btn-outline btn-sm';
+      }
+    }
+  },
+
+  toggleCurrentLessonCompleted() {
+    if (!this.currentLesson) return;
+    const isDone = StorageManager.toggleLessonCompleted(this.currentLesson.id);
+    if (isDone) {
+      AudioEngine.playVictorySound();
+    } else {
+      AudioEngine.playClickSound();
+    }
+    this.updateCompleteButton();
+    App.updateDashboardStats();
   },
 
   switchLessonTab(tab) {

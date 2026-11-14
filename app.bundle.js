@@ -5,24 +5,65 @@ window.CHINESE_DATA = {"total_lessons": 30, "total_words": 744, "lessons": [{"id
 
 /* === storage.js === */
 /**
- * Storage Manager: LocalStorage persistence for user progress, SRS, custom words, and bookmarks.
+ * Storage & Auth Manager: Multi-user authentication and per-account cloud-like persistence.
  */
 const StorageManager = {
-  KEY_DATA: 'chinese_app_userdata_v1',
+  KEY_USERS: 'chinese_app_users_v2',
+  KEY_CURRENT_USER: 'chinese_app_session_v2',
 
-  getData() {
+  getAllUsers() {
     try {
-      const raw = localStorage.getItem(this.KEY_DATA);
-      if (raw) {
-        return JSON.parse(raw);
-      }
+      const raw = localStorage.getItem(this.KEY_USERS);
+      return raw ? JSON.parse(raw) : {};
     } catch(e) {
-      console.error('Failed to read localStorage:', e);
+      return {};
     }
-    return {
-      bookmarks: [],         // array of word ids
-      wordProgress: {},      // { [wordId]: { srsLevel: 0..5, nextReview: timestamp, lastStudied: timestamp } }
-      customWords: [],       // array of user-added word objects
+  },
+
+  saveAllUsers(users) {
+    try {
+      localStorage.setItem(this.KEY_USERS, JSON.stringify(users));
+    } catch(e) {
+      console.error('Error saving users:', e);
+    }
+  },
+
+  getCurrentUser() {
+    const username = localStorage.getItem(this.KEY_CURRENT_USER);
+    if (!username) return null;
+    const users = this.getAllUsers();
+    return users[username] || null;
+  },
+
+  saveCurrentUser(user) {
+    if (!user || !user.username) return;
+    const users = this.getAllUsers();
+    users[user.username] = user;
+    this.saveAllUsers(users);
+  },
+
+  register(fullName, username, password) {
+    const cleanUser = username.trim().toLowerCase();
+    const cleanName = fullName.trim();
+    if (!cleanName) return { success: false, message: 'Vui lòng nhập họ và tên của bạn!' };
+    if (!cleanUser || cleanUser.length < 3) return { success: false, message: 'Tên đăng nhập tối thiểu 3 ký tự!' };
+    if (!password || password.length < 4) return { success: false, message: 'Mật khẩu tối thiểu 4 ký tự!' };
+
+    const users = this.getAllUsers();
+    if (users[cleanUser]) {
+      return { success: false, message: 'Tên đăng nhập này đã được sử dụng. Vui lòng chọn tên khác!' };
+    }
+
+    const newUser = {
+      fullName: cleanName,
+      username: cleanUser,
+      password: password,
+      createdAt: Date.now(),
+      completedLessons: [],    // list of lesson IDs: [1, 2, ...]
+      lastActiveLesson: 1,      // default lesson 1
+      bookmarks: [],            // word IDs
+      wordProgress: {},         // { [wordId]: { srsLevel, reviewCount, nextReview } }
+      customWords: [],          // user created words
       streak: 1,
       lastActiveDate: new Date().toISOString().slice(0, 10),
       quizHighScores: {
@@ -31,62 +72,116 @@ const StorageManager = {
         bestScore: 0
       }
     };
+
+    users[cleanUser] = newUser;
+    this.saveAllUsers(users);
+    localStorage.setItem(this.KEY_CURRENT_USER, cleanUser);
+    return { success: true, user: newUser };
   },
 
-  saveData(data) {
-    try {
-      localStorage.setItem(this.KEY_DATA, JSON.stringify(data));
-    } catch(e) {
-      console.error('Failed to write localStorage:', e);
+  login(username, password) {
+    const cleanUser = username.trim().toLowerCase();
+    const users = this.getAllUsers();
+    const user = users[cleanUser];
+
+    if (!user || user.password !== password) {
+      return { success: false, message: 'Sai tên đăng nhập hoặc mật khẩu!' };
     }
+
+    localStorage.setItem(this.KEY_CURRENT_USER, cleanUser);
+    this.updateStreak();
+    return { success: true, user };
+  },
+
+  logout() {
+    localStorage.removeItem(this.KEY_CURRENT_USER);
   },
 
   updateStreak() {
-    const data = this.getData();
+    const user = this.getCurrentUser();
+    if (!user) return 1;
+
     const today = new Date().toISOString().slice(0, 10);
-    const lastDate = data.lastActiveDate;
+    const lastDate = user.lastActiveDate;
 
     if (lastDate !== today) {
       const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
       if (lastDate === yesterday) {
-        data.streak += 1;
+        user.streak = (user.streak || 1) + 1;
       } else {
-        data.streak = 1;
+        user.streak = 1;
       }
-      data.lastActiveDate = today;
-      this.saveData(data);
+      user.lastActiveDate = today;
+      this.saveCurrentUser(user);
     }
-    return data.streak;
+    return user.streak || 1;
   },
 
-  toggleBookmark(wordId) {
-    const data = this.getData();
-    const idx = data.bookmarks.indexOf(wordId);
+  // LESSON COMPLETION TRACKING
+  toggleLessonCompleted(lessonId) {
+    const user = this.getCurrentUser();
+    if (!user) return false;
+    user.completedLessons = user.completedLessons || [];
+    const idx = user.completedLessons.indexOf(lessonId);
+    let isCompleted = false;
     if (idx > -1) {
-      data.bookmarks.splice(idx, 1);
+      user.completedLessons.splice(idx, 1);
+      isCompleted = false;
     } else {
-      data.bookmarks.push(wordId);
+      user.completedLessons.push(lessonId);
+      isCompleted = true;
     }
-    this.saveData(data);
-    return idx === -1; // true if added
+    this.saveCurrentUser(user);
+    return isCompleted;
+  },
+
+  isLessonCompleted(lessonId) {
+    const user = this.getCurrentUser();
+    if (!user || !user.completedLessons) return false;
+    return user.completedLessons.includes(lessonId);
+  },
+
+  setLastActiveLesson(lessonId) {
+    const user = this.getCurrentUser();
+    if (!user) return;
+    user.lastActiveLesson = lessonId;
+    this.saveCurrentUser(user);
+  },
+
+  // BOOKMARKS
+  toggleBookmark(wordId) {
+    const user = this.getCurrentUser();
+    if (!user) return false;
+    user.bookmarks = user.bookmarks || [];
+    const idx = user.bookmarks.indexOf(wordId);
+    if (idx > -1) {
+      user.bookmarks.splice(idx, 1);
+    } else {
+      user.bookmarks.push(wordId);
+    }
+    this.saveCurrentUser(user);
+    return idx === -1;
   },
 
   isBookmarked(wordId) {
-    const data = this.getData();
-    return data.bookmarks.includes(wordId);
+    const user = this.getCurrentUser();
+    if (!user || !user.bookmarks) return false;
+    return user.bookmarks.includes(wordId);
   },
 
+  // SRS PROGRESS
   updateWordSrs(wordId, quality) {
-    // quality: 'again' (0), 'good' (+1), 'easy' (+2)
-    const data = this.getData();
-    if (!data.wordProgress[wordId]) {
-      data.wordProgress[wordId] = { srsLevel: 0, reviewCount: 0 };
+    const user = this.getCurrentUser();
+    if (!user) return;
+    user.wordProgress = user.wordProgress || {};
+    if (!user.wordProgress[wordId]) {
+      user.wordProgress[wordId] = { srsLevel: 0, reviewCount: 0 };
     }
-    const item = data.wordProgress[wordId];
+    const item = user.wordProgress[wordId];
     item.reviewCount = (item.reviewCount || 0) + 1;
     item.lastStudied = Date.now();
 
-    const intervals = [1, 2, 4, 7, 14, 30]; // days
+    const intervals = [1, 2, 4, 7, 14, 30];
     if (quality === 'again') {
       item.srsLevel = 0;
     } else if (quality === 'good') {
@@ -97,11 +192,14 @@ const StorageManager = {
 
     const daysToAdd = intervals[item.srsLevel];
     item.nextReview = Date.now() + daysToAdd * 86400000;
-    this.saveData(data);
+    this.saveCurrentUser(user);
   },
 
+  // CUSTOM WORDS
   addCustomWord(word) {
-    const data = this.getData();
+    const user = this.getCurrentUser();
+    if (!user) return null;
+    user.customWords = user.customWords || [];
     const newWord = {
       id: 'custom_' + Date.now(),
       hsk: word.hsk || 1,
@@ -113,45 +211,64 @@ const StorageManager = {
       meaning: word.meaning.trim(),
       isCustom: true
     };
-    data.customWords.push(newWord);
-    this.saveData(data);
+    user.customWords.push(newWord);
+    this.saveCurrentUser(user);
     return newWord;
   },
 
   deleteCustomWord(wordId) {
-    const data = this.getData();
-    data.customWords = data.customWords.filter(w => w.id !== wordId);
-    this.saveData(data);
+    const user = this.getCurrentUser();
+    if (!user || !user.customWords) return;
+    user.customWords = user.customWords.filter(w => w.id !== wordId);
+    this.saveCurrentUser(user);
   },
 
   recordQuiz(correctCount, totalCount) {
-    const data = this.getData();
-    data.quizHighScores.totalQuizzes += 1;
-    data.quizHighScores.totalCorrect += correctCount;
+    const user = this.getCurrentUser();
+    if (!user) return;
+    user.quizHighScores = user.quizHighScores || { totalQuizzes: 0, totalCorrect: 0, bestScore: 0 };
+    user.quizHighScores.totalQuizzes += 1;
+    user.quizHighScores.totalCorrect += correctCount;
     const scorePct = Math.round((correctCount / totalCount) * 100);
-    if (scorePct > (data.quizHighScores.bestScore || 0)) {
-      data.quizHighScores.bestScore = scorePct;
+    if (scorePct > (user.quizHighScores.bestScore || 0)) {
+      user.quizHighScores.bestScore = scorePct;
     }
-    this.saveData(data);
+    this.saveCurrentUser(user);
   },
 
   getStats(totalAppWords) {
-    const data = this.getData();
-    const progressValues = Object.values(data.wordProgress);
+    const user = this.getCurrentUser();
+    if (!user) {
+      return {
+        streak: 1,
+        mastered: 0,
+        learning: 0,
+        notStarted: totalAppWords,
+        bookmarksCount: 0,
+        customCount: 0,
+        completedLessonsCount: 0,
+        totalQuizzes: 0,
+        bestScore: 0
+      };
+    }
+
+    const progressValues = Object.values(user.wordProgress || {});
     const mastered = progressValues.filter(p => p.srsLevel >= 3).length;
     const learning = progressValues.filter(p => p.srsLevel > 0 && p.srsLevel < 3).length;
-    const customCount = data.customWords.length;
+    const customCount = (user.customWords || []).length;
     const totalWords = totalAppWords + customCount;
+    const completedLessonsCount = (user.completedLessons || []).length;
 
     return {
-      streak: data.streak || 1,
+      streak: user.streak || 1,
       mastered,
       learning,
       notStarted: Math.max(0, totalWords - mastered - learning),
-      bookmarksCount: data.bookmarks.length,
+      bookmarksCount: (user.bookmarks || []).length,
       customCount,
-      totalQuizzes: data.quizHighScores.totalQuizzes || 0,
-      bestScore: data.quizHighScores.bestScore || 0
+      completedLessonsCount,
+      totalQuizzes: user.quizHighScores ? user.quizHighScores.totalQuizzes : 0,
+      bestScore: user.quizHighScores ? user.quizHighScores.bestScore : 0
     };
   }
 };
@@ -1075,26 +1192,31 @@ const LessonBrowser = {
     if (this.activeFilter === 'hsk1') filtered = filtered.filter(l => l.hsk === 1);
     else if (this.activeFilter === 'hsk2') filtered = filtered.filter(l => l.hsk === 2);
 
-    container.innerHTML = filtered.map(l => `
-      <div class="lesson-card" onclick="LessonBrowser.openLesson(${l.id})">
-        <div class="lesson-card-header">
-          <span class="lesson-num-pill">Bài ${l.id} • HSK ${l.hsk}</span>
-          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">${l.words ? l.words.length : 0} từ</span>
+    container.innerHTML = filtered.map(l => {
+      const isCompleted = StorageManager.isLessonCompleted(l.id);
+      return `
+        <div class="lesson-card ${isCompleted ? 'lesson-card-completed' : ''}" onclick="LessonBrowser.openLesson(${l.id})">
+          <div class="lesson-card-header">
+            <span class="lesson-num-pill">Bài ${l.id} • HSK ${l.hsk}</span>
+            ${isCompleted ? '<span class="lesson-status-completed">✅ Đã học xong</span>' : `<span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">${l.words ? l.words.length : 0} từ</span>`}
+          </div>
+          <div class="lesson-card-zh">${l.zh_title}</div>
+          <div class="lesson-card-vi">${l.title}</div>
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid var(--border-light);">
+            <span>💬 ${l.dialogue ? l.dialogue.length : 0} câu thoại</span>
+            <span>💡 ${l.grammar ? l.grammar.length : 0} ngữ pháp</span>
+          </div>
         </div>
-        <div class="lesson-card-zh">${l.zh_title}</div>
-        <div class="lesson-card-vi">${l.title}</div>
-        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid var(--border-light);">
-          <span>💬 ${l.dialogue ? l.dialogue.length : 0} câu thoại</span>
-          <span>💡 ${l.grammar ? l.grammar.length : 0} ngữ pháp</span>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   },
 
   openLesson(lessonId) {
     const lesson = this.lessons.find(l => l.id === lessonId);
     if (!lesson) return;
     this.currentLesson = lesson;
+
+    StorageManager.setLastActiveLesson(lessonId);
 
     document.getElementById('lesson-list-view').style.display = 'none';
     const detailView = document.getElementById('lesson-detail-view');
@@ -1103,6 +1225,7 @@ const LessonBrowser = {
     document.getElementById('lesson-detail-title').innerText = `Bài ${lesson.id}: ${lesson.zh_title}`;
     document.getElementById('lesson-detail-subtitle').innerText = `${lesson.pinyin_title || ''} • ${lesson.title}`;
 
+    this.updateCompleteButton();
     this.renderVocabTab();
     this.renderDialogueTab();
     this.renderGrammarTab();
@@ -1113,6 +1236,35 @@ const LessonBrowser = {
   closeLesson() {
     document.getElementById('lesson-detail-view').style.display = 'none';
     document.getElementById('lesson-list-view').style.display = 'block';
+    this.renderLessonList();
+    App.updateDashboardStats();
+  },
+
+  updateCompleteButton() {
+    if (!this.currentLesson) return;
+    const isCompleted = StorageManager.isLessonCompleted(this.currentLesson.id);
+    const btn = document.getElementById('btn-toggle-complete-lesson');
+    if (btn) {
+      if (isCompleted) {
+        btn.innerHTML = '✅ Đã học xong bài này';
+        btn.className = 'btn btn-sm btn-lesson-done';
+      } else {
+        btn.innerHTML = '⬜ Đánh dấu đã học xong';
+        btn.className = 'btn btn-outline btn-sm';
+      }
+    }
+  },
+
+  toggleCurrentLessonCompleted() {
+    if (!this.currentLesson) return;
+    const isDone = StorageManager.toggleLessonCompleted(this.currentLesson.id);
+    if (isDone) {
+      AudioEngine.playVictorySound();
+    } else {
+      AudioEngine.playClickSound();
+    }
+    this.updateCompleteButton();
+    App.updateDashboardStats();
   },
 
   switchLessonTab(tab) {
@@ -1379,7 +1531,7 @@ const DictionaryController = {
 
 /* === app.js === */
 /**
- * Main Application Orchestrator & View Router
+ * Main Application Orchestrator & Multi-User Auth Controller
  */
 const App = {
   data: null,
@@ -1392,7 +1544,24 @@ const App = {
     }
     this.data = window.CHINESE_DATA;
 
+    this.initTheme();
+    this.initAudioSettings();
+    this.setupEventListeners();
+
+    // Check User Session
+    const user = StorageManager.getCurrentUser();
+    if (!user) {
+      this.showAuthModal('login');
+    } else {
+      this.onUserLoggedIn(user);
+    }
+  },
+
+  onUserLoggedIn(user) {
+    this.hideAuthModal();
     StorageManager.updateStreak();
+
+    // Initialize all modules with active user state
     FlashcardController.init(this.data.all_words);
     QuizController.init(this.data.all_words);
     HanziController.init('hanzi-writer-target');
@@ -1400,33 +1569,45 @@ const App = {
     LessonBrowser.init(this.data.lessons);
     DictionaryController.init(this.data.all_words);
 
-    this.initTheme();
-    this.initAudioSettings();
+    // Update Header with User Info
+    const userBadge = document.getElementById('header-user-btn');
+    if (userBadge) {
+      const shortName = user.fullName.split(' ').pop();
+      userBadge.innerHTML = `<span>👤</span> <span>${shortName}</span>`;
+      userBadge.title = `Đang đăng nhập: ${user.fullName} (@${user.username})`;
+    }
+
+    // Update Dashboard Welcome & Progress
+    const welcomeTitle = document.getElementById('welcome-user-name');
+    if (welcomeTitle) {
+      welcomeTitle.innerText = `Chào bạn, ${user.fullName}!`;
+    }
+
     this.updateDashboardStats();
-    this.setupEventListeners();
   },
 
   navigateTo(tabId) {
     this.currentTab = tabId;
 
-    // Sync Desktop Top Navigation
+    // Desktop Nav Sync
     document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.target === tabId);
     });
 
-    // Sync Mobile Bottom Navigation
+    // Mobile Bottom Nav Sync
     document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.target === tabId);
     });
 
-    // Toggle Section Views
+    // Toggle Views
     document.querySelectorAll('.view-section').forEach(view => {
       view.classList.toggle('active', view.id === `view-${tabId}`);
     });
 
-    // Tab hooks
     if (tabId === 'home') {
       this.updateDashboardStats();
+    } else if (tabId === 'lessons') {
+      LessonBrowser.renderLessonList();
     } else if (tabId === 'writer') {
       setTimeout(() => {
         HanziController.loadCharacter(HanziController.currentChar || '好');
@@ -1440,7 +1621,9 @@ const App = {
 
   updateDashboardStats() {
     const stats = StorageManager.getStats(this.data.total_words);
+    const user = StorageManager.getCurrentUser();
 
+    // Update KPI Numbers
     const streakEl = document.getElementById('stat-streak');
     if (streakEl) streakEl.innerText = stats.streak;
 
@@ -1455,6 +1638,99 @@ const App = {
 
     const totalEl = document.getElementById('stat-total');
     if (totalEl) totalEl.innerText = this.data.total_words + stats.customCount;
+
+    // Update Course Progress Bar
+    const completedCount = stats.completedLessonsCount || 0;
+    const completedPct = Math.round((completedCount / 30) * 100);
+
+    const progText = document.getElementById('course-progress-text');
+    if (progText) progText.innerText = `Đã hoàn thành ${completedCount}/30 bài (${completedPct}%)`;
+
+    const progFill = document.getElementById('course-progress-fill');
+    if (progFill) progFill.style.width = `${completedPct}%`;
+
+    // Last Active Lesson button
+    const resumeBtn = document.getElementById('btn-resume-lesson');
+    if (resumeBtn && user) {
+      const lId = user.lastActiveLesson || 1;
+      resumeBtn.innerText = `▶️ Tiếp tục: Bài ${lId}`;
+      resumeBtn.onclick = () => {
+        App.navigateTo('lessons');
+        LessonBrowser.openLesson(lId);
+      };
+    }
+  },
+
+  // AUTH MODAL & LOGIC
+  showAuthModal(tab = 'login') {
+    const modal = document.getElementById('auth-gate-modal');
+    if (modal) modal.style.display = 'flex';
+    this.switchAuthTab(tab);
+  },
+
+  hideAuthModal() {
+    const modal = document.getElementById('auth-gate-modal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.remove('active'));
+    const tabBtn = document.getElementById(`auth-tab-btn-${tab}`);
+    if (tabBtn) tabBtn.classList.add('active');
+
+    document.getElementById('auth-form-login').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('auth-form-register').style.display = tab === 'register' ? 'block' : 'none';
+
+    // Hide error messages
+    const errLogin = document.getElementById('auth-error-login');
+    const errReg = document.getElementById('auth-error-register');
+    if (errLogin) errLogin.style.display = 'none';
+    if (errReg) errReg.style.display = 'none';
+  },
+
+  handleLogin(e) {
+    e.preventDefault();
+    const userField = document.getElementById('login-username').value;
+    const passField = document.getElementById('login-password').value;
+    const res = StorageManager.login(userField, passField);
+
+    const errBox = document.getElementById('auth-error-login');
+    if (!res.success) {
+      if (errBox) {
+        errBox.innerText = res.message;
+        errBox.style.display = 'block';
+      }
+    } else {
+      AudioEngine.playCorrectSound();
+      this.onUserLoggedIn(res.user);
+    }
+  },
+
+  handleRegister(e) {
+    e.preventDefault();
+    const nameField = document.getElementById('reg-fullname').value;
+    const userField = document.getElementById('reg-username').value;
+    const passField = document.getElementById('reg-password').value;
+    const res = StorageManager.register(nameField, userField, passField);
+
+    const errBox = document.getElementById('auth-error-register');
+    if (!res.success) {
+      if (errBox) {
+        errBox.innerText = res.message;
+        errBox.style.display = 'block';
+      }
+    } else {
+      AudioEngine.playVictorySound();
+      alert(`🎉 Đăng ký thành công! Chào mừng ${res.user.fullName} đến với Hán Ngữ Master!`);
+      this.onUserLoggedIn(res.user);
+    }
+  },
+
+  handleLogout() {
+    if (confirm('Bạn có chắc muốn đăng xuất khỏi tài khoản này? Toàn bộ tiến độ của bạn đã được lưu an toàn.')) {
+      StorageManager.logout();
+      location.reload();
+    }
   },
 
   initTheme() {
@@ -1489,8 +1765,9 @@ const App = {
   },
 
   startDailyReview() {
-    const data = StorageManager.getData();
-    const progress = data.wordProgress;
+    const user = StorageManager.getCurrentUser();
+    if (!user) return;
+    const progress = user.wordProgress || {};
     
     const dueWords = this.data.all_words.filter(w => {
       const p = progress[w.id];
@@ -1506,12 +1783,12 @@ const App = {
   },
 
   setupEventListeners() {
-    // Desktop Nav Clicks
+    // Desktop Nav
     document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
       tab.onclick = () => this.navigateTo(tab.dataset.target);
     });
 
-    // Mobile Bottom Nav Clicks
+    // Mobile Bottom Nav
     document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn').forEach(btn => {
       btn.onclick = () => this.navigateTo(btn.dataset.target);
     });
