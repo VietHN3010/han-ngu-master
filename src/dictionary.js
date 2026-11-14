@@ -23,7 +23,8 @@ const DictionaryController = {
 
   search(query) {
     const q = (query || '').trim().toLowerCase();
-    const customWords = StorageManager.getData().customWords || [];
+    const user = StorageManager.getCurrentUser() || {};
+    const customWords = user.customWords || [];
     const combined = [...customWords, ...this.allWords];
 
     let filtered = combined;
@@ -138,7 +139,7 @@ const DictionaryController = {
   },
 
   exportBackup() {
-    const data = StorageManager.getData();
+    const data = StorageManager.getCurrentUser() || {};
     const jsonStr = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);

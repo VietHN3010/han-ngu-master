@@ -152,7 +152,7 @@ const QuizController = {
       const btn = document.createElement('button');
       btn.className = 'quiz-option-btn';
 
-      const choiceMeaning = (choice.meaning || '').replace(/\s+,/g, ',');
+      const choiceMeaning = (choice.meaning || (choice.hanviet ? `Hán Việt: ${choice.hanviet}` : choice.pinyin)).replace(/\s+,/g, ',');
       let text = '';
       if (this.mode === 'hanzi_to_vi') {
         text = `<span><strong>${String.fromCharCode(65 + idx)}.</strong> ${choiceMeaning}</span>`;

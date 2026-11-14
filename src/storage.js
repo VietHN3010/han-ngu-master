@@ -48,6 +48,10 @@ const StorageManager = {
     return users[userKey] || null;
   },
 
+  getData() {
+    return this.getCurrentUser() || {};
+  },
+
   saveCurrentUser(user) {
     if (!user) return;
     const key = (user.email || user.username || '').toLowerCase();
