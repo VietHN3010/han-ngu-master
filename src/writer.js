@@ -23,9 +23,11 @@ const HanziController = {
     // Check if HanziWriter library is loaded
     if (typeof HanziWriter !== 'undefined') {
       try {
+        const frameWidth = el.clientWidth || 270;
+        const targetSize = Math.max(220, Math.min(280, frameWidth - 10));
         this.writerInstance = HanziWriter.create(this.containerId, target, {
-          width: 290,
-          height: 290,
+          width: targetSize,
+          height: targetSize,
           padding: 20,
           strokeAnimationSpeed: 1,
           delayBetweenStrokes: 150,

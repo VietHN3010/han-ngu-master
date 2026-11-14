@@ -54,7 +54,7 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
   --shadow-card: 0 2px 8px rgba(15, 23, 42, 0.06);
 
-  --font-hanzi: "Noto Serif SC", "STKaiti", "Songti SC", "SimSun", serif;
+  --font-hanzi: "Noto Serif SC", "PingFang SC", "STHeiti", "Microsoft YaHei", "STKaiti", "Songti SC", "SimSun", serif;
   --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -1108,6 +1108,8 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .vocab-item-hanzi {
@@ -1116,11 +1118,14 @@ body {
   font-weight: 700;
   color: var(--text-main);
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .vocab-item-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .vocab-item-py {
@@ -1133,6 +1138,7 @@ body {
   color: var(--text-main);
   font-size: 0.85rem;
   font-weight: 500;
+  word-break: break-word;
 }
 
 .vocab-item-meta {
@@ -1234,6 +1240,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  overflow-y: auto;
 }
 
 .auth-card {
@@ -1245,6 +1252,13 @@ body {
   padding: 2rem 1.75rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
   animation: authScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: auto;
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 1.5rem 1.15rem;
+  }
 }
 
 @keyframes authScaleIn {
@@ -1420,6 +1434,174 @@ body {
   background: linear-gradient(90deg, #10b981, #059669);
   width: 0%;
   transition: width 0.4s ease;
+}
+
+/* ==========================================================================
+   ADVANCED RESPONSIVE & TYPOGRAPHY POLISH (MOBILE & PC)
+   ========================================================================== */
+
+/* Typography & Pinyin tone mark perfection */
+.vocab-item-py, .flashcard-pinyin, .quiz-prompt-label {
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* On Desktop: 2-column grid for Vocab Cards */
+@media (min-width: 768px) {
+  .vocab-cards-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* Header Responsiveness on Small Screens (< 520px) */
+@media (max-width: 520px) {
+  .header-container {
+    padding: 0.5rem 0.75rem;
+  }
+  .brand-text p {
+    display: none !important;
+  }
+  .brand-text h1 {
+    font-size: 0.95rem !important;
+  }
+  .brand-logo {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1.15rem !important;
+  }
+  .user-profile-badge {
+    padding: 0.25rem 0.55rem !important;
+    font-size: 0.72rem !important;
+  }
+  .user-profile-badge span:first-child {
+    font-size: 0.85rem !important;
+  }
+  .streak-badge {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.7rem !important;
+  }
+  #audio-speed-select {
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.7rem !important;
+  }
+  .btn-icon-small {
+    width: 30px !important;
+    height: 30px !important;
+  }
+}
+
+/* Ultra Small Screens (< 380px) */
+@media (max-width: 380px) {
+  #audio-speed-select {
+    display: none !important; /* Hide to avoid wrapping */
+  }
+}
+
+/* Mobile Bottom Navigation Bar Polish */
+.mobile-bottom-nav {
+  padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom)) !important;
+}
+
+.mobile-nav-btn {
+  min-width: 0 !important;
+  padding: 0.25rem 0.25rem !important;
+  font-size: 0.65rem !important;
+  letter-spacing: -0.02em !important;
+  white-space: nowrap !important;
+}
+
+.mobile-nav-icon {
+  font-size: 1.2rem !important;
+}
+
+/* Symmetrical Match Game Grid */
+.match-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 0.5rem !important;
+  max-width: 480px !important;
+  margin: 1rem auto !important;
+}
+
+/* Flashcard Face Text Clamping & Scroll safety */
+.flashcard-face {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+}
+
+.flashcard-hanzi {
+  font-size: clamp(3.2rem, 12vw, 4.8rem) !important;
+}
+
+.quiz-prompt-hanzi {
+  font-size: clamp(2.4rem, 9vw, 3.8rem) !important;
+}
+
+/* Touch Friendly Tap Targets */
+.btn-speaker {
+  min-width: 38px;
+  min-height: 38px;
+}
+
+/* Lesson detail action bar on mobile */
+@media (max-width: 600px) {
+  .lesson-card-zh {
+    font-size: 1.05rem !important;
+  }
+  .welcome-title {
+    font-size: 1.25rem !important;
+  }
+  .stat-num {
+    font-size: 1.35rem !important;
+  }
+}
+
+/* Medium desktop navbar responsiveness (900px - 1100px) */
+@media (min-width: 900px) and (max-width: 1100px) {
+  .desktop-nav {
+    gap: 0.15rem !important;
+    padding: 0.2rem 0.25rem !important;
+  }
+  .nav-item {
+    padding: 0.35rem 0.55rem !important;
+    font-size: 0.78rem !important;
+    gap: 0.2rem !important;
+  }
+}
+
+/* HanziWriter SVG centering */
+#hanzi-writer-target svg {
+  display: block;
+  margin: auto;
+}
+
+/* Dark mode theme consistency */
+[data-theme="dark"] .migrid-frame {
+  background-color: #131b2e !important;
+}
+
+[data-theme="dark"] .training-icon-box {
+  background: var(--bg-subtle) !important;
+}
+
+[data-theme="dark"] .btn-srs-again {
+  background: #3b1818 !important;
+  color: #fca5a5 !important;
+  border-color: #5c2020 !important;
+}
+
+[data-theme="dark"] .btn-srs-good {
+  background: #172554 !important;
+  color: #93c5fd !important;
+  border-color: #1e3a8a !important;
+}
+
+[data-theme="dark"] .btn-srs-easy {
+  background: #143521 !important;
+  color: #86efac !important;
+  border-color: #166534 !important;
 }
 
   </style>

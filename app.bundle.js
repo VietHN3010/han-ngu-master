@@ -447,9 +447,11 @@ const HanziController = {
     // Check if HanziWriter library is loaded
     if (typeof HanziWriter !== 'undefined') {
       try {
+        const frameWidth = el.clientWidth || 270;
+        const targetSize = Math.max(220, Math.min(280, frameWidth - 10));
         this.writerInstance = HanziWriter.create(this.containerId, target, {
-          width: 290,
-          height: 290,
+          width: targetSize,
+          height: targetSize,
           padding: 20,
           strokeAnimationSpeed: 1,
           delayBetweenStrokes: 150,
@@ -1322,13 +1324,13 @@ const LessonBrowser = {
 
     container.innerHTML = this.currentLesson.dialogue.map((d, idx) => `
       <div style="padding:0.85rem 1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); margin-bottom:0.6rem; display:flex; align-items:flex-start; justify-content:space-between; gap:0.75rem;">
-        <div>
+        <div style="min-width:0; flex:1; word-break:break-word;">
           <div style="font-weight:700; color:var(--secondary); font-size:0.8rem; margin-bottom:0.15rem;">${d.speaker || `Nhân vật ${idx + 1}`}:</div>
           <div class="hanzi" style="font-size:1.15rem; color:var(--text-main); font-weight:600; margin-bottom:0.15rem;">${d.zh}</div>
           <div style="color:var(--primary); font-size:0.82rem; font-weight:600; margin-bottom:0.15rem;">${d.py}</div>
           <div style="color:var(--text-muted); font-size:0.82rem;">${d.vi}</div>
         </div>
-        <button class="btn-speaker" onclick="AudioEngine.speak('${d.zh}')" title="Nghe câu" style="font-size:1.2rem;">
+        <button class="btn-speaker" onclick="AudioEngine.speak('${d.zh}')" title="Nghe câu" style="font-size:1.2rem; flex-shrink:0;">
           🔊
         </button>
       </div>
