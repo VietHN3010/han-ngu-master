@@ -1606,6 +1606,8 @@ body {
 
   </style>
   
+  <!-- Supabase Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- HanziWriter CDN -->
   <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 </head>
@@ -1617,13 +1619,14 @@ body {
       <div class="auth-header">
         <div class="auth-logo-badge">汉</div>
         <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.25rem;">Hán Ngữ Master</h2>
-        <p style="font-size:0.8rem; color:var(--text-muted);">Vui lòng đăng nhập để lưu trữ tiến độ học tập của bạn</p>
+        <p style="font-size:0.8rem; color:var(--text-muted);">Đồng bộ dữ liệu học tập thông minh trên Máy tính & Điện thoại</p>
       </div>
 
       <!-- Auth Tabs -->
-      <div class="auth-tabs">
+      <div class="auth-tabs" style="grid-template-columns: repeat(3, 1fr);">
         <button id="auth-tab-btn-login" class="auth-tab-btn active" onclick="App.switchAuthTab('login')">Đăng nhập</button>
-        <button id="auth-tab-btn-register" class="auth-tab-btn" onclick="App.switchAuthTab('register')">Đăng ký mới</button>
+        <button id="auth-tab-btn-register" class="auth-tab-btn" onclick="App.switchAuthTab('register')">Đăng ký</button>
+        <button id="auth-tab-btn-forgot" class="auth-tab-btn" onclick="App.switchAuthTab('forgot')">Quên mật khẩu</button>
       </div>
 
       <!-- Login Form -->
@@ -1631,16 +1634,20 @@ body {
         <div id="auth-error-login" class="auth-error-msg"></div>
 
         <div class="auth-input-group">
-          <label>Tên đăng nhập</label>
-          <input id="login-username" type="text" required placeholder="Nhập tên đăng nhập..." class="auth-input" autocomplete="username">
+          <label>Email hoặc Tên đăng nhập</label>
+          <input id="login-username" type="text" required placeholder="Nhập email của bạn..." class="auth-input" autocomplete="username">
         </div>
 
-        <div class="auth-input-group">
+        <div class="auth-input-group" style="margin-bottom:0.4rem;">
           <label>Mật khẩu</label>
           <input id="login-password" type="password" required placeholder="Nhập mật khẩu..." class="auth-input" autocomplete="current-password">
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width:100%; padding:0.85rem; font-size:0.95rem; margin-top:0.5rem;">
+        <div style="text-align:right; margin-bottom:0.85rem;">
+          <span style="font-size:0.78rem; color:var(--primary); font-weight:600; cursor:pointer;" onclick="App.switchAuthTab('forgot')">Quên mật khẩu?</span>
+        </div>
+
+        <button id="btn-submit-login" type="submit" class="btn btn-primary" style="width:100%; padding:0.85rem; font-size:0.95rem;">
           🚀 Đăng nhập ngay
         </button>
 
@@ -1654,27 +1661,72 @@ body {
         <div id="auth-error-register" class="auth-error-msg"></div>
 
         <div class="auth-input-group">
-          <label>Họ và tên của bạn</label>
+          <label>Họ và tên</label>
           <input id="reg-fullname" type="text" required placeholder="VD: Nguyễn Hoàng Việt" class="auth-input">
         </div>
 
         <div class="auth-input-group">
-          <label>Tên đăng nhập (viết liền)</label>
+          <label>Địa chỉ Email (để khôi phục mật khẩu & đồng bộ)</label>
+          <input id="reg-email" type="email" required placeholder="VD: viethn3010@gmail.com" class="auth-input" autocomplete="email">
+        </div>
+
+        <div class="auth-input-group">
+          <label>Tên hiển thị / Username</label>
           <input id="reg-username" type="text" required placeholder="VD: viethn3010" class="auth-input" autocomplete="username">
         </div>
 
         <div class="auth-input-group">
-          <label>Mật khẩu</label>
-          <input id="reg-password" type="password" required placeholder="Tối thiểu 4 ký tự..." class="auth-input" autocomplete="new-password">
+          <label>Mật khẩu (tối thiểu 6 ký tự)</label>
+          <input id="reg-password" type="password" required minlength="6" placeholder="Tối thiểu 6 ký tự..." class="auth-input" autocomplete="new-password">
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width:100%; padding:0.85rem; font-size:0.95rem; margin-top:0.5rem;">
+        <button id="btn-submit-reg" type="submit" class="btn btn-primary" style="width:100%; padding:0.85rem; font-size:0.95rem; margin-top:0.5rem;">
           ✨ Tạo tài khoản & Bắt đầu học
         </button>
 
         <p style="text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:1rem;">
           Đã có tài khoản? <span style="color:var(--primary); font-weight:700; cursor:pointer;" onclick="App.switchAuthTab('login')">Đăng nhập tại đây</span>
         </p>
+      </form>
+
+      <!-- Forgot Password Form -->
+      <form id="auth-form-forgot" style="display:none;" onsubmit="App.handleForgotPassword(event)">
+        <div id="auth-msg-forgot" class="auth-error-msg"></div>
+
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem; line-height:1.45;">
+          Nhập địa chỉ Email bạn đã đăng ký. Hệ thống sẽ tự động gửi liên kết đặt lại mật khẩu an toàn vào hộp thư của bạn.
+        </p>
+
+        <div class="auth-input-group">
+          <label>Địa chỉ Email của bạn</label>
+          <input id="forgot-email" type="email" required placeholder="VD: viethn3010@gmail.com" class="auth-input" autocomplete="email">
+        </div>
+
+        <button id="btn-submit-forgot" type="submit" class="btn btn-primary" style="width:100%; padding:0.85rem; font-size:0.95rem; margin-top:0.5rem;">
+          📩 Gửi link khôi phục mật khẩu
+        </button>
+
+        <p style="text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:1rem;">
+          Nhớ lại mật khẩu rồi? <span style="color:var(--primary); font-weight:700; cursor:pointer;" onclick="App.switchAuthTab('login')">← Quay lại Đăng nhập</span>
+        </p>
+      </form>
+
+      <!-- Reset Password Form (When user enters from recovery email) -->
+      <form id="auth-form-reset" style="display:none;" onsubmit="App.handleSetNewPassword(event)">
+        <div id="auth-msg-reset" class="auth-error-msg"></div>
+
+        <p style="font-size:0.85rem; color:var(--accent-jade); font-weight:700; margin-bottom:0.75rem;">
+          ✅ Đã xác thực link khôi phục! Vui lòng nhập mật khẩu mới:
+        </p>
+
+        <div class="auth-input-group">
+          <label>Mật khẩu mới (tối thiểu 6 ký tự)</label>
+          <input id="reset-new-password" type="password" required minlength="6" placeholder="Nhập mật khẩu mới..." class="auth-input">
+        </div>
+
+        <button id="btn-submit-reset" type="submit" class="btn btn-primary" style="width:100%; padding:0.85rem; font-size:0.95rem; margin-top:0.5rem;">
+          🔒 Lưu mật khẩu mới & Đăng nhập
+        </button>
       </form>
     </div>
   </div>

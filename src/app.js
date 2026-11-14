@@ -5,7 +5,7 @@ const App = {
   data: null,
   currentTab: 'home',
 
-  init() {
+  async init() {
     if (!window.CHINESE_DATA) {
       console.error('CHINESE_DATA not found.');
       return;
@@ -15,9 +15,10 @@ const App = {
     this.initTheme();
     this.initAudioSettings();
     this.setupEventListeners();
+    this.checkPasswordRecoveryUrl();
 
-    // Check User Session
-    const user = StorageManager.getCurrentUser();
+    // Check User Session (Supabase Cloud + Local cache)
+    const user = await StorageManager.checkSession();
     if (!user) {
       this.showAuthModal('login');
     } else {
@@ -142,25 +143,28 @@ const App = {
   },
 
   switchAuthTab(tab) {
-    document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.remove('active'));
-    const tabBtn = document.getElementById(`auth-tab-btn-${tab}`);
-    if (tabBtn) tabBtn.classList.add('active');
-
-    document.getElementById('auth-form-login').style.display = tab === 'login' ? 'block' : 'none';
-    document.getElementById('auth-form-register').style.display = tab === 'register' ? 'block' : 'none';
-
-    // Hide error messages
-    const errLogin = document.getElementById('auth-error-login');
-    const errReg = document.getElementById('auth-error-register');
-    if (errLogin) errLogin.style.display = 'none';
-    if (errReg) errReg.style.display = 'none';
+    const tabs = ['login', 'register', 'forgot', 'reset'];
+    tabs.forEach(t => {
+      const btn = document.getElementById(`auth-tab-btn-${t}`);
+      const form = document.getElementById(`auth-form-${t}`);
+      if (btn) btn.classList.toggle('active', t === tab);
+      if (form) form.style.display = t === tab ? 'block' : 'none';
+      const errMsg = document.getElementById(`auth-error-${t}`) || document.getElementById(`auth-msg-${t}`);
+      if (errMsg) errMsg.style.display = 'none';
+    });
   },
 
-  handleLogin(e) {
+  async handleLogin(e) {
     e.preventDefault();
+    const btn = document.getElementById('btn-submit-login');
+    const origText = btn ? btn.innerText : '🚀 Đăng nhập ngay';
+    if (btn) { btn.disabled = true; btn.innerText = '⏳ Đang đăng nhập...'; }
+
     const userField = document.getElementById('login-username').value;
     const passField = document.getElementById('login-password').value;
-    const res = StorageManager.login(userField, passField);
+    const res = await StorageManager.login(userField, passField);
+
+    if (btn) { btn.disabled = false; btn.innerText = origText; }
 
     const errBox = document.getElementById('auth-error-login');
     if (!res.success) {
@@ -174,12 +178,20 @@ const App = {
     }
   },
 
-  handleRegister(e) {
+  async handleRegister(e) {
     e.preventDefault();
+    const btn = document.getElementById('btn-submit-reg');
+    const origText = btn ? btn.innerText : '✨ Tạo tài khoản';
+    if (btn) { btn.disabled = true; btn.innerText = '⏳ Đang tạo tài khoản...'; }
+
     const nameField = document.getElementById('reg-fullname').value;
+    const emailField = document.getElementById('reg-email').value;
     const userField = document.getElementById('reg-username').value;
     const passField = document.getElementById('reg-password').value;
-    const res = StorageManager.register(nameField, userField, passField);
+
+    const res = await StorageManager.register(nameField, emailField, userField, passField);
+
+    if (btn) { btn.disabled = false; btn.innerText = origText; }
 
     const errBox = document.getElementById('auth-error-register');
     if (!res.success) {
@@ -189,8 +201,72 @@ const App = {
       }
     } else {
       AudioEngine.playVictorySound();
-      alert(`🎉 Đăng ký thành công! Chào mừng ${res.user.fullName} đến với Hán Ngữ Master!`);
+      if (!res.hasSession) {
+        alert(`🎉 Đăng ký thành công! Hãy kiểm tra hòm thư ${emailField} (kể cả hòm Spam) để kích hoạt tài khoản nếu được yêu cầu.`);
+      } else {
+        alert(`🎉 Chúc mừng ${res.user.fullName}! Tài khoản đã được kích hoạt thành công trên đám mây.`);
+      }
       this.onUserLoggedIn(res.user);
+    }
+  },
+
+  async handleForgotPassword(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-submit-forgot');
+    const origText = btn ? btn.innerText : '📩 Gửi link khôi phục mật khẩu';
+    if (btn) { btn.disabled = true; btn.innerText = '⏳ Đang gửi yêu cầu...'; }
+
+    const emailField = document.getElementById('forgot-email').value;
+    const res = await StorageManager.forgotPassword(emailField);
+
+    if (btn) { btn.disabled = false; btn.innerText = origText; }
+
+    const msgBox = document.getElementById('auth-msg-forgot');
+    if (msgBox) {
+      msgBox.innerText = res.message;
+      msgBox.style.display = 'block';
+      msgBox.style.background = res.success ? '#ecfdf5' : '#fef2f2';
+      msgBox.style.color = res.success ? '#065f46' : '#dc2626';
+      msgBox.style.borderColor = res.success ? '#a7f3d0' : '#fecaca';
+    }
+  },
+
+  checkPasswordRecoveryUrl() {
+    const hash = window.location.hash || '';
+    if (hash.includes('type=recovery') || hash.includes('access_token')) {
+      this.showAuthModal('reset');
+      this.switchAuthTab('reset');
+    }
+    const sb = getSupabase();
+    if (sb) {
+      sb.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          this.showAuthModal('reset');
+          this.switchAuthTab('reset');
+        }
+      });
+    }
+  },
+
+  async handleSetNewPassword(e) {
+    e.preventDefault();
+    const newPass = document.getElementById('reset-new-password').value;
+    const btn = document.getElementById('btn-submit-reset');
+    if (btn) { btn.disabled = true; btn.innerText = '⏳ Đang lưu...'; }
+
+    const res = await StorageManager.updateNewPassword(newPass);
+    if (btn) { btn.disabled = false; btn.innerText = '🔒 Lưu mật khẩu mới & Đăng nhập'; }
+
+    const msgBox = document.getElementById('auth-msg-reset');
+    if (!res.success) {
+      if (msgBox) {
+        msgBox.innerText = res.message;
+        msgBox.style.display = 'block';
+      }
+    } else {
+      alert('🎉 Đặt lại mật khẩu thành công! Bạn đã được đăng nhập an toàn.');
+      window.location.hash = '';
+      window.location.reload();
     }
   },
 
