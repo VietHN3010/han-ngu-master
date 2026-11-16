@@ -323,5 +323,15 @@ const LessonBrowser = {
       count: 10,
       mode: 'hanzi_to_vi'
     });
+  },
+
+  grammarPracticeCurrentLesson() {
+    if (!this.currentLesson) return;
+    App.navigateTo('grammar');
+    GrammarController.startExercise({
+      scope: `lesson_${this.currentLesson.id}`,
+      count: 5,
+      mode: 'reorder'
+    });
   }
 };

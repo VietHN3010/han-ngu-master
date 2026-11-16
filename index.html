@@ -1771,6 +1771,122 @@ body {
   border-color: var(--primary);
   background: var(--primary-light);
 }
+
+/* Grammar Word Ordering & Translation Styles */
+.grammar-slot-box {
+  min-height: 56px;
+  background: var(--bg-main);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  transition: all 0.25s ease;
+}
+.grammar-slot-box.slot-correct {
+  border-color: #22c55e !important;
+  background: #f0fdf4 !important;
+}
+.grammar-slot-box.slot-wrong {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+}
+.tile-placeholder {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+  width: 100%;
+  text-align: center;
+}
+.grammar-pool-box {
+  min-height: 56px;
+  padding: 0.6rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.grammar-tile {
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-family: var(--font-hanzi);
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.grammar-tile:hover, .grammar-tile:active {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: var(--shadow-sm);
+}
+.grammar-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.grammar-opt-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+.grammar-opt-btn:hover {
+  border-color: var(--primary);
+  background: var(--bg-subtle);
+}
+.grammar-opt-btn .opt-letter {
+  font-weight: 800;
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+.grammar-opt-btn.correct {
+  border-color: #22c55e !important;
+  background: #f0fdf4 !important;
+  color: #15803d !important;
+  font-weight: 700;
+}
+.grammar-opt-btn.wrong {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+.grammar-feedback {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  animation: slideDown 0.25s ease;
+}
+.grammar-feedback.feedback-correct {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+.grammar-feedback.feedback-wrong {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
   </style>
   
   <!-- Supabase Client CDN -->
@@ -1915,6 +2031,7 @@ body {
         <button class="nav-item" data-target="lessons">📚 Bài học</button>
         <button class="nav-item" data-target="flashcard">🎴 Flashcard</button>
         <button class="nav-item" data-target="quiz">📝 Trắc nghiệm</button>
+        <button class="nav-item" data-target="grammar">📐 Ngữ pháp</button>
         <button class="nav-item" data-target="writer">✍️ Luyện viết</button>
         <button class="nav-item" data-target="match">🧩 Ghép từ</button>
         <button class="nav-item" data-target="dict">📖 Sổ tay</button>
@@ -2083,6 +2200,14 @@ body {
       </div>
 
       <div class="features-grid">
+        <div class="training-card" onclick="App.navigateTo('grammar')">
+          <div class="training-icon-box" style="background:#fef3c7; color:#d97706;">📐</div>
+          <div class="training-info">
+            <h4>Bài tập Ngữ pháp</h4>
+            <p>Sắp xếp từ thành câu hoàn chỉnh (Duolingo) và luyện dịch 2 chiều Vi ↔ Zh.</p>
+          </div>
+        </div>
+
         <div class="training-card" onclick="App.navigateTo('flashcard')">
           <div class="training-icon-box" style="background:#fff1f0; color:#d93829;">🎴</div>
           <div class="training-info">
@@ -2167,6 +2292,9 @@ body {
             </button>
             <button class="btn btn-secondary btn-sm" onclick="LessonBrowser.quizCurrentLesson()">
               📝 Thi trắc nghiệm
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.grammarPracticeCurrentLesson()" title="Luyện sắp xếp câu và dịch câu bài này">
+              📐 Bài tập ngữ pháp
             </button>
           </div>
         </div>
@@ -2365,6 +2493,133 @@ body {
               🏠 Về trang chủ
             </button>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: GRAMMAR EXERCISE (SẮP XẾP CÂU & DỊCH CÂU) -->
+    <section id="view-grammar" class="view-section">
+      <!-- SETUP VIEW -->
+      <div id="grammar-setup-view" class="quiz-card" style="max-width:540px;">
+        <div style="text-align:center; margin-bottom:1.25rem;">
+          <h2 style="font-size:1.35rem; font-weight:800; color:var(--text-main);">Luyện tập Ngữ pháp</h2>
+          <p style="color:var(--text-muted); font-size:0.82rem;">Rèn luyện trật tự câu (连词成句) & Dịch câu 2 chiều Việt ↔ Trung</p>
+        </div>
+
+        <form id="grammar-setup-form">
+          <div style="margin-bottom:1rem;">
+            <label style="display:block; font-weight:700; font-size:0.82rem; margin-bottom:0.35rem;">Chế độ luyện tập:</label>
+            <select id="grammar-mode-select" class="btn btn-outline" style="width:100%; text-align:left;">
+              <option value="reorder">🧩 1. Sắp xếp từ thành câu hoàn chỉnh (Duolingo Style)</option>
+              <option value="vi_to_zh">🇨🇳 2. Dịch câu: Tiếng Việt ➔ Tiếng Trung</option>
+              <option value="zh_to_vi">🇻🇳 3. Dịch câu: Tiếng Trung ➔ Tiếng Việt</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom:1rem;">
+            <label style="display:block; font-weight:700; font-size:0.82rem; margin-bottom:0.35rem;">Phạm vi bài học:</label>
+            <select id="grammar-scope-select" class="btn btn-outline" style="width:100%; text-align:left;">
+              <option value="all">Toàn bộ 30 bài HSK 1 & 2</option>
+              <option value="hsk1">Khối HSK 1 (Bài 1 - 15)</option>
+              <option value="hsk2">Khối HSK 2 (Bài 16 - 30)</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom:1.5rem;">
+            <label style="display:block; font-weight:700; font-size:0.82rem; margin-bottom:0.35rem;">Số lượng câu:</label>
+            <select id="grammar-count-select" class="btn btn-outline" style="width:100%; text-align:left;">
+              <option value="5">5 câu (Nhanh)</option>
+              <option value="10" selected>10 câu tiêu chuẩn</option>
+              <option value="15">15 câu nâng cao</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width:100%; padding:0.85rem; font-size:1rem;">
+            🚀 Bắt đầu làm bài tập
+          </button>
+        </form>
+      </div>
+
+      <!-- PLAY VIEW -->
+      <div id="grammar-play-view" class="quiz-card" style="display:none; max-width:620px;">
+        <div class="quiz-header">
+          <span style="font-weight:700; font-size:0.88rem; color:var(--text-muted);">
+            Câu: <span id="grammar-cur-num">1</span>/<span id="grammar-tot-num">10</span>
+          </span>
+          <span style="font-weight:700; font-size:0.88rem; color:var(--primary);">
+            Điểm: <span id="grammar-live-score">0</span>
+          </span>
+        </div>
+
+        <div class="quiz-progress-bar">
+          <div id="grammar-progress-fill" class="quiz-progress-fill" style="width:0%;"></div>
+        </div>
+
+        <div class="quiz-prompt-card" style="text-align:center;">
+          <div id="grammar-prompt-vi" style="font-size:1.05rem; margin-bottom:0.4rem; color:var(--secondary); font-weight:700;"></div>
+          <div id="grammar-prompt-zh" style="display:none;"></div>
+        </div>
+
+        <!-- REORDER AREA -->
+        <div id="grammar-reorder-area" style="display:none; margin:1rem 0;">
+          <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:0.4rem;">Khung ghép câu của bạn:</div>
+          <div id="grammar-answer-slot" class="grammar-slot-box"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin:0.75rem 0 0.35rem;">
+            <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Các từ có sẵn (Chạm để ghép):</span>
+            <button type="button" class="btn btn-outline btn-sm" onclick="GrammarController.clearTiles()" style="font-size:0.75rem; padding:0.2rem 0.5rem;">
+              🧹 Làm lại
+            </button>
+          </div>
+          <div id="grammar-pool-slot" class="grammar-pool-box"></div>
+        </div>
+
+        <!-- CHOICE AREA -->
+        <div id="grammar-choice-area" style="display:none; margin:1rem 0;"></div>
+
+        <!-- FEEDBACK BOX -->
+        <div id="grammar-feedback-box" style="display:none;"></div>
+
+        <!-- BUTTONS -->
+        <div style="display:flex; gap:0.5rem; justify-content:center; margin-top:1.25rem;">
+          <button id="grammar-check-btn" class="btn btn-primary" onclick="GrammarController.checkReorderAnswer()" style="padding:0.75rem 1.8rem; font-size:0.95rem;">
+            ✅ Kiểm tra đáp án
+          </button>
+          <button id="grammar-next-btn" class="btn btn-primary" onclick="GrammarController.nextQuestion()" style="display:none; padding:0.75rem 1.8rem; font-size:0.95rem;">
+            Câu tiếp theo &rarr;
+          </button>
+        </div>
+      </div>
+
+      <!-- RESULTS VIEW -->
+      <div id="grammar-results-view" class="quiz-card" style="display:none; text-align:center; max-width:540px;">
+        <div style="font-size:3.5rem; margin-bottom:0.5rem;">🏆</div>
+        <h2 style="font-size:1.45rem; font-weight:800;">Kết quả bài tập Ngữ pháp</h2>
+        <div id="grammar-res-badge" style="font-size:1rem; font-weight:700; color:var(--primary); margin:0.35rem 0 1rem;"></div>
+
+        <div style="display:flex; justify-content:center; gap:1.5rem; margin-bottom:1.5rem;">
+          <div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">Số câu đúng</div>
+            <div id="grammar-res-score" style="font-size:1.6rem; font-weight:800; color:var(--text-main);">0/10</div>
+          </div>
+          <div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">Độ chính xác</div>
+            <div id="grammar-res-pct" style="font-size:1.6rem; font-weight:800; color:var(--accent-jade);">0%</div>
+          </div>
+        </div>
+
+        <!-- Missed list -->
+        <div id="grammar-missed-area" style="display:none; text-align:left; margin-bottom:1.5rem;">
+          <h4 style="font-size:0.95rem; font-weight:800; color:#dc2626; margin-bottom:0.5rem;">Các câu cần ôn tập lại:</h4>
+          <div id="grammar-missed-list" style="background:var(--bg-main); border:1px solid var(--border); border-radius:var(--radius-md);"></div>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="App.navigateTo('grammar')">
+            🔄 Làm bài tập khác
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="App.navigateTo('home')">
+            🏠 Về trang chủ
+          </button>
         </div>
       </div>
     </section>

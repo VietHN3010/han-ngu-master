@@ -39,6 +39,9 @@ const App = {
     MatchGame.init(this.data.all_words);
     LessonBrowser.init(this.data.lessons);
     DictionaryController.init(this.data.all_words);
+    if (typeof GrammarController !== 'undefined') {
+      GrammarController.init(this.data.lessons);
+    }
 
     // Update Header with User Info
     const userBadge = document.getElementById('header-user-btn');
@@ -109,7 +112,7 @@ const App = {
     }
 
     const tab = hash.replace('#', '');
-    const validTabs = ['home', 'lessons', 'flashcard', 'quiz', 'writer', 'match', 'dict'];
+    const validTabs = ['home', 'lessons', 'flashcard', 'quiz', 'grammar', 'writer', 'match', 'dict'];
     if (validTabs.includes(tab)) {
       this.closeAllModals();
       if (typeof LessonBrowser !== 'undefined' && LessonBrowser.closeLesson) {
@@ -560,6 +563,18 @@ const App = {
         const count = document.getElementById('quiz-count-select').value;
         const mode = document.getElementById('quiz-mode-select').value;
         QuizController.startQuiz({ scope, count, mode });
+      };
+    }
+
+    // Grammar form
+    const grammarForm = document.getElementById('grammar-setup-form');
+    if (grammarForm) {
+      grammarForm.onsubmit = (e) => {
+        e.preventDefault();
+        const mode = document.getElementById('grammar-mode-select').value;
+        const scope = document.getElementById('grammar-scope-select').value;
+        const count = document.getElementById('grammar-count-select').value;
+        GrammarController.startExercise({ mode, scope, count });
       };
     }
 
