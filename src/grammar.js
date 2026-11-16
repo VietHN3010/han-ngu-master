@@ -452,6 +452,19 @@ const GrammarController = {
     });
   },
 
+  resetToSetup() {
+    const setupView = document.getElementById('grammar-setup-view');
+    const playView = document.getElementById('grammar-play-view');
+    const resultsView = document.getElementById('grammar-results-view');
+    if (setupView) setupView.style.display = 'block';
+    if (playView) playView.style.display = 'none';
+    if (resultsView) resultsView.style.display = 'none';
+  },
+
+  exitExercise() {
+    this.resetToSetup();
+  },
+
   startExercise(options = {}) {
     this.mode = options.mode || 'reorder';
     const scope = options.scope || 'all';
@@ -802,3 +815,8 @@ const GrammarController = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.GRAMMAR_DATA = GRAMMAR_DATA;
+  window.GrammarController = GrammarController;
+}

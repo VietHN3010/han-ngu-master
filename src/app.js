@@ -161,6 +161,10 @@ const App = {
       }, 50);
     } else if (tabId === 'match') {
       MatchGame.startGame('hsk1');
+    } else if (tabId === 'grammar') {
+      if (typeof GrammarController !== 'undefined') {
+        GrammarController.resetToSetup();
+      }
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });

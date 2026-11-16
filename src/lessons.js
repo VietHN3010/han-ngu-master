@@ -291,17 +291,81 @@ const LessonBrowser = {
     const container = document.getElementById('lesson-grammar-content');
     if (!container || !this.currentLesson) return;
 
-    if (!this.currentLesson.grammar || !this.currentLesson.grammar.length) {
-      container.innerHTML = '<p style="color:var(--text-muted); padding:1rem; font-size:0.85rem;">Chưa có điểm ngữ pháp nổi bật cho bài này.</p>';
-      return;
+    const grammarPoints = this.currentLesson.grammar || [];
+
+    let theoryHtml = '';
+    if (grammarPoints.length > 0) {
+      theoryHtml = grammarPoints.map((g, idx) => `
+        <div style="padding:1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--primary); margin-bottom:0.65rem;">
+          <div style="font-weight:700; color:var(--text-main); font-size:0.92rem; margin-bottom:0.25rem;">Điểm ${idx + 1}: ${g.split(':')[0]}</div>
+          <div style="color:var(--text-muted); font-size:0.85rem; line-height:1.5;">${g.includes(':') ? g.split(':').slice(1).join(':') : g}</div>
+        </div>
+      `).join('');
+    } else {
+      theoryHtml = '<p style="color:var(--text-muted); padding:0.5rem 0; font-size:0.85rem;">Bài này tập trung vào củng cố từ vựng và hội thoại.</p>';
     }
 
-    container.innerHTML = this.currentLesson.grammar.map((g, idx) => `
-      <div style="padding:1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--primary); margin-bottom:0.65rem;">
-        <div style="font-weight:700; color:var(--text-main); font-size:0.92rem; margin-bottom:0.25rem;">Điểm ${idx + 1}: ${g.split(':')[0]}</div>
-        <div style="color:var(--text-muted); font-size:0.85rem; line-height:1.5;">${g.includes(':') ? g.split(':').slice(1).join(':') : g}</div>
+    const practiceCardHtml = `
+      <div class="lesson-grammar-practice-card" style="margin-top:1.25rem; padding:1.25rem; border-radius:var(--radius-lg); background:linear-gradient(135deg, rgba(239, 68, 68, 0.04), rgba(245, 158, 11, 0.08)); border:1.5px solid var(--primary-light, #fca5a5);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:0.4rem; margin:0 0 0.2rem 0;">
+              <span>🎯</span> <span>Luyện tập Ngữ pháp Bài ${this.currentLesson.id}</span>
+            </h3>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:0;">Áp dụng ngay cấu trúc ngữ pháp vừa học vào bài tập tương tác</p>
+          </div>
+          <span style="background:var(--primary); color:white; font-size:0.72rem; padding:0.2rem 0.6rem; border-radius:999px; font-weight:700;">+15 XP / câu</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:0.75rem; margin-top:0.75rem;">
+          <!-- 1. Sắp xếp câu -->
+          <div onclick="LessonBrowser.grammarPracticeMode('reorder')" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+            <div>
+              <div style="font-size:1.4rem; margin-bottom:0.35rem;">🧩</div>
+              <div style="font-weight:800; font-size:0.92rem; color:var(--text-main); margin-bottom:0.25rem;">Sắp xếp câu (连词成句)</div>
+              <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;">Chạm các mảnh từ để xếp thành câu đúng vị trí ngữ pháp.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" style="margin-top:0.85rem; width:100%;">
+              Luyện ghép câu &rarr;
+            </button>
+          </div>
+
+          <!-- 2. Dịch Việt -> Trung -->
+          <div onclick="LessonBrowser.grammarPracticeMode('vi_to_zh')" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+            <div>
+              <div style="font-size:1.4rem; margin-bottom:0.35rem;">🇨🇳</div>
+              <div style="font-weight:800; font-size:0.92rem; color:var(--text-main); margin-bottom:0.25rem;">Dịch Việt ➔ Trung</div>
+              <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;">Đọc câu tiếng Việt và chọn câu chữ Hán chuẩn ngữ pháp.</div>
+            </div>
+            <button class="btn btn-outline btn-sm" style="margin-top:0.85rem; width:100%; border-color:var(--primary); color:var(--primary);">
+              Luyện dịch Vi ➔ Zh &rarr;
+            </button>
+          </div>
+
+          <!-- 3. Dịch Trung -> Việt -->
+          <div onclick="LessonBrowser.grammarPracticeMode('zh_to_vi')" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+            <div>
+              <div style="font-size:1.4rem; margin-bottom:0.35rem;">🇻🇳</div>
+              <div style="font-weight:800; font-size:0.92rem; color:var(--text-main); margin-bottom:0.25rem;">Dịch Trung ➔ Việt</div>
+              <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;">Phân tích ngữ cảnh chữ Hán và chọn nghĩa tiếng Việt chuẩn xác.</div>
+            </div>
+            <button class="btn btn-outline btn-sm" style="margin-top:0.85rem; width:100%; border-color:var(--secondary); color:var(--secondary);">
+              Luyện dịch Zh ➔ Vi &rarr;
+            </button>
+          </div>
+        </div>
       </div>
-    `).join('');
+    `;
+
+    container.innerHTML = `
+      <div style="margin-bottom:0.5rem;">
+        <h4 style="font-size:0.95rem; font-weight:800; color:var(--secondary); margin-bottom:0.5rem; display:flex; align-items:center; gap:0.35rem;">
+          <span>📖</span> <span>Kiến thức trọng tâm</span>
+        </h4>
+        ${theoryHtml}
+      </div>
+      ${practiceCardHtml}
+    `;
   },
 
   toggleBookmark(wordId, btn) {
@@ -325,13 +389,17 @@ const LessonBrowser = {
     });
   },
 
-  grammarPracticeCurrentLesson() {
+  grammarPracticeMode(mode = 'reorder') {
     if (!this.currentLesson) return;
     App.navigateTo('grammar');
     GrammarController.startExercise({
       scope: `lesson_${this.currentLesson.id}`,
       count: 5,
-      mode: 'reorder'
+      mode: mode
     });
+  },
+
+  grammarPracticeCurrentLesson() {
+    this.grammarPracticeMode('reorder');
   }
 };
