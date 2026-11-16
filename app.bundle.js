@@ -2769,6 +2769,19 @@ const LessonBrowser = {
           `;
         }).join('')}
       </div>
+
+      <!-- Quick Review Footer inside Vocab Tab -->
+      <div style="margin-top:1.25rem; padding:1.1rem 1.25rem; border-radius:var(--radius-lg); background:linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(59, 130, 246, 0.06)); border:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; box-shadow:var(--shadow-sm);">
+        <div>
+          <div style="font-weight:800; font-size:0.95rem; color:var(--text-main);">🎯 Ôn luyện Từ vựng & Ngữ pháp Bài ${this.currentLesson.id}</div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.15rem;">Củng cố phản xạ qua Flashcard, Trắc nghiệm và Ghép câu ngữ pháp bài này</div>
+        </div>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="LessonBrowser.studyCurrentLessonFlashcards()">🎴 Ôn Flashcard</button>
+          <button class="btn btn-secondary btn-sm" onclick="LessonBrowser.quizCurrentLesson()">📝 Trắc nghiệm</button>
+          <button class="btn btn-outline btn-sm" onclick="LessonBrowser.grammarPracticeMode('reorder')" style="border-color:#d97706; color:#d97706; background:var(--bg-card);">🧩 Ghép câu</button>
+        </div>
+      </div>
     `;
   },
 
@@ -2848,13 +2861,18 @@ const LessonBrowser = {
     const toolbar = `
       <div class="dialogue-toolbar" style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-card); padding:0.6rem 0.9rem; border-radius:var(--radius-md); border:1px solid var(--border); margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
         <span style="font-weight:700; font-size:0.85rem; color:var(--text-main);">🎧 Nghe tự động toàn bài</span>
-        <button id="btn-dialogue-autoplay" class="btn btn-primary btn-sm" onclick="LessonBrowser.toggleDialogueAutoPlay()">
-          ▶️ Tự động phát hội thoại
-        </button>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+          <button id="btn-dialogue-autoplay" class="btn btn-primary btn-sm" onclick="LessonBrowser.toggleDialogueAutoPlay()">
+            ▶️ Tự động phát hội thoại
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="LessonBrowser.openLessonReviewModal()" style="border-color:var(--secondary); color:var(--secondary); font-weight:700;" title="Ôn tập từ vựng & ngữ pháp bài này">
+            ⚡ Ôn tập bài này
+          </button>
+        </div>
       </div>
     `;
 
-    container.innerHTML = toolbar + this.currentLesson.dialogue.map((d, idx) => `
+    const dialogueBubbles = this.currentLesson.dialogue.map((d, idx) => `
       <div class="dialogue-bubble" style="padding:0.85rem 1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); margin-bottom:0.6rem; display:flex; align-items:flex-start; justify-content:space-between; gap:0.75rem; transition:all 0.25s ease;">
         <div style="min-width:0; flex:1; word-break:break-word;">
           <div style="font-weight:700; color:var(--secondary); font-size:0.8rem; margin-bottom:0.15rem;">${d.speaker || `Nhân vật ${idx + 1}`}:</div>
@@ -2872,6 +2890,49 @@ const LessonBrowser = {
         </div>
       </div>
     `).join('');
+
+    const wordCount = this.currentLesson.words ? this.currentLesson.words.length : 0;
+    const reviewCta = `
+      <div class="dialogue-review-cta" style="margin-top:1.5rem; padding:1.25rem; border-radius:var(--radius-lg); background:linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(59, 130, 246, 0.06)); border:1.5px solid var(--border); box-shadow:var(--shadow-sm);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-main); margin:0 0 0.2rem 0; display:flex; align-items:center; gap:0.4rem;">
+              <span>🎯</span> <span>Ôn tập toàn diện Bài ${this.currentLesson.id} (Từ vựng & Ngữ pháp)</span>
+            </h3>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:0;">
+              Luyện ngay toàn bộ ${wordCount} từ mới và các mẫu câu ngữ pháp xuất hiện trong bài khóa này:
+            </p>
+          </div>
+          <span style="background:var(--secondary); color:white; font-size:0.75rem; padding:0.25rem 0.65rem; border-radius:999px; font-weight:700;">
+            Bài ${this.currentLesson.id} • HSK ${this.currentLesson.hsk}
+          </span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:0.65rem; margin-top:0.75rem;">
+          <!-- 1. Flashcard bài này -->
+          <button class="btn btn-primary" onclick="LessonBrowser.studyCurrentLessonFlashcards()" style="padding:0.75rem 0.6rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; font-size:0.85rem; font-weight:700;">
+            <span>🎴</span> <span>Ôn Flashcard (${wordCount} từ)</span>
+          </button>
+
+          <!-- 2. Trắc nghiệm bài này -->
+          <button class="btn btn-secondary" onclick="LessonBrowser.quizCurrentLesson()" style="padding:0.75rem 0.6rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; font-size:0.85rem; font-weight:700;">
+            <span>📝</span> <span>Thi trắc nghiệm từ vựng</span>
+          </button>
+
+          <!-- 3. Sắp xếp câu ngữ pháp bài này -->
+          <button class="btn btn-outline" onclick="LessonBrowser.grammarPracticeMode('reorder')" style="padding:0.75rem 0.6rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; font-size:0.85rem; font-weight:700; border-color:#d97706; color:#d97706; background:var(--bg-card);">
+            <span>🧩</span> <span>Sắp xếp câu ngữ pháp</span>
+          </button>
+
+          <!-- 4. Dịch câu bài này -->
+          <button class="btn btn-outline" onclick="LessonBrowser.grammarPracticeMode('vi_to_zh')" style="padding:0.75rem 0.6rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; font-size:0.85rem; font-weight:700; border-color:var(--accent-jade); color:var(--accent-jade); background:var(--bg-card);">
+            <span>🇨🇳</span> <span>Luyện dịch câu Vi ➔ Zh</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = toolbar + dialogueBubbles + reviewCta;
   },
 
   renderGrammarTab() {
@@ -2988,6 +3049,25 @@ const LessonBrowser = {
 
   grammarPracticeCurrentLesson() {
     this.grammarPracticeMode('reorder');
+  },
+
+  openLessonReviewModal() {
+    if (!this.currentLesson) return;
+    const modal = document.getElementById('lesson-review-modal');
+    const title = document.getElementById('lesson-review-modal-title');
+    const subtitle = document.getElementById('lesson-review-modal-subtitle');
+    const wordCount = document.getElementById('review-modal-word-count');
+
+    if (title) title.innerText = `🎯 Ôn tập Bài ${this.currentLesson.id}: ${this.currentLesson.zh_title}`;
+    if (subtitle) subtitle.innerText = `Phạm vi: Toàn bộ từ mới & ngữ pháp của ${this.currentLesson.title}`;
+    if (wordCount) wordCount.innerText = this.currentLesson.words ? this.currentLesson.words.length : 0;
+
+    if (modal) modal.classList.add('active');
+  },
+
+  closeLessonReviewModal() {
+    const modal = document.getElementById('lesson-review-modal');
+    if (modal) modal.classList.remove('active');
   }
 };
 

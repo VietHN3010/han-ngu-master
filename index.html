@@ -2287,14 +2287,17 @@ body {
             <button id="btn-toggle-complete-lesson" class="btn btn-outline btn-sm" onclick="LessonBrowser.toggleCurrentLessonCompleted()">
               ⬜ Đánh dấu đã học xong
             </button>
-            <button class="btn btn-primary btn-sm" onclick="LessonBrowser.studyCurrentLessonFlashcards()">
-              🎴 Ôn Flashcard
+            <button class="btn btn-primary btn-sm" onclick="LessonBrowser.openLessonReviewModal()" style="font-weight:700; background:linear-gradient(135deg, var(--primary), var(--secondary)); border:none; box-shadow:var(--shadow-sm);" title="Mở trung tâm ôn tập từ vựng & ngữ pháp bài này">
+              ⚡ Ôn tập bài này
             </button>
-            <button class="btn btn-secondary btn-sm" onclick="LessonBrowser.quizCurrentLesson()">
-              📝 Thi trắc nghiệm
+            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.studyCurrentLessonFlashcards()">
+              🎴 Flashcard
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.quizCurrentLesson()">
+              📝 Trắc nghiệm
             </button>
             <button class="btn btn-outline btn-sm" onclick="LessonBrowser.grammarPracticeCurrentLesson()" title="Luyện sắp xếp câu và dịch câu bài này">
-              📐 Bài tập ngữ pháp
+              📐 Ngữ pháp
             </button>
           </div>
         </div>
@@ -2866,7 +2869,59 @@ body {
     </div>
   </div>
 
-  <!-- Application Bundle (Cache busted v4) -->
-  <script src="app.bundle.js?v=20261116-v4"></script>
+  <!-- ================= MODAL: LESSON REVIEW HUB (TỪ VỰNG & NGỮ PHÁP) ================= -->
+  <div id="lesson-review-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width:560px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">
+        <div>
+          <h3 id="lesson-review-modal-title" style="font-size:1.15rem; font-weight:800; color:var(--text-main);">🎯 Ôn tập Từ vựng & Ngữ pháp</h3>
+          <p id="lesson-review-modal-subtitle" style="font-size:0.78rem; color:var(--text-muted); margin:0;">Phạm vi: Toàn bộ từ mới và mẫu câu của bài này</p>
+        </div>
+        <button onclick="LessonBrowser.closeLessonReviewModal()" style="background:transparent; border:none; font-size:1.4rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:1rem;">
+        <!-- Phần 1: Ôn từ vựng -->
+        <div style="background:var(--bg-subtle); border-radius:var(--radius-md); padding:0.9rem; border:1px solid var(--border);">
+          <div style="font-weight:800; font-size:0.88rem; color:var(--primary); margin-bottom:0.6rem; display:flex; align-items:center; gap:0.35rem;">
+            <span>📖</span> <span>1. Ôn luyện Từ vựng (<span id="review-modal-word-count">0</span> từ của bài)</span>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+            <button class="btn btn-primary btn-sm" onclick="LessonBrowser.closeLessonReviewModal(); LessonBrowser.studyCurrentLessonFlashcards();" style="padding:0.65rem; font-weight:700;">
+              🎴 Thẻ Flashcard 3D
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.closeLessonReviewModal(); LessonBrowser.quizCurrentLesson();" style="padding:0.65rem; font-weight:700; border-color:var(--primary); color:var(--primary); background:var(--bg-card);">
+              📝 Thi trắc nghiệm
+            </button>
+          </div>
+        </div>
+
+        <!-- Phần 2: Ôn ngữ pháp -->
+        <div style="background:var(--bg-subtle); border-radius:var(--radius-md); padding:0.9rem; border:1px solid var(--border);">
+          <div style="font-weight:800; font-size:0.88rem; color:var(--secondary); margin-bottom:0.6rem; display:flex; align-items:center; gap:0.35rem;">
+            <span>💡</span> <span>2. Bài tập Ngữ pháp & Đặt câu theo bài</span>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.5rem;">
+            <button class="btn btn-secondary btn-sm" onclick="LessonBrowser.closeLessonReviewModal(); LessonBrowser.grammarPracticeMode('reorder');" style="padding:0.65rem; font-weight:700;">
+              🧩 Sắp xếp ghép câu
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.closeLessonReviewModal(); LessonBrowser.grammarPracticeMode('vi_to_zh');" style="padding:0.65rem; font-weight:700; border-color:var(--secondary); color:var(--secondary); background:var(--bg-card);">
+              🇨🇳 Dịch Việt ➔ Trung
+            </button>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="LessonBrowser.closeLessonReviewModal(); LessonBrowser.grammarPracticeMode('zh_to_vi');" style="width:100%; padding:0.55rem; font-weight:700; border-color:var(--accent-jade); color:var(--accent-jade); background:var(--bg-card);">
+            🇻🇳 Dịch Trung ➔ Việt
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:1rem; padding-top:0.5rem; border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-outline btn-sm" onclick="LessonBrowser.closeLessonReviewModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Bundle (Cache busted v5) -->
+  <script src="app.bundle.js?v=20261116-v5"></script>
 </body>
 </html>
