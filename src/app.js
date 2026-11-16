@@ -65,7 +65,7 @@ const App = {
     // Update Dashboard Welcome & Progress
     const welcomeTitle = document.getElementById('welcome-user-name');
     if (welcomeTitle) {
-      welcomeTitle.innerText = `Chào bạn, ${user.fullName}!`;
+      welcomeTitle.innerHTML = `Chào bạn, <span style="color:#fde047;">${user.fullName || 'bạn'}</span>! 👋`;
     }
 
     this.updateDashboardStats();
@@ -237,15 +237,66 @@ const App = {
     const progText = document.getElementById('course-progress-text');
     if (progText) progText.innerText = `Đã hoàn thành ${completedCount}/30 bài (${completedPct}%)`;
 
+    const progPctBadge = document.getElementById('course-progress-badge');
+    if (progPctBadge) progPctBadge.innerText = `${completedPct}%`;
+
     const progFill = document.getElementById('course-progress-fill');
     if (progFill) progFill.style.width = `${completedPct}%`;
 
+    // Render Weekly Streak Dots
+    const streakDots = document.getElementById('weekly-streak-dots');
+    if (streakDots) {
+      const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+      const currentDayOfWeek = new Date().getDay(); // 0 is Sun, 1 is Mon...
+      const todayIndex = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
+      streakDots.innerHTML = days.map((day, idx) => {
+        const isToday = idx === todayIndex;
+        const isCompleted = idx <= todayIndex && stats.streak > 0;
+        return `
+          <div class="streak-day-item ${isCompleted ? 'streak-active' : ''} ${isToday ? 'streak-today' : ''}">
+            <span class="streak-day-name">${day}</span>
+            <span class="streak-day-bubble">${isCompleted ? '🔥' : '○'}</span>
+          </div>
+        `;
+      }).join('');
+    }
+    const weeklyLabel = document.getElementById('weekly-streak-label');
+    if (weeklyLabel) {
+      weeklyLabel.innerText = `${stats.streak} ngày streak`;
+    }
+
+    // Update XP remaining tip
+    const xpTip = document.getElementById('user-xp-tip');
+    if (xpTip) {
+      if (lvl.nextXP >= 99999) {
+        xpTip.innerText = 'Bạn đã đạt cấp độ tối đa!';
+      } else {
+        const diff = lvl.nextXP - lvl.currentXP;
+        xpTip.innerText = `Chỉ còn ${diff} XP nữa để thăng hạng Cấp ${lvl.level + 1}! 🚀`;
+      }
+    }
+
+    // Last Active Lesson in Hero Card
+    const lId = (user && user.lastActiveLesson) ? user.lastActiveLesson : 1;
+    const lessonObj = typeof LESSONS_DATA !== 'undefined' ? LESSONS_DATA.find(l => l.id === lId) : null;
+    const heroTitle = document.getElementById('hero-lesson-title');
+    const heroSub = document.getElementById('hero-lesson-sub');
+    const heroHsk = document.getElementById('hero-lesson-hsk-badge');
+    if (heroTitle && lessonObj) {
+      heroTitle.innerText = `Bài ${lessonObj.id}: ${lessonObj.zh_title}`;
+    }
+    if (heroSub && lessonObj) {
+      heroSub.innerText = `${lessonObj.pinyin_title || ''} • ${lessonObj.title}`;
+    }
+    if (heroHsk && lessonObj) {
+      heroHsk.innerText = `HSK ${lessonObj.hsk}`;
+    }
+
     // Last Active Lesson button
     const resumeBtn = document.getElementById('btn-resume-lesson');
-    if (resumeBtn && user) {
-      const lId = user.lastActiveLesson || 1;
-      resumeBtn.innerText = `▶️ Tiếp tục: Bài ${lId}`;
-      resumeBtn.onclick = () => {
+    if (resumeBtn) {
+      resumeBtn.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
         App.navigateTo('lessons');
         LessonBrowser.openLesson(lId);
       };

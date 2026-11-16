@@ -428,23 +428,24 @@ body {
 }
 
 /* ==========================================================================
-   VIEW: DASHBOARD / HOME (COMPACT & MODERN)
+   VIEW: DASHBOARD / HOME (MODERN MOBILE-FIRST DESIGN)
    ========================================================================== */
 .home-welcome-card {
-  background: linear-gradient(135deg, #1e3a8a, #0f172a);
+  background: linear-gradient(145deg, #1e1b4b 0%, #1e3a8a 55%, #0f172a 100%);
   color: white;
   border-radius: var(--radius-xl);
-  padding: 1.5rem 1.25rem;
+  padding: 1.25rem 1.15rem;
   position: relative;
   overflow: hidden;
-  margin-bottom: 1.25rem;
-  box-shadow: var(--shadow-lg);
+  margin-bottom: 1.15rem;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 @media (min-width: 768px) {
   .home-welcome-card {
-    padding: 2rem 2.25rem;
-    margin-bottom: 1.75rem;
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.5rem;
   }
 }
 
@@ -454,7 +455,7 @@ body {
   right: -0.5rem;
   bottom: -2rem;
   font-family: var(--font-hanzi);
-  font-size: 12rem;
+  font-size: 11rem;
   color: rgba(255, 255, 255, 0.04);
   line-height: 1;
   pointer-events: none;
@@ -464,59 +465,267 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.25rem 0.7rem;
+  padding: 0.2rem 0.65rem;
   background: rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-full);
   font-size: 0.72rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  backdrop-filter: blur(4px);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fde047;
 }
 
 .welcome-title {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 800;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.25rem;
   line-height: 1.25;
 }
 
 @media (min-width: 768px) {
   .welcome-title {
-    font-size: 1.85rem;
+    font-size: 1.75rem;
   }
 }
 
 .welcome-desc {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.82rem;
   max-width: 580px;
-  margin-bottom: 1.25rem;
-  line-height: 1.45;
+  margin-bottom: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Active Lesson Focus Box inside Hero */
+.hero-active-lesson-box {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.85rem 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.hero-active-lesson-box:hover, .hero-active-lesson-box:active {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-2px);
+}
+
+.hero-lesson-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-lesson-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.hero-status-pill {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fef08a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.hero-hsk-tag {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fecaca;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.hero-lesson-title {
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hero-lesson-sub {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.78);
+  margin-top: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hero-play-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.05rem;
+  font-weight: 800;
+  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.hero-play-btn:hover, .hero-play-btn:active {
+  transform: scale(1.05);
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.6);
+}
+
+.hero-btn-arrow {
+  font-size: 0.85rem;
 }
 
 .welcome-actions {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
 }
 
-.welcome-actions .btn {
-  font-size: 0.82rem;
-  padding: 0.55rem 1rem;
+.btn-hero-chip {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
-/* Mini KPI Stats Grid */
+.btn-hero-chip:hover, .btn-hero-chip:active {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Weekly Streak Activity Bar */
+.weekly-streak-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.weekly-streak-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.weekly-streak-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ea580c;
+  background: #fff7ed;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #ffedd5;
+}
+
+[data-theme="dark"] .weekly-streak-badge {
+  background: #431407;
+  color: #fdba74;
+  border-color: #7c2d12;
+}
+
+.weekly-streak-dots {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.65rem;
+  gap: 0.25rem;
+}
+
+.streak-day-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.streak-day-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.streak-day-bubble {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--border);
+  transition: all 0.2s;
+}
+
+.streak-day-item.streak-active .streak-day-bubble {
+  background: #fff7ed;
+  border-color: #f97316;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+}
+
+[data-theme="dark"] .streak-day-item.streak-active .streak-day-bubble {
+  background: #431407;
+  border-color: #ea580c;
+}
+
+.streak-day-item.streak-today .streak-day-name {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.streak-day-item.streak-today .streak-day-bubble {
+  border-color: var(--primary);
+  transform: scale(1.08);
+}
+
+/* 4 Bento KPI Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
 }
 
 @media (min-width: 640px) {
   .stats-grid {
     grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
+    gap: 0.85rem;
   }
 }
 
@@ -524,28 +733,320 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1rem;
+  padding: 0.85rem 0.95rem;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  cursor: pointer;
 }
 
-.stat-card:hover {
+.stat-card:hover, .stat-card:active {
   transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
 }
+
+.stat-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+}
+
+.stat-icon-squircle {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.stat-icon-blue { background: #eff6ff; color: #2563eb; }
+.stat-icon-green { background: #ecfdf5; color: #059669; }
+.stat-icon-cyan { background: #e0f2fe; color: #0284c7; }
+.stat-icon-orange { background: #fff7ed; color: #ea580c; }
+
+[data-theme="dark"] .stat-icon-blue { background: #172554; }
+[data-theme="dark"] .stat-icon-green { background: #064e3b; }
+[data-theme="dark"] .stat-icon-cyan { background: #082f49; }
+[data-theme="dark"] .stat-icon-orange { background: #431407; }
+
+.stat-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+.stat-pill-blue { background: #eff6ff; color: #2563eb; }
+.stat-pill-green { background: #ecfdf5; color: #059669; }
+.stat-pill-cyan { background: #e0f2fe; color: #0284c7; }
+.stat-pill-orange { background: #fff7ed; color: #ea580c; }
+
+[data-theme="dark"] .stat-pill-blue { background: #1e3a8a; color: #93c5fd; }
+[data-theme="dark"] .stat-pill-green { background: #065f46; color: #a7f3d0; }
+[data-theme="dark"] .stat-pill-cyan { background: #0369a1; color: #bae6fd; }
+[data-theme="dark"] .stat-pill-orange { background: #9a3412; color: #fed7aa; }
 
 .stat-num {
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 800;
   line-height: 1.1;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.15rem;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Course Progress Widget */
+.course-progress-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.95rem 1.1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.course-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+
+.course-progress-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .course-progress-icon {
+  background: #451a1a;
+  color: #f87171;
+}
+
+.course-pct-pill {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--primary);
+  background: #fef2f2;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--primary-border);
+}
+
+[data-theme="dark"] .course-pct-pill {
+  background: #451a1a;
+  color: #f87171;
+  border-color: #5c2020;
+}
+
+.course-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-subtle);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.course-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #d93829, #f59e0b);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.course-route-btn {
+  width: 100%;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 0.5rem;
+  border-color: var(--border);
+  background: var(--bg-subtle);
+}
+
+/* User Level & XP Card */
+.user-level-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.95rem 1.1rem;
+  margin-bottom: 1.15rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.user-level-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.45rem;
+}
+
+.level-badge-pill {
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: var(--secondary);
+  background: var(--secondary-light);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.level-xp-counter {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.user-xp-track {
+  background: var(--bg-subtle);
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.4rem;
+}
+
+.user-xp-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #f59e0b, #d93829);
+  transition: width 0.4s ease;
+  border-radius: 999px;
+}
+
+.user-xp-tip {
+  font-size: 0.74rem;
   color: var(--text-muted);
   font-weight: 500;
+}
+
+/* Daily Goals Card */
+.daily-goals-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.15rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.daily-goals-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+/* Feature Bento Grid */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .features-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
+  }
+}
+
+.training-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative;
+}
+
+.training-card:hover, .training-card:active {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.training-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.training-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.training-badge-hot {
+  font-size: 0.62rem;
+  font-weight: 800;
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+}
+
+.training-badge-3d {
+  font-size: 0.62rem;
+  font-weight: 800;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+}
+
+[data-theme="dark"] .training-badge-hot {
+  background: #451a1a;
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .training-badge-3d {
+  background: #172554;
+  color: #93c5fd;
+}
+
+.training-info h4 {
+  font-size: 0.86rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text-main);
+  line-height: 1.25;
+}
+
+.training-info p {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0.15rem 0 0 0;
+  line-height: 1.35;
 }
 
 /* Level Curriculum Cards */
@@ -1495,86 +1996,138 @@ body {
 /* Header Responsiveness on Mobile (< 640px) */
 @media (max-width: 640px) {
   .header-container {
-    padding: 0.5rem 0.65rem !important;
-    gap: 0.4rem !important;
+    padding: 0.5rem 0.75rem !important;
+    gap: 0.35rem !important;
   }
   .brand {
-    gap: 0.4rem !important;
+    gap: 0.35rem !important;
   }
   .brand-logo {
     width: 32px !important;
     height: 32px !important;
     font-size: 1.15rem !important;
+    border-radius: 9px !important;
   }
   .brand-text h1 {
-    font-size: 0.92rem !important;
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
   }
   .brand-text p {
     display: none !important;
   }
   .header-right {
-    gap: 0.35rem !important;
+    gap: 0.3rem !important;
+  }
+  #header-pinyin-btn, .header-pinyin-btn {
+    display: none !important; /* Hide on mobile header - available on Home Bento grid */
   }
   #audio-speed-select {
-    display: none !important; /* Hide on mobile header to make space for theme toggle */
+    display: none !important; /* Hide on mobile header */
   }
   .user-profile-badge {
-    padding: 0.25rem 0.5rem !important;
+    padding: 0.22rem 0.5rem !important;
     font-size: 0.72rem !important;
-    max-width: 95px;
+    max-width: 85px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    border-radius: 999px !important;
   }
   .streak-badge {
-    padding: 0.25rem 0.45rem !important;
+    padding: 0.22rem 0.45rem !important;
     font-size: 0.7rem !important;
+    font-weight: 800 !important;
+    border-radius: 999px !important;
+    background: #fff7ed !important;
+    border-color: #ffedd5 !important;
+  }
+  [data-theme="dark"] .streak-badge {
+    background: #431407 !important;
+    border-color: #7c2d12 !important;
   }
   .btn-icon-small {
     width: 32px !important;
     height: 32px !important;
-    font-size: 0.9rem !important;
+    font-size: 0.88rem !important;
     flex-shrink: 0 !important;
+  }
+  .header-dict-btn {
+    display: inline-flex !important;
   }
 }
 
-/* Mobile Bottom Navigation Bar */
+@media (min-width: 641px) {
+  .header-dict-btn {
+    display: none !important;
+  }
+}
+
+/* Mobile Bottom Navigation Bar - Ultra-Modern Glassmorphism */
 .mobile-bottom-nav {
   height: auto !important;
-  padding: 0.35rem 0.2rem calc(0.35rem + env(safe-area-inset-bottom)) !important;
-  background: var(--bg-card) !important;
-  border-top: 1px solid var(--border) !important;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom)) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.07) !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06) !important;
+  display: flex !important;
+  justify-content: space-around !important;
+  align-items: center !important;
+}
+
+[data-theme="dark"] .mobile-bottom-nav {
+  background: rgba(15, 23, 42, 0.94) !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.3) !important;
 }
 
 .mobile-nav-btn {
   flex: 1 1 0 !important;
   min-width: 0 !important;
-  padding: 0.2rem 0.1rem !important;
-  font-size: 0.62rem !important;
+  padding: 0.3rem 0.2rem !important;
+  font-size: 0.68rem !important;
   font-weight: 600 !important;
-  letter-spacing: -0.02em !important;
+  letter-spacing: -0.01em !important;
   white-space: nowrap !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  gap: 0.1rem !important;
-  color: var(--text-muted);
-  transition: color 0.15s, transform 0.15s;
+  gap: 0.15rem !important;
+  color: var(--text-muted) !important;
+  border-radius: 12px !important;
+  transition: all 0.15s ease !important;
+  position: relative !important;
 }
 
 .mobile-nav-icon {
-  font-size: 1.15rem !important;
+  font-size: 1.25rem !important;
   line-height: 1 !important;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
 .mobile-nav-btn.active {
   color: var(--primary) !important;
-  font-weight: 700 !important;
+  font-weight: 800 !important;
+  background: rgba(217, 56, 41, 0.08) !important;
+}
+
+[data-theme="dark"] .mobile-nav-btn.active {
+  background: rgba(248, 113, 113, 0.12) !important;
 }
 
 .mobile-nav-btn.active .mobile-nav-icon {
-  transform: scale(1.1);
+  transform: translateY(-2px) scale(1.1) !important;
+}
+
+.mobile-nav-btn.active::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 2px !important;
+  width: 14px !important;
+  height: 3px !important;
+  background: var(--primary) !important;
+  border-radius: 999px !important;
 }
 
 /* Symmetrical Match Game Grid */
@@ -2042,8 +2595,8 @@ body {
         <!-- Cloud Sync status indicator -->
         <span id="sync-indicator" title="Đã đồng bộ đám mây" style="font-size:0.9rem; cursor:help; margin-right:0.15rem;" data-state="idle">☁️</span>
 
-        <!-- Pinyin Matrix Button -->
-        <button class="btn btn-outline btn-sm" onclick="PinyinController.openModal()" title="Bảng phiên âm Pinyin tương tác" style="padding:0.25rem 0.55rem; font-size:0.78rem; font-weight:700;">
+        <!-- Pinyin Matrix Button (Desktop) -->
+        <button id="header-pinyin-btn" class="btn btn-outline btn-sm header-pinyin-btn" onclick="PinyinController.openModal()" title="Bảng phiên âm Pinyin tương tác" style="padding:0.25rem 0.55rem; font-size:0.78rem; font-weight:700;">
           🎵 Pinyin
         </button>
 
@@ -2052,14 +2605,19 @@ body {
           📲 Cài App
         </button>
 
-        <!-- User Profile Pill -->
-        <button id="header-user-btn" class="user-profile-badge" onclick="App.handleUserBadgeClick()" title="Tài khoản / Đăng xuất">
-          <span>👤</span> <span>Tài khoản</span>
+        <!-- Sổ tay Shortcut on Mobile Header -->
+        <button class="btn-icon-small header-dict-btn" onclick="App.navigateTo('dict')" title="Mở Sổ tay từ vựng">
+          📖
         </button>
 
         <div class="streak-badge" title="Chuỗi ngày liên tiếp">
           <span>🔥</span> <span id="header-streak-count">1 ngày</span>
         </div>
+
+        <!-- User Profile Pill -->
+        <button id="header-user-btn" class="user-profile-badge" onclick="App.handleUserBadgeClick()" title="Tài khoản / Đăng xuất">
+          <span>👤</span> <span>Tài khoản</span>
+        </button>
 
         <select id="audio-speed-select" class="btn btn-outline btn-sm" style="padding:0.25rem 0.5rem; font-size:0.75rem;" title="Tốc độ đọc">
           <option value="0.75">0.75x</option>
@@ -2077,87 +2635,134 @@ body {
   <!-- ================= MAIN CONTENT ================= -->
   <main class="app-main">
 
-    <!-- 1. VIEW: HOME / DASHBOARD -->
+    <!-- 1. VIEW: HOME / DASHBOARD (MODERN MOBILE-FIRST) -->
     <section id="view-home" class="view-section active">
-      <!-- Welcome Banner -->
+      <!-- Welcome Hero Card -->
       <div class="home-welcome-card">
         <div class="welcome-badge">🌟 Giáo trình Hán ngữ Chuẩn 30 Bài</div>
-        <h2 id="welcome-user-name" class="welcome-title">Chào bạn!</h2>
+        <h2 id="welcome-user-name" class="welcome-title">Chào bạn! 👋</h2>
         <p class="welcome-desc">
-          Hệ thống lưu tiến độ tự động theo tài khoản của bạn: Thẻ ghi nhớ 3D lặp lại ngắt quãng, trắc nghiệm phản xạ, mô phỏng bút thuận nét viết chữ Hán và hội thoại thực tế.
+          Cùng bứt phá HSK hôm nay với lộ trình bài khóa, ngữ pháp và thẻ 3D! 🚀
         </p>
 
-        <div class="welcome-actions">
-          <button id="btn-resume-lesson" class="btn btn-primary" onclick="App.navigateTo('lessons')">
-            ▶️ Tiếp tục bài học
+        <!-- Active Current Lesson Action Box -->
+        <div class="hero-active-lesson-box" onclick="App.navigateTo('lessons'); LessonBrowser.openLesson(StorageManager.getCurrentUser()?.lastActiveLesson || 1);">
+          <div class="hero-lesson-meta">
+            <div class="hero-lesson-tags">
+              <span class="hero-status-pill">📍 Đang học dở</span>
+              <span id="hero-lesson-hsk-badge" class="hero-hsk-tag">HSK 1</span>
+            </div>
+            <div id="hero-lesson-title" class="hero-lesson-title">Bài 1: 你好</div>
+            <div id="hero-lesson-sub" class="hero-lesson-sub">Nǐ hǎo • Xin chào</div>
+          </div>
+          <button id="btn-resume-lesson" class="hero-play-btn" onclick="event.stopPropagation(); App.navigateTo('lessons'); LessonBrowser.openLesson(StorageManager.getCurrentUser()?.lastActiveLesson || 1);">
+            <span>Vào học</span> <span class="hero-btn-arrow">▶</span>
           </button>
-          <button class="btn btn-primary" style="background:#10b981;" onclick="App.startDailyReview()">
+        </div>
+
+        <!-- Quick Action Chips -->
+        <div class="welcome-actions">
+          <button class="btn-hero-chip" onclick="App.startDailyReview()">
             ⚡ Ôn từ hôm nay
           </button>
-          <button class="btn btn-outline" style="color:white; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.1);" onclick="App.navigateTo('quiz')">
+          <button class="btn-hero-chip" onclick="App.navigateTo('grammar')">
+            📐 Luyện ngữ pháp
+          </button>
+          <button class="btn-hero-chip" onclick="App.navigateTo('quiz')">
             🎯 Thi trắc nghiệm
           </button>
         </div>
       </div>
 
+      <!-- Weekly Streak Activity Tracker -->
+      <div class="weekly-streak-card">
+        <div class="weekly-streak-header">
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <span style="font-size:1.15rem;">🔥</span>
+            <span style="font-weight:800; font-size:0.92rem; color:var(--text-main);">Chuỗi học tập tuần này</span>
+          </div>
+          <span id="weekly-streak-label" class="weekly-streak-badge">1 ngày streak</span>
+        </div>
+        <div class="weekly-streak-dots" id="weekly-streak-dots"></div>
+      </div>
+
+      <!-- 4 Bento KPI Stats -->
+      <div class="stats-grid">
+        <div class="stat-card stat-card-vocab" onclick="App.navigateTo('lessons')">
+          <div class="stat-card-top">
+            <div class="stat-icon-squircle stat-icon-blue">📚</div>
+            <span class="stat-pill stat-pill-blue">HSK 1&2</span>
+          </div>
+          <div id="stat-total" class="stat-num">744</div>
+          <div class="stat-label">Tổng từ vựng</div>
+        </div>
+        <div class="stat-card stat-card-mastered" onclick="App.navigateTo('flashcard')">
+          <div class="stat-card-top">
+            <div class="stat-icon-squircle stat-icon-green">🏆</div>
+            <span class="stat-pill stat-pill-green">Vững vàng</span>
+          </div>
+          <div id="stat-mastered" class="stat-num">0</div>
+          <div class="stat-label">Đã thuộc vững</div>
+        </div>
+        <div class="stat-card stat-card-learning" onclick="App.startDailyReview()">
+          <div class="stat-card-top">
+            <div class="stat-icon-squircle stat-icon-cyan">⚡</div>
+            <span class="stat-pill stat-pill-cyan">Cần rèn</span>
+          </div>
+          <div id="stat-learning" class="stat-num">0</div>
+          <div class="stat-label">Đang rèn luyện</div>
+        </div>
+        <div class="stat-card stat-card-streak">
+          <div class="stat-card-top">
+            <div class="stat-icon-squircle stat-icon-orange">🔥</div>
+            <span class="stat-pill stat-pill-orange">Chăm chỉ</span>
+          </div>
+          <div id="stat-streak" class="stat-num">1</div>
+          <div class="stat-label">Ngày streak</div>
+        </div>
+      </div>
+
       <!-- Course Completion Progress Card -->
       <div class="course-progress-card">
-        <div class="course-progress-bar-wrap">
-          <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:700;">
-            <span>Tiến độ hoàn thành khóa học</span>
-            <span id="course-progress-text" style="color:var(--primary);">Đã hoàn thành 0/30 bài (0%)</span>
+        <div class="course-progress-top">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <div class="course-progress-icon">🎓</div>
+            <div>
+              <div style="font-weight:800; font-size:0.92rem; color:var(--text-main);">Tiến độ Giáo trình 30 Bài</div>
+              <div id="course-progress-text" style="font-size:0.78rem; color:var(--text-muted);">Đã hoàn thành 0/30 bài (0%)</div>
+            </div>
           </div>
-          <div class="course-progress-bar">
-            <div id="course-progress-fill" class="course-progress-fill"></div>
-          </div>
+          <span id="course-progress-badge" class="course-pct-pill">0%</span>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="App.navigateTo('lessons')">
-          Xem danh sách bài &rarr;
+        <div class="course-progress-bar">
+          <div id="course-progress-fill" class="course-progress-fill"></div>
+        </div>
+        <button class="btn btn-outline btn-sm course-route-btn" onclick="App.navigateTo('lessons')">
+          Xem lộ trình bài học &rarr;
         </button>
       </div>
 
-      <!-- 4 Mini KPI Stats -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span id="stat-total" class="stat-num" style="color:var(--secondary);">744</span>
-          <span class="stat-label">Tổng từ vựng HSK</span>
-        </div>
-        <div class="stat-card">
-          <span id="stat-mastered" class="stat-num" style="color:#16a34a;">0</span>
-          <span class="stat-label">Đã thuộc vững</span>
-        </div>
-        <div class="stat-card">
-          <span id="stat-learning" class="stat-num" style="color:#0284c7;">0</span>
-          <span class="stat-label">Đang rèn luyện</span>
-        </div>
-        <div class="stat-card">
-          <span id="stat-streak" class="stat-num" style="color:#ea580c;">1</span>
-          <span class="stat-label">Ngày streak 🔥</span>
-        </div>
-      </div>
-
       <!-- XP & Level Gamification Card -->
-      <div class="user-level-card" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1rem 1.25rem; margin-bottom:1rem; box-shadow:var(--shadow-sm);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.4rem;">
+      <div class="user-level-card">
+        <div class="user-level-top">
           <div style="display:flex; align-items:center; gap:0.5rem;">
-            <span id="user-level-badge" style="font-weight:800; font-size:0.95rem; color:var(--secondary); background:var(--secondary-light); padding:0.25rem 0.65rem; border-radius:var(--radius-full);">
-              🌱 Cấp 1: Sơ nhập Giang hồ
-            </span>
+            <span id="user-level-badge" class="level-badge-pill">🌱 Cấp 1: Sơ nhập Giang hồ</span>
           </div>
-          <span id="user-xp-text" style="font-size:0.85rem; font-weight:700; color:var(--primary);">0 / 200 XP</span>
+          <span id="user-xp-text" class="level-xp-counter">0 / 200 XP</span>
         </div>
-        <div style="background:var(--bg-subtle); height:8px; border-radius:999px; overflow:hidden;">
-          <div id="user-xp-fill" style="height:100%; width:0%; background:linear-gradient(90deg, #f59e0b, #d93829); transition:width 0.4s ease; border-radius:999px;"></div>
+        <div class="user-xp-track">
+          <div id="user-xp-fill" class="user-xp-fill"></div>
         </div>
+        <div id="user-xp-tip" class="user-xp-tip">Học mỗi ngày để tích lũy XP thăng hạng! 🚀</div>
       </div>
 
       <!-- Daily Goals Card -->
-      <div class="daily-goals-card" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.1rem 1.25rem; margin-bottom:1.25rem; box-shadow:var(--shadow-sm);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+      <div class="daily-goals-card">
+        <div class="daily-goals-header">
           <span style="font-weight:800; font-size:0.95rem; color:var(--text-main); display:flex; align-items:center; gap:0.4rem;">
             🎯 Mục tiêu hôm nay
           </span>
-          <span style="font-size:0.78rem; color:var(--text-muted);">Tự động làm mới mỗi ngày</span>
+          <span style="font-size:0.75rem; color:var(--text-muted); background:var(--bg-subtle); padding:0.15rem 0.5rem; border-radius:999px;">Tự động làm mới</span>
         </div>
         <div id="daily-goals-list"></div>
       </div>
@@ -2194,33 +2799,41 @@ body {
         </div>
       </div>
 
-      <!-- Feature Hub Grid -->
+      <!-- Feature Hub Bento Grid (Modern 2-Column Mobile Grid) -->
       <div class="section-title">
         <span>Các chế độ luyện tập</span>
       </div>
 
       <div class="features-grid">
         <div class="training-card" onclick="App.navigateTo('grammar')">
-          <div class="training-icon-box" style="background:#fef3c7; color:#d97706;">📐</div>
+          <div class="training-card-top">
+            <div class="training-icon-box" style="background:#fef3c7; color:#d97706;">📐</div>
+            <span class="training-badge-hot">HOT 🔥</span>
+          </div>
           <div class="training-info">
             <h4>Bài tập Ngữ pháp</h4>
-            <p>Sắp xếp từ thành câu hoàn chỉnh (Duolingo) và luyện dịch 2 chiều Vi ↔ Zh.</p>
+            <p>Sắp xếp từ thành câu & luyện dịch 2 chiều Vi ↔ Zh theo bài.</p>
           </div>
         </div>
 
         <div class="training-card" onclick="App.navigateTo('flashcard')">
-          <div class="training-icon-box" style="background:#fff1f0; color:#d93829;">🎴</div>
+          <div class="training-card-top">
+            <div class="training-icon-box" style="background:#fff1f0; color:#d93829;">🎴</div>
+            <span class="training-badge-3d">3D</span>
+          </div>
           <div class="training-info">
             <h4>Flashcard 3D</h4>
-            <p>Lật thẻ 3 chiều, phát âm chuẩn Bắc Kinh và lặp lại ngắt quãng.</p>
+            <p>Lật thẻ 3 chiều, phát âm chuẩn Bắc Kinh & lặp lại ngắt quãng.</p>
           </div>
         </div>
 
         <div class="training-card" onclick="App.navigateTo('quiz')">
-          <div class="training-icon-box" style="background:#eff6ff; color:#2563eb;">📝</div>
+          <div class="training-card-top">
+            <div class="training-icon-box" style="background:#eff6ff; color:#2563eb;">📝</div>
+          </div>
           <div class="training-info">
-            <h4>Trắc nghiệm</h4>
-            <p>4 chế độ câu hỏi linh hoạt: đoán nghĩa, đoán pinyin, nghe âm thanh.</p>
+            <h4>Thi Trắc nghiệm</h4>
+            <p>4 chế độ câu hỏi linh hoạt: đoán nghĩa, đoán pinyin, nghe.</p>
           </div>
         </div>
 
@@ -2236,22 +2849,14 @@ body {
           <div class="training-icon-box" style="background:#faf5ff; color:#9333ea;">🧩</div>
           <div class="training-info">
             <h4>Game ghép từ</h4>
-            <p>Ghép cặp chữ Hán với nghĩa tiếng Việt rèn phản xạ nhận diện nhanh.</p>
-          </div>
-        </div>
-
-        <div class="training-card" onclick="App.navigateTo('lessons')">
-          <div class="training-icon-box" style="background:#fef3c7; color:#d97706;">📚</div>
-          <div class="training-info">
-            <h4>Bài học & Ngữ pháp</h4>
-            <p>Toàn bộ bài khóa hội thoại, điểm ngữ pháp và từ vựng 30 bài.</p>
+            <p>Ghép cặp chữ Hán với nghĩa tiếng Việt rèn phản xạ nhận diện.</p>
           </div>
         </div>
 
         <div class="training-card" onclick="App.navigateTo('dict')">
           <div class="training-icon-box" style="background:#f1f5f9; color:#475569;">📖</div>
           <div class="training-info">
-            <h4>Sổ tay & Tự thêm từ</h4>
+            <h4>Sổ tay & Từ điển</h4>
             <p>Tra cứu 744 từ vựng, tự thêm từ mới và lưu trữ an toàn.</p>
           </div>
         </div>
@@ -2765,21 +3370,13 @@ body {
       <span class="mobile-nav-icon">🎴</span>
       <span>Flashcard</span>
     </button>
-    <button class="mobile-nav-btn" data-target="quiz">
-      <span class="mobile-nav-icon">📝</span>
-      <span>Trắc nghiệm</span>
-    </button>
     <button class="mobile-nav-btn" data-target="grammar">
       <span class="mobile-nav-icon">📐</span>
       <span>Ngữ pháp</span>
     </button>
     <button class="mobile-nav-btn" data-target="writer">
       <span class="mobile-nav-icon">✍️</span>
-      <span>Tập viết</span>
-    </button>
-    <button class="mobile-nav-btn" data-target="dict">
-      <span class="mobile-nav-icon">📖</span>
-      <span>Sổ tay</span>
+      <span>Luyện viết</span>
     </button>
   </nav>
 
@@ -2914,7 +3511,7 @@ body {
     </div>
   </div>
 
-  <!-- Application Bundle (Cache busted v8) -->
-  <script src="app.bundle.js?v=20261116-v8"></script>
+  <!-- Application Bundle (Cache busted v9) -->
+  <script src="app.bundle.js?v=20261116-v9"></script>
 </body>
 </html>
