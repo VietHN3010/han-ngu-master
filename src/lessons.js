@@ -715,7 +715,7 @@ const LessonBrowser = {
             </div>
             ${!isViToZh ? `<button class="btn-speaker" onclick="AudioEngine.speak('${escapeHtml(q.zh)}')" title="Phát âm">🔊</button>` : ''}
           </div>
-          ${!isViToZh && q.pinyin ? `<div style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">${q.pinyin}</div>` : ''}
+          ${!isViToZh && (q.py || q.pinyin) ? `<div style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">${q.py || q.pinyin}</div>` : ''}
         </div>
 
         <div style="display:flex; flex-direction:column; gap:0.6rem; margin-bottom:1rem;">
@@ -1037,7 +1037,7 @@ const LessonBrowser = {
             <div style="font-size:1.15rem; font-weight:800; font-family:var(--font-hanzi); color:var(--text-main);">${q.zh}</div>
             <button class="btn-speaker" onclick="AudioEngine.speak('${escapeHtml(q.zh)}')">🔊</button>
           </div>
-          <div style="color:var(--primary); font-size:0.85rem; font-weight:600; margin-bottom:0.25rem;">${q.pinyin}</div>
+          <div style="color:var(--primary); font-size:0.85rem; font-weight:600; margin-bottom:0.25rem;">${q.py || q.pinyin || ''}</div>
           <div style="color:var(--text-muted); font-size:0.82rem;">${q.vi}</div>
           ${q.point ? `<div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px dashed var(--border); font-size:0.8rem; color:#d97706; font-weight:600;">💡 Ngữ pháp: ${escapeHtml(q.point)}</div>` : ''}
         </div>
@@ -1094,7 +1094,7 @@ const LessonBrowser = {
       fb.innerHTML = `
         <div style="padding:0.85rem; border-radius:var(--radius-md); background:${isCorrect ? '#f0fdf4' : '#fef2f2'}; border:1px solid ${isCorrect ? '#86efac' : '#fca5a5'}; font-size:0.88rem;">
           <strong>${isCorrect ? '🎉 Chính xác!' : '❌ Đáp án đúng:'}</strong> ${expected}
-          ${q.pinyin ? `<div style="color:var(--text-muted); font-size:0.8rem; margin-top:0.2rem;">${q.pinyin}</div>` : ''}
+          ${(q.py || q.pinyin) ? `<div style="color:var(--text-muted); font-size:0.8rem; margin-top:0.2rem;">${q.py || q.pinyin}</div>` : ''}
           ${q.point ? `<div style="color:#d97706; font-size:0.78rem; margin-top:0.25rem;">💡 ${escapeHtml(q.point)}</div>` : ''}
         </div>
       `;
