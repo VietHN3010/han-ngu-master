@@ -2088,6 +2088,9 @@ const GrammarController = {
   },
 
   startExercise(options = {}) {
+    if (!this.sentences || !this.sentences.length) {
+      this.sentences = (typeof GRAMMAR_DATA !== 'undefined' ? GRAMMAR_DATA : (window.GRAMMAR_DATA || []));
+    }
     this.mode = options.mode || 'reorder';
     const scope = options.scope || 'all';
     const count = parseInt(options.count || 10, 10);
@@ -2621,6 +2624,9 @@ const LessonBrowser = {
   },
 
   openLesson(lessonId, pushHistory = true) {
+    if (!this.lessons || !this.lessons.length) {
+      this.lessons = (window.CHINESE_DATA && window.CHINESE_DATA.lessons) ? window.CHINESE_DATA.lessons : [];
+    }
     const lesson = this.lessons.find(l => l.id === lessonId);
     if (!lesson) return;
     this.currentLesson = lesson;
@@ -2724,6 +2730,10 @@ const LessonBrowser = {
     document.getElementById('lesson-subview-vocab').style.display = tab === 'vocab' ? 'block' : 'none';
     document.getElementById('lesson-subview-dialogue').style.display = tab === 'dialogue' ? 'block' : 'none';
     document.getElementById('lesson-subview-grammar').style.display = tab === 'grammar' ? 'block' : 'none';
+
+    if (tab === 'grammar') {
+      this.renderGrammarTab();
+    }
   },
 
   renderVocabTab() {
@@ -2980,6 +2990,10 @@ const LessonBrowser = {
     this.grammarPracticeMode('reorder');
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.LessonBrowser = LessonBrowser;
+}
 
 
 /* === src/dictionary.js === */
@@ -3304,6 +3318,17 @@ const App = {
     this.checkPasswordRecoveryUrl();
     this.initPWA();
     this.initRouting();
+
+    // Pre-initialize modules with curriculum data so UI components are immediately ready
+    if (this.data) {
+      if (typeof LessonBrowser !== 'undefined') LessonBrowser.init(this.data.lessons);
+      if (typeof GrammarController !== 'undefined') GrammarController.init(this.data.lessons);
+      if (typeof FlashcardController !== 'undefined') FlashcardController.init(this.data.all_words);
+      if (typeof QuizController !== 'undefined') QuizController.init(this.data.all_words);
+      if (typeof HanziController !== 'undefined') HanziController.init('hanzi-writer-target');
+      if (typeof MatchGame !== 'undefined') MatchGame.init(this.data.all_words);
+      if (typeof DictionaryController !== 'undefined') DictionaryController.init(this.data.all_words);
+    }
 
     // Check User Session (Supabase Cloud + Local cache)
     const user = await StorageManager.checkSession();
@@ -3890,6 +3915,10 @@ const App = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.App = App;
+}
 
 window.addEventListener('DOMContentLoaded', () => {
   App.init();

@@ -466,6 +466,9 @@ const GrammarController = {
   },
 
   startExercise(options = {}) {
+    if (!this.sentences || !this.sentences.length) {
+      this.sentences = (typeof GRAMMAR_DATA !== 'undefined' ? GRAMMAR_DATA : (window.GRAMMAR_DATA || []));
+    }
     this.mode = options.mode || 'reorder';
     const scope = options.scope || 'all';
     const count = parseInt(options.count || 10, 10);

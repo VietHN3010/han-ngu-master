@@ -44,6 +44,9 @@ const LessonBrowser = {
   },
 
   openLesson(lessonId, pushHistory = true) {
+    if (!this.lessons || !this.lessons.length) {
+      this.lessons = (window.CHINESE_DATA && window.CHINESE_DATA.lessons) ? window.CHINESE_DATA.lessons : [];
+    }
     const lesson = this.lessons.find(l => l.id === lessonId);
     if (!lesson) return;
     this.currentLesson = lesson;
@@ -147,6 +150,10 @@ const LessonBrowser = {
     document.getElementById('lesson-subview-vocab').style.display = tab === 'vocab' ? 'block' : 'none';
     document.getElementById('lesson-subview-dialogue').style.display = tab === 'dialogue' ? 'block' : 'none';
     document.getElementById('lesson-subview-grammar').style.display = tab === 'grammar' ? 'block' : 'none';
+
+    if (tab === 'grammar') {
+      this.renderGrammarTab();
+    }
   },
 
   renderVocabTab() {
@@ -403,3 +410,7 @@ const LessonBrowser = {
     this.grammarPracticeMode('reorder');
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.LessonBrowser = LessonBrowser;
+}

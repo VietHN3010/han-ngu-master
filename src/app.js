@@ -19,6 +19,17 @@ const App = {
     this.initPWA();
     this.initRouting();
 
+    // Pre-initialize modules with curriculum data so UI components are immediately ready
+    if (this.data) {
+      if (typeof LessonBrowser !== 'undefined') LessonBrowser.init(this.data.lessons);
+      if (typeof GrammarController !== 'undefined') GrammarController.init(this.data.lessons);
+      if (typeof FlashcardController !== 'undefined') FlashcardController.init(this.data.all_words);
+      if (typeof QuizController !== 'undefined') QuizController.init(this.data.all_words);
+      if (typeof HanziController !== 'undefined') HanziController.init('hanzi-writer-target');
+      if (typeof MatchGame !== 'undefined') MatchGame.init(this.data.all_words);
+      if (typeof DictionaryController !== 'undefined') DictionaryController.init(this.data.all_words);
+    }
+
     // Check User Session (Supabase Cloud + Local cache)
     const user = await StorageManager.checkSession();
     if (!user) {
@@ -604,6 +615,10 @@ const App = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.App = App;
+}
 
 window.addEventListener('DOMContentLoaded', () => {
   App.init();
