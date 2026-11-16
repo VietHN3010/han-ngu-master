@@ -1686,3 +1686,65 @@ body {
   color: #86efac !important;
   border-color: #166534 !important;
 }
+
+/* Active reading sentence in dialogue auto-play */
+.dialogue-bubble.active-reading {
+  border-color: var(--primary) !important;
+  background: var(--primary-light) !important;
+  box-shadow: 0 0 0 2px var(--primary-border), var(--shadow-md) !important;
+  transform: scale(1.01);
+}
+
+/* Pinyin Matrix Styles */
+.pinyin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+  gap: 0.4rem;
+}
+.pinyin-cell {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.35rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.pinyin-cell:hover, .pinyin-cell:active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+.pinyin-name {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--primary);
+}
+.pinyin-tip {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.15;
+  margin-top: 0.15rem;
+}
+.pinyin-ex {
+  font-size: 0.65rem;
+  color: var(--secondary);
+  font-style: italic;
+  margin-top: 0.15rem;
+}
+.pinyin-tone-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pinyin-tone-card:hover, .pinyin-tone-card:active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}

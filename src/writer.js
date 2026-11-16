@@ -104,6 +104,10 @@ const HanziController = {
           feedbackEl.innerText = `Tuyệt vời! Bạn đã hoàn thành chữ "${this.currentChar}" với ${summaryData.totalMistakes} lỗi!`;
           feedbackEl.style.color = '#15803d';
         }
+        if (typeof StorageManager !== 'undefined') {
+          StorageManager.addXP(10, `Tập viết chữ "${this.currentChar}"`);
+          StorageManager.recordDailyAction('writing', 1);
+        }
       }
     });
   },

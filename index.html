@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Hán Ngữ Master - Học Tiếng Trung HSK 1 & 2</title>
   
+  <!-- PWA & Mobile Web Meta -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#d93829">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Hán Ngữ Master">
+  
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1701,6 +1710,67 @@ body {
   border-color: #166534 !important;
 }
 
+/* Active reading sentence in dialogue auto-play */
+.dialogue-bubble.active-reading {
+  border-color: var(--primary) !important;
+  background: var(--primary-light) !important;
+  box-shadow: 0 0 0 2px var(--primary-border), var(--shadow-md) !important;
+  transform: scale(1.01);
+}
+
+/* Pinyin Matrix Styles */
+.pinyin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+  gap: 0.4rem;
+}
+.pinyin-cell {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.35rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.pinyin-cell:hover, .pinyin-cell:active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+.pinyin-name {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--primary);
+}
+.pinyin-tip {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.15;
+  margin-top: 0.15rem;
+}
+.pinyin-ex {
+  font-size: 0.65rem;
+  color: var(--secondary);
+  font-style: italic;
+  margin-top: 0.15rem;
+}
+.pinyin-tone-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pinyin-tone-card:hover, .pinyin-tone-card:active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
   </style>
   
   <!-- Supabase Client CDN -->
@@ -1855,6 +1925,16 @@ body {
         <!-- Cloud Sync status indicator -->
         <span id="sync-indicator" title="Đã đồng bộ đám mây" style="font-size:0.9rem; cursor:help; margin-right:0.15rem;" data-state="idle">☁️</span>
 
+        <!-- Pinyin Matrix Button -->
+        <button class="btn btn-outline btn-sm" onclick="PinyinController.openModal()" title="Bảng phiên âm Pinyin tương tác" style="padding:0.25rem 0.55rem; font-size:0.78rem; font-weight:700;">
+          🎵 Pinyin
+        </button>
+
+        <!-- Install PWA Button (Auto appears on supported devices) -->
+        <button id="btn-pwa-install" class="btn btn-primary btn-sm" onclick="App.installPWA()" title="Cài đặt ứng dụng vào máy" style="display:none; padding:0.25rem 0.6rem; font-size:0.78rem;">
+          📲 Cài App
+        </button>
+
         <!-- User Profile Pill -->
         <button id="header-user-btn" class="user-profile-badge" onclick="App.handleUserBadgeClick()" title="Tài khoản / Đăng xuất">
           <span>👤</span> <span>Tài khoản</span>
@@ -1937,6 +2017,32 @@ body {
           <span id="stat-streak" class="stat-num" style="color:#ea580c;">1</span>
           <span class="stat-label">Ngày streak 🔥</span>
         </div>
+      </div>
+
+      <!-- XP & Level Gamification Card -->
+      <div class="user-level-card" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1rem 1.25rem; margin-bottom:1rem; box-shadow:var(--shadow-sm);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.4rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <span id="user-level-badge" style="font-weight:800; font-size:0.95rem; color:var(--secondary); background:var(--secondary-light); padding:0.25rem 0.65rem; border-radius:var(--radius-full);">
+              🌱 Cấp 1: Sơ nhập Giang hồ
+            </span>
+          </div>
+          <span id="user-xp-text" style="font-size:0.85rem; font-weight:700; color:var(--primary);">0 / 200 XP</span>
+        </div>
+        <div style="background:var(--bg-subtle); height:8px; border-radius:999px; overflow:hidden;">
+          <div id="user-xp-fill" style="height:100%; width:0%; background:linear-gradient(90deg, #f59e0b, #d93829); transition:width 0.4s ease; border-radius:999px;"></div>
+        </div>
+      </div>
+
+      <!-- Daily Goals Card -->
+      <div class="daily-goals-card" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.1rem 1.25rem; margin-bottom:1.25rem; box-shadow:var(--shadow-sm);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+          <span style="font-weight:800; font-size:0.95rem; color:var(--text-main); display:flex; align-items:center; gap:0.4rem;">
+            🎯 Mục tiêu hôm nay
+          </span>
+          <span style="font-size:0.78rem; color:var(--text-muted);">Tự động làm mới mỗi ngày</span>
+        </div>
+        <div id="daily-goals-list"></div>
       </div>
 
       <!-- Level Curriculum Section -->
@@ -2093,6 +2199,19 @@ body {
 
         <div id="lesson-subview-grammar" style="display:none;">
           <div id="lesson-grammar-content"></div>
+        </div>
+
+        <!-- Lesson Flow Navigation Footer -->
+        <div class="lesson-bottom-nav" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border); flex-wrap:wrap; gap:0.5rem;">
+          <button id="btn-lesson-prev" class="btn btn-outline btn-sm" onclick="LessonBrowser.prevLesson()">
+            ⬅️ Bài trước
+          </button>
+          <button id="btn-lesson-complete-bottom" class="btn btn-outline btn-sm" onclick="LessonBrowser.toggleCurrentLessonCompleted()">
+            ⬜ Đánh dấu đã học xong
+          </button>
+          <button id="btn-lesson-next" class="btn btn-primary btn-sm" onclick="LessonBrowser.nextLesson()">
+            Bài tiếp theo ➡️
+          </button>
         </div>
       </div>
     </section>
@@ -2414,6 +2533,43 @@ body {
           <button type="submit" class="btn btn-primary btn-sm">Lưu từ</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: PINYIN MATRIX ================= -->
+  <div id="pinyin-matrix-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width:680px; max-height:85vh; display:flex; flex-direction:column;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">
+        <div>
+          <h3 style="font-size:1.15rem; font-weight:800; color:var(--text-main);">🎵 Bảng Ngữ Âm Pinyin Chuẩn</h3>
+          <p style="font-size:0.78rem; color:var(--text-muted); margin:0;">Chạm vào âm bất kỳ để nghe phát âm chuẩn Bắc Kinh</p>
+        </div>
+        <button onclick="PinyinController.closeModal()" style="background:transparent; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+      </div>
+
+      <div style="overflow-y:auto; flex:1; padding-right:0.25rem;">
+        <!-- Tones Section -->
+        <div style="margin-bottom:1.25rem;">
+          <h4 style="font-size:0.95rem; font-weight:800; color:var(--primary); margin-bottom:0.5rem;">1. 4 Thanh điệu cơ bản (四声)</h4>
+          <div id="pinyin-tones-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:0.5rem;"></div>
+        </div>
+
+        <!-- Initials Section -->
+        <div style="margin-bottom:1.25rem;">
+          <h4 style="font-size:0.95rem; font-weight:800; color:var(--secondary); margin-bottom:0.5rem;">2. Thanh mẫu (23 Phụ âm đầu)</h4>
+          <div id="pinyin-initials-grid" class="pinyin-grid"></div>
+        </div>
+
+        <!-- Finals Section -->
+        <div>
+          <h4 style="font-size:0.95rem; font-weight:800; color:var(--accent-jade); margin-bottom:0.5rem;">3. Vận mẫu (36 Nguyên âm & Vần)</h4>
+          <div id="pinyin-finals-grid" class="pinyin-grid"></div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-primary btn-sm" onclick="PinyinController.closeModal()">Đóng bảng</button>
+      </div>
     </div>
   </div>
 

@@ -124,9 +124,14 @@ const FlashcardController = {
           
           <div class="flashcard-hanzi">${w.hanzi}</div>
           
-          <button id="flashcard-audio-btn" class="btn-speaker" title="Phát âm" style="margin-top:0.5rem; font-size:1.4rem;">
-            🔊
-          </button>
+          <div style="display:flex; gap:0.75rem; justify-content:center; margin-top:0.5rem;">
+            <button id="flashcard-audio-btn" class="btn-speaker" title="Phát âm" style="font-size:1.4rem;">
+              🔊
+            </button>
+            <button id="flashcard-mic-btn" class="btn-speaker" title="Luyện phát âm với Micro" style="font-size:1.4rem;">
+              🎙️
+            </button>
+          </div>
 
           <p class="flashcard-hint">
             <span>💡 Nhấn vào thẻ hoặc nhấn Phím Cách (Space) để lật</span>
@@ -165,6 +170,14 @@ const FlashcardController = {
         audioBtn.onclick = (e) => {
           e.stopPropagation();
           AudioEngine.speak(w.hanzi);
+        };
+      }
+
+      const micBtn = document.getElementById('flashcard-mic-btn');
+      if (micBtn) {
+        micBtn.onclick = (e) => {
+          e.stopPropagation();
+          AudioEngine.recognizeSpeech(w.hanzi);
         };
       }
 

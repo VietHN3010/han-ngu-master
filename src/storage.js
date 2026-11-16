@@ -25,7 +25,8 @@ function getSupabase() {
 
 const PROGRESS_FIELDS = [
   'completedLessons', 'lastActiveLesson', 'bookmarks', 'wordProgress',
-  'customWords', 'streak', 'lastActiveDate', 'quizHighScores', 'updatedAt'
+  'customWords', 'streak', 'lastActiveDate', 'quizHighScores', 'updatedAt',
+  'xp', 'dailyGoals'
 ];
 
 function emptyProgress() {
@@ -38,6 +39,8 @@ function emptyProgress() {
     streak: 1,
     lastActiveDate: new Date().toISOString().slice(0, 10),
     quizHighScores: { totalQuizzes: 0, totalCorrect: 0, bestScore: 0 },
+    xp: 0,
+    dailyGoals: {},
     updatedAt: 0
   };
 }
@@ -399,6 +402,7 @@ const StorageManager = {
     } else {
       user.completedLessons.push(lessonId);
       isCompleted = true;
+      this.addXP(50, `Hoàn thành Bài ${lessonId}`);
     }
     this.saveCurrentUser(user);
     return isCompleted;
@@ -462,6 +466,8 @@ const StorageManager = {
     const daysToAdd = intervals[item.srsLevel];
     item.nextReview = Date.now() + daysToAdd * 86400000;
     this.saveCurrentUser(user);
+    this.addXP(2, 'Ôn từ vựng');
+    this.recordDailyAction('vocab', 1);
   },
 
   // CUSTOM WORDS
@@ -503,6 +509,118 @@ const StorageManager = {
       user.quizHighScores.bestScore = scorePct;
     }
     this.saveCurrentUser(user);
+
+    // Gamification rewards for quiz
+    const earnedXP = correctCount * 5 + (scorePct === 100 ? 20 : 0);
+    this.addXP(earnedXP, 'Luyện trắc nghiệm');
+    this.recordDailyAction('quiz', 1);
+  },
+
+  // XP & GAMIFICATION
+  addXP(amount, reason = '') {
+    const user = this.getCurrentUser();
+    if (!user) return null;
+    const oldLevel = this.getXPLevel(user.xp || 0);
+    user.xp = Math.max(0, (user.xp || 0) + amount);
+    const newLevel = this.getXPLevel(user.xp);
+
+    this.saveCurrentUser(user);
+
+    if (newLevel.level > oldLevel.level) {
+      if (typeof AudioEngine !== 'undefined' && AudioEngine.playVictorySound) {
+        AudioEngine.playVictorySound();
+      }
+      if (typeof App !== 'undefined' && App.toast) {
+        App.toast(`🎉 Chúc mừng! Bạn đã thăng cấp: ${newLevel.badge} ${newLevel.title}!`, 'success', 5000);
+      }
+    } else if (amount > 0 && typeof App !== 'undefined' && App.toast) {
+      App.toast(`+${amount} XP ${reason ? `(${reason})` : ''}`, 'info', 2000);
+    }
+
+    if (typeof App !== 'undefined' && App.updateDashboardStats) {
+      App.updateDashboardStats();
+    }
+    return newLevel;
+  },
+
+  getXPLevel(xp = 0) {
+    const current = Math.max(0, xp);
+    const levels = [
+      { level: 1, title: 'Sơ nhập Giang hồ', badge: '🌱', minXP: 0, nextXP: 200 },
+      { level: 2, title: 'Học đồ Hán ngữ', badge: '🥉', minXP: 200, nextXP: 500 },
+      { level: 3, title: 'Hiệp khách HSK 1', badge: '🥈', minXP: 500, nextXP: 1000 },
+      { level: 4, title: 'Cao thủ HSK 2', badge: '🥇', minXP: 1000, nextXP: 2000 },
+      { level: 5, title: 'Hán Ngữ Tinh Anh', badge: '💎', minXP: 2000, nextXP: 4000 },
+      { level: 6, title: 'Đại Sư Hán Học', badge: '👑', minXP: 4000, nextXP: 99999 }
+    ];
+
+    let found = levels[0];
+    for (let i = levels.length - 1; i >= 0; i--) {
+      if (current >= levels[i].minXP) {
+        found = levels[i];
+        break;
+      }
+    }
+
+    const range = found.nextXP - found.minXP;
+    const inRange = current - found.minXP;
+    const progressPct = found.nextXP >= 99999 ? 100 : Math.min(100, Math.round((inRange / range) * 100));
+
+    return {
+      level: found.level,
+      title: found.title,
+      badge: found.badge,
+      currentXP: current,
+      minXP: found.minXP,
+      nextXP: found.nextXP,
+      progressPct
+    };
+  },
+
+  // DAILY GOALS
+  getDailyGoals() {
+    const user = this.getCurrentUser();
+    const today = new Date().toISOString().slice(0, 10);
+    const defaults = {
+      vocab: { current: 0, target: 10, label: 'Ôn 10 từ vựng' },
+      writing: { current: 0, target: 3, label: 'Luyện viết 3 chữ' },
+      quiz: { current: 0, target: 1, label: 'Làm 1 bài trắc nghiệm' },
+      speech: { current: 0, target: 2, label: 'Luyện phát âm 2 từ' }
+    };
+
+    if (!user) return defaults;
+    user.dailyGoals = user.dailyGoals || {};
+    if (!user.dailyGoals[today]) {
+      user.dailyGoals[today] = { vocab: 0, writing: 0, quiz: 0, speech: 0 };
+    }
+    const todayData = user.dailyGoals[today];
+    return {
+      vocab: { current: todayData.vocab || 0, target: 10, label: 'Ôn 10 từ vựng' },
+      writing: { current: todayData.writing || 0, target: 3, label: 'Luyện viết 3 chữ' },
+      quiz: { current: todayData.quiz || 0, target: 1, label: 'Làm 1 bài trắc nghiệm' },
+      speech: { current: todayData.speech || 0, target: 2, label: 'Luyện phát âm 2 từ' }
+    };
+  },
+
+  recordDailyAction(type, amount = 1) {
+    const user = this.getCurrentUser();
+    if (!user) return;
+    const today = new Date().toISOString().slice(0, 10);
+    user.dailyGoals = user.dailyGoals || {};
+    if (!user.dailyGoals[today]) {
+      user.dailyGoals[today] = { vocab: 0, writing: 0, quiz: 0, speech: 0 };
+    }
+    const oldVal = user.dailyGoals[today][type] || 0;
+    user.dailyGoals[today][type] = oldVal + amount;
+
+    // Check if goal just completed
+    const targets = { vocab: 10, writing: 3, quiz: 1, speech: 2 };
+    const target = targets[type] || 1;
+    if (oldVal < target && user.dailyGoals[today][type] >= target) {
+      this.addXP(25, 'Hoàn thành mục tiêu ngày');
+    } else {
+      this.saveCurrentUser(user);
+    }
   },
 
   getStats(totalAppWords) {

@@ -32,7 +32,8 @@ function getSupabase() {
 
 const PROGRESS_FIELDS = [
   'completedLessons', 'lastActiveLesson', 'bookmarks', 'wordProgress',
-  'customWords', 'streak', 'lastActiveDate', 'quizHighScores', 'updatedAt'
+  'customWords', 'streak', 'lastActiveDate', 'quizHighScores', 'updatedAt',
+  'xp', 'dailyGoals'
 ];
 
 function emptyProgress() {
@@ -45,6 +46,8 @@ function emptyProgress() {
     streak: 1,
     lastActiveDate: new Date().toISOString().slice(0, 10),
     quizHighScores: { totalQuizzes: 0, totalCorrect: 0, bestScore: 0 },
+    xp: 0,
+    dailyGoals: {},
     updatedAt: 0
   };
 }
@@ -406,6 +409,7 @@ const StorageManager = {
     } else {
       user.completedLessons.push(lessonId);
       isCompleted = true;
+      this.addXP(50, `Hoàn thành Bài ${lessonId}`);
     }
     this.saveCurrentUser(user);
     return isCompleted;
@@ -469,6 +473,8 @@ const StorageManager = {
     const daysToAdd = intervals[item.srsLevel];
     item.nextReview = Date.now() + daysToAdd * 86400000;
     this.saveCurrentUser(user);
+    this.addXP(2, 'Ôn từ vựng');
+    this.recordDailyAction('vocab', 1);
   },
 
   // CUSTOM WORDS
@@ -510,6 +516,118 @@ const StorageManager = {
       user.quizHighScores.bestScore = scorePct;
     }
     this.saveCurrentUser(user);
+
+    // Gamification rewards for quiz
+    const earnedXP = correctCount * 5 + (scorePct === 100 ? 20 : 0);
+    this.addXP(earnedXP, 'Luyện trắc nghiệm');
+    this.recordDailyAction('quiz', 1);
+  },
+
+  // XP & GAMIFICATION
+  addXP(amount, reason = '') {
+    const user = this.getCurrentUser();
+    if (!user) return null;
+    const oldLevel = this.getXPLevel(user.xp || 0);
+    user.xp = Math.max(0, (user.xp || 0) + amount);
+    const newLevel = this.getXPLevel(user.xp);
+
+    this.saveCurrentUser(user);
+
+    if (newLevel.level > oldLevel.level) {
+      if (typeof AudioEngine !== 'undefined' && AudioEngine.playVictorySound) {
+        AudioEngine.playVictorySound();
+      }
+      if (typeof App !== 'undefined' && App.toast) {
+        App.toast(`🎉 Chúc mừng! Bạn đã thăng cấp: ${newLevel.badge} ${newLevel.title}!`, 'success', 5000);
+      }
+    } else if (amount > 0 && typeof App !== 'undefined' && App.toast) {
+      App.toast(`+${amount} XP ${reason ? `(${reason})` : ''}`, 'info', 2000);
+    }
+
+    if (typeof App !== 'undefined' && App.updateDashboardStats) {
+      App.updateDashboardStats();
+    }
+    return newLevel;
+  },
+
+  getXPLevel(xp = 0) {
+    const current = Math.max(0, xp);
+    const levels = [
+      { level: 1, title: 'Sơ nhập Giang hồ', badge: '🌱', minXP: 0, nextXP: 200 },
+      { level: 2, title: 'Học đồ Hán ngữ', badge: '🥉', minXP: 200, nextXP: 500 },
+      { level: 3, title: 'Hiệp khách HSK 1', badge: '🥈', minXP: 500, nextXP: 1000 },
+      { level: 4, title: 'Cao thủ HSK 2', badge: '🥇', minXP: 1000, nextXP: 2000 },
+      { level: 5, title: 'Hán Ngữ Tinh Anh', badge: '💎', minXP: 2000, nextXP: 4000 },
+      { level: 6, title: 'Đại Sư Hán Học', badge: '👑', minXP: 4000, nextXP: 99999 }
+    ];
+
+    let found = levels[0];
+    for (let i = levels.length - 1; i >= 0; i--) {
+      if (current >= levels[i].minXP) {
+        found = levels[i];
+        break;
+      }
+    }
+
+    const range = found.nextXP - found.minXP;
+    const inRange = current - found.minXP;
+    const progressPct = found.nextXP >= 99999 ? 100 : Math.min(100, Math.round((inRange / range) * 100));
+
+    return {
+      level: found.level,
+      title: found.title,
+      badge: found.badge,
+      currentXP: current,
+      minXP: found.minXP,
+      nextXP: found.nextXP,
+      progressPct
+    };
+  },
+
+  // DAILY GOALS
+  getDailyGoals() {
+    const user = this.getCurrentUser();
+    const today = new Date().toISOString().slice(0, 10);
+    const defaults = {
+      vocab: { current: 0, target: 10, label: 'Ôn 10 từ vựng' },
+      writing: { current: 0, target: 3, label: 'Luyện viết 3 chữ' },
+      quiz: { current: 0, target: 1, label: 'Làm 1 bài trắc nghiệm' },
+      speech: { current: 0, target: 2, label: 'Luyện phát âm 2 từ' }
+    };
+
+    if (!user) return defaults;
+    user.dailyGoals = user.dailyGoals || {};
+    if (!user.dailyGoals[today]) {
+      user.dailyGoals[today] = { vocab: 0, writing: 0, quiz: 0, speech: 0 };
+    }
+    const todayData = user.dailyGoals[today];
+    return {
+      vocab: { current: todayData.vocab || 0, target: 10, label: 'Ôn 10 từ vựng' },
+      writing: { current: todayData.writing || 0, target: 3, label: 'Luyện viết 3 chữ' },
+      quiz: { current: todayData.quiz || 0, target: 1, label: 'Làm 1 bài trắc nghiệm' },
+      speech: { current: todayData.speech || 0, target: 2, label: 'Luyện phát âm 2 từ' }
+    };
+  },
+
+  recordDailyAction(type, amount = 1) {
+    const user = this.getCurrentUser();
+    if (!user) return;
+    const today = new Date().toISOString().slice(0, 10);
+    user.dailyGoals = user.dailyGoals || {};
+    if (!user.dailyGoals[today]) {
+      user.dailyGoals[today] = { vocab: 0, writing: 0, quiz: 0, speech: 0 };
+    }
+    const oldVal = user.dailyGoals[today][type] || 0;
+    user.dailyGoals[today][type] = oldVal + amount;
+
+    // Check if goal just completed
+    const targets = { vocab: 10, writing: 3, quiz: 1, speech: 2 };
+    const target = targets[type] || 1;
+    if (oldVal < target && user.dailyGoals[today][type] >= target) {
+      this.addXP(25, 'Hoàn thành mục tiêu ngày');
+    } else {
+      this.saveCurrentUser(user);
+    }
   },
 
   getStats(totalAppWords) {
@@ -712,6 +830,90 @@ const AudioEngine = {
       osc.start(now);
       osc.stop(now + 0.05);
     } catch(e) {}
+  },
+
+  _recognition: null,
+  isListening: false,
+
+  recognizeSpeech(expectedText, onResult) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      if (typeof App !== 'undefined' && App.toast) {
+        App.toast('Trình duyệt chưa hỗ trợ ghi âm tiếng Trung. Bạn hãy thử Google Chrome hoặc Edge nhé!', 'warning', 4000);
+      }
+      return;
+    }
+
+    if (this.isListening && this._recognition) {
+      try { this._recognition.stop(); } catch(e) {}
+      this.isListening = false;
+      return;
+    }
+
+    try {
+      this._recognition = new SpeechRecognition();
+      this._recognition.lang = 'zh-CN';
+      this._recognition.interimResults = false;
+      this._recognition.maxAlternatives = 3;
+
+      this.isListening = true;
+      if (typeof App !== 'undefined' && App.toast) {
+        App.toast(`🎙️ Đang nghe... Hãy đọc to: "${expectedText}"`, 'info', 3000);
+      }
+
+      this._recognition.onresult = (event) => {
+        this.isListening = false;
+        const results = event.results[0];
+        const spoken = results && results[0] ? results[0].transcript.trim() : '';
+        const cleanExp = (expectedText || '').replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '').toLowerCase();
+        const cleanSpoken = spoken.replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '').toLowerCase();
+
+        const isExact = cleanSpoken === cleanExp;
+        const isClose = cleanSpoken.includes(cleanExp) || cleanExp.includes(cleanSpoken);
+
+        if (isExact || (isClose && cleanSpoken.length > 0)) {
+          this.playCorrectSound();
+          if (typeof App !== 'undefined') {
+            App.toast(`🎉 Xuất sắc! Phát âm rất chuẩn: "${spoken}"`, 'success', 3500);
+            if (typeof StorageManager !== 'undefined' && StorageManager.addXP) {
+              StorageManager.addXP(10, 'Phát âm chuẩn');
+              StorageManager.recordDailyAction('speech', 1);
+            }
+          }
+          if (onResult) onResult({ success: true, spoken, expected: expectedText });
+        } else {
+          this.playWrongSound();
+          if (typeof App !== 'undefined') {
+            App.toast(`Âm bạn vừa đọc: "${spoken}". Chưa khớp với "${expectedText}", hãy thử lại!`, 'warning', 4000);
+          }
+          if (onResult) onResult({ success: false, spoken, expected: expectedText });
+        }
+      };
+
+      this._recognition.onerror = (e) => {
+        this.isListening = false;
+        console.warn('Speech recognition error:', e.error);
+        if (e.error === 'not-allowed') {
+          if (typeof App !== 'undefined' && App.toast) {
+            App.toast('Vui lòng cấp quyền truy cập Micro trên trình duyệt để luyện nói.', 'warning', 4000);
+          }
+        } else if (e.error !== 'aborted') {
+          if (typeof App !== 'undefined' && App.toast) {
+            App.toast('Chưa thu được âm thanh. Hãy nhấn lại Micro và đọc to rõ hơn nhé!', 'info', 3000);
+          }
+        }
+        if (onResult) onResult({ success: false, error: e.error });
+      };
+
+      this._recognition.onend = () => {
+        this.isListening = false;
+      };
+
+      this._recognition.start();
+    } catch (err) {
+      this.isListening = false;
+      console.warn('Failed to start speech recognition:', err);
+    }
   }
 };
 
@@ -842,6 +1044,10 @@ const HanziController = {
         if (feedbackEl) {
           feedbackEl.innerText = `Tuyệt vời! Bạn đã hoàn thành chữ "${this.currentChar}" với ${summaryData.totalMistakes} lỗi!`;
           feedbackEl.style.color = '#15803d';
+        }
+        if (typeof StorageManager !== 'undefined') {
+          StorageManager.addXP(10, `Tập viết chữ "${this.currentChar}"`);
+          StorageManager.recordDailyAction('writing', 1);
         }
       }
     });
@@ -1039,9 +1245,14 @@ const FlashcardController = {
           
           <div class="flashcard-hanzi">${w.hanzi}</div>
           
-          <button id="flashcard-audio-btn" class="btn-speaker" title="Phát âm" style="margin-top:0.5rem; font-size:1.4rem;">
-            🔊
-          </button>
+          <div style="display:flex; gap:0.75rem; justify-content:center; margin-top:0.5rem;">
+            <button id="flashcard-audio-btn" class="btn-speaker" title="Phát âm" style="font-size:1.4rem;">
+              🔊
+            </button>
+            <button id="flashcard-mic-btn" class="btn-speaker" title="Luyện phát âm với Micro" style="font-size:1.4rem;">
+              🎙️
+            </button>
+          </div>
 
           <p class="flashcard-hint">
             <span>💡 Nhấn vào thẻ hoặc nhấn Phím Cách (Space) để lật</span>
@@ -1080,6 +1291,14 @@ const FlashcardController = {
         audioBtn.onclick = (e) => {
           e.stopPropagation();
           AudioEngine.speak(w.hanzi);
+        };
+      }
+
+      const micBtn = document.getElementById('flashcard-mic-btn');
+      if (micBtn) {
+        micBtn.onclick = (e) => {
+          e.stopPropagation();
+          AudioEngine.recognizeSpeech(w.hanzi);
         };
       }
 
@@ -1581,6 +1800,7 @@ const LessonBrowser = {
     if (!lesson) return;
     this.currentLesson = lesson;
 
+    this.stopDialogueAutoPlay();
     StorageManager.setLastActiveLesson(lessonId);
 
     document.getElementById('lesson-list-view').style.display = 'none';
@@ -1591,6 +1811,7 @@ const LessonBrowser = {
     document.getElementById('lesson-detail-subtitle').innerText = `${lesson.pinyin_title || ''} • ${lesson.title}`;
 
     this.updateCompleteButton();
+    this.updateNavigationButtons();
     this.renderVocabTab();
     this.renderDialogueTab();
     this.renderGrammarTab();
@@ -1599,24 +1820,54 @@ const LessonBrowser = {
   },
 
   closeLesson() {
+    this.stopDialogueAutoPlay();
     document.getElementById('lesson-detail-view').style.display = 'none';
     document.getElementById('lesson-list-view').style.display = 'block';
     this.renderLessonList();
     App.updateDashboardStats();
   },
 
+  prevLesson() {
+    if (this.currentLesson && this.currentLesson.id > 1) {
+      this.openLesson(this.currentLesson.id - 1);
+    }
+  },
+
+  nextLesson() {
+    if (this.currentLesson && this.currentLesson.id < 30) {
+      this.openLesson(this.currentLesson.id + 1);
+    }
+  },
+
+  updateNavigationButtons() {
+    if (!this.currentLesson) return;
+    const prevBtn = document.getElementById('btn-lesson-prev');
+    const nextBtn = document.getElementById('btn-lesson-next');
+    if (prevBtn) {
+      prevBtn.style.visibility = this.currentLesson.id > 1 ? 'visible' : 'hidden';
+      prevBtn.innerHTML = `⬅️ Bài ${this.currentLesson.id - 1}`;
+    }
+    if (nextBtn) {
+      nextBtn.style.visibility = this.currentLesson.id < 30 ? 'visible' : 'hidden';
+      nextBtn.innerHTML = `Bài ${this.currentLesson.id + 1} ➡️`;
+    }
+  },
+
   updateCompleteButton() {
     if (!this.currentLesson) return;
     const isCompleted = StorageManager.isLessonCompleted(this.currentLesson.id);
-    const btn = document.getElementById('btn-toggle-complete-lesson');
-    if (btn) {
-      if (isCompleted) {
-        btn.innerHTML = '✅ Đã học xong bài này';
-        btn.className = 'btn btn-sm btn-lesson-done';
-      } else {
-        btn.innerHTML = '⬜ Đánh dấu đã học xong';
-        btn.className = 'btn btn-outline btn-sm';
-      }
+    const topBtn = document.getElementById('btn-toggle-complete-lesson');
+    const bottomBtn = document.getElementById('btn-lesson-complete-bottom');
+    const label = isCompleted ? '✅ Đã học xong' : '⬜ Đánh dấu đã học xong';
+    const cls = isCompleted ? 'btn btn-sm btn-lesson-done' : 'btn btn-outline btn-sm';
+    
+    if (topBtn) {
+      topBtn.innerHTML = label;
+      topBtn.className = cls;
+    }
+    if (bottomBtn) {
+      bottomBtn.innerHTML = label;
+      bottomBtn.className = cls;
     }
   },
 
@@ -1665,7 +1916,8 @@ const LessonBrowser = {
                 </div>
               </div>
               <div style="display:flex; gap:0.3rem; flex-shrink:0;">
-                <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${w.hanzi}');" title="Tập viết">✍️</button>
+                <button class="btn btn-outline btn-sm" onclick="AudioEngine.recognizeSpeech('${typeof jsArg === 'function' ? jsArg(w.hanzi) : w.hanzi}')" title="Luyện phát âm với Micro">🎙️</button>
+                <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${typeof jsArg === 'function' ? jsArg(w.hanzi) : w.hanzi}');" title="Tập viết">✍️</button>
                 <button class="btn btn-outline btn-sm" onclick="LessonBrowser.toggleBookmark('${w.id}', this)" title="Lưu">
                   ${isFav ? '★' : '☆'}
                 </button>
@@ -1677,6 +1929,70 @@ const LessonBrowser = {
     `;
   },
 
+  isDialoguePlaying: false,
+  dialogueIndex: 0,
+  dialogueTimeout: null,
+
+  toggleDialogueAutoPlay() {
+    if (this.isDialoguePlaying) {
+      this.stopDialogueAutoPlay();
+    } else {
+      this.startDialogueAutoPlay();
+    }
+  },
+
+  startDialogueAutoPlay() {
+    if (!this.currentLesson || !this.currentLesson.dialogue || !this.currentLesson.dialogue.length) return;
+    this.isDialoguePlaying = true;
+    this.dialogueIndex = 0;
+    const btn = document.getElementById('btn-dialogue-autoplay');
+    if (btn) {
+      btn.innerHTML = '⏸️ Tạm dừng phát';
+      btn.className = 'btn btn-secondary btn-sm';
+    }
+    this.playCurrentDialogueSentence();
+  },
+
+  stopDialogueAutoPlay() {
+    this.isDialoguePlaying = false;
+    if (this.dialogueTimeout) clearTimeout(this.dialogueTimeout);
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    document.querySelectorAll('.dialogue-bubble').forEach(el => el.classList.remove('active-reading'));
+    const btn = document.getElementById('btn-dialogue-autoplay');
+    if (btn) {
+      btn.innerHTML = '▶️ Tự động phát hội thoại';
+      btn.className = 'btn btn-primary btn-sm';
+    }
+  },
+
+  playCurrentDialogueSentence() {
+    if (!this.isDialoguePlaying || !this.currentLesson || !this.currentLesson.dialogue) return;
+    if (this.dialogueIndex >= this.currentLesson.dialogue.length) {
+      this.stopDialogueAutoPlay();
+      if (typeof App !== 'undefined' && App.toast) {
+        App.toast('🎉 Đã phát xong toàn bộ bài khóa!', 'success', 3000);
+      }
+      return;
+    }
+
+    const d = this.currentLesson.dialogue[this.dialogueIndex];
+    document.querySelectorAll('.dialogue-bubble').forEach((el, idx) => {
+      const isActive = idx === this.dialogueIndex;
+      el.classList.toggle('active-reading', isActive);
+      if (isActive) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+
+    AudioEngine.speak(d.zh, () => {
+      if (!this.isDialoguePlaying) return;
+      this.dialogueTimeout = setTimeout(() => {
+        this.dialogueIndex++;
+        this.playCurrentDialogueSentence();
+      }, 750);
+    });
+  },
+
   renderDialogueTab() {
     const container = document.getElementById('lesson-dialogue-content');
     if (!container || !this.currentLesson) return;
@@ -1686,17 +2002,31 @@ const LessonBrowser = {
       return;
     }
 
-    container.innerHTML = this.currentLesson.dialogue.map((d, idx) => `
-      <div style="padding:0.85rem 1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); margin-bottom:0.6rem; display:flex; align-items:flex-start; justify-content:space-between; gap:0.75rem;">
+    const toolbar = `
+      <div class="dialogue-toolbar" style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-card); padding:0.6rem 0.9rem; border-radius:var(--radius-md); border:1px solid var(--border); margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+        <span style="font-weight:700; font-size:0.85rem; color:var(--text-main);">🎧 Nghe tự động toàn bài</span>
+        <button id="btn-dialogue-autoplay" class="btn btn-primary btn-sm" onclick="LessonBrowser.toggleDialogueAutoPlay()">
+          ▶️ Tự động phát hội thoại
+        </button>
+      </div>
+    `;
+
+    container.innerHTML = toolbar + this.currentLesson.dialogue.map((d, idx) => `
+      <div class="dialogue-bubble" style="padding:0.85rem 1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); margin-bottom:0.6rem; display:flex; align-items:flex-start; justify-content:space-between; gap:0.75rem; transition:all 0.25s ease;">
         <div style="min-width:0; flex:1; word-break:break-word;">
           <div style="font-weight:700; color:var(--secondary); font-size:0.8rem; margin-bottom:0.15rem;">${d.speaker || `Nhân vật ${idx + 1}`}:</div>
           <div class="hanzi" style="font-size:1.15rem; color:var(--text-main); font-weight:600; margin-bottom:0.15rem;">${d.zh}</div>
           <div style="color:var(--primary); font-size:0.82rem; font-weight:600; margin-bottom:0.15rem;">${d.py}</div>
           <div style="color:var(--text-muted); font-size:0.82rem;">${d.vi}</div>
         </div>
-        <button class="btn-speaker" onclick="AudioEngine.speak('${d.zh}')" title="Nghe câu" style="font-size:1.2rem; flex-shrink:0;">
-          🔊
-        </button>
+        <div style="display:flex; gap:0.3rem; flex-shrink:0;">
+          <button class="btn btn-outline btn-sm" onclick="AudioEngine.recognizeSpeech('${typeof jsArg === 'function' ? jsArg(d.zh) : d.zh}')" title="Luyện đọc câu này" style="font-size:1.05rem;">
+            🎙️
+          </button>
+          <button class="btn-speaker" onclick="AudioEngine.speak('${typeof jsArg === 'function' ? jsArg(d.zh) : d.zh}')" title="Nghe câu" style="font-size:1.2rem; flex-shrink:0;">
+            🔊
+          </button>
+        </div>
       </div>
     `).join('');
   },
@@ -1897,6 +2227,139 @@ const DictionaryController = {
 };
 
 
+/* === pinyin.js === */
+/**
+ * Interactive Pinyin Pronunciation Matrix (Thanh mẫu, Vận mẫu & 4 Thanh điệu)
+ */
+
+const PinyinController = {
+  initials: [
+    { pinyin: 'b', vi: 'púa (âm môi)', ex: 'bàba' },
+    { pinyin: 'p', vi: 'pua (bật hơi mạnh)', ex: 'píngguǒ' },
+    { pinyin: 'm', vi: 'mua (m- như tiếng Việt)', ex: 'māma' },
+    { pinyin: 'f', vi: 'phua (ph- như tiếng Việt)', ex: 'fēi' },
+    { pinyin: 'd', vi: 'tưa (như chữ T)', ex: 'dà' },
+    { pinyin: 't', vi: 'thưa (như chữ TH, bật hơi)', ex: 'tā' },
+    { pinyin: 'n', vi: 'nưa (như chữ N)', ex: 'nǐ' },
+    { pinyin: 'l', vi: 'lưa (như chữ L)', ex: 'lǎo' },
+    { pinyin: 'g', vi: 'cưa (như chữ C/K)', ex: 'gēge' },
+    { pinyin: 'k', vi: 'khưa (như chữ KH, bật hơi)', ex: 'kāi' },
+    { pinyin: 'h', vi: 'hưa (như chữ H nhẹ)', ex: 'hǎo' },
+    { pinyin: 'j', vi: 'chi (mặt lưỡi)', ex: 'jiā' },
+    { pinyin: 'q', vi: 'chi (bật hơi sắc)', ex: 'qǐng' },
+    { pinyin: 'x', vi: 'xi (như chữ X)', ex: 'xièxie' },
+    { pinyin: 'zh', vi: 'trưa (uốn lưỡi, không bật)', ex: 'zhōng' },
+    { pinyin: 'ch', vi: 'trưa (uốn lưỡi, bật hơi)', ex: 'chī' },
+    { pinyin: 'sh', vi: 'sưa (uốn lưỡi như S)', ex: 'shì' },
+    { pinyin: 'r', vi: 'rưa (như R tiếng Việt)', ex: 'rén' },
+    { pinyin: 'z', vi: 'chưa (đầu lưỡi thẳng)', ex: 'zài' },
+    { pinyin: 'c', vi: 'thưa/chưa (bật hơi đầu lưỡi)', ex: 'cài' },
+    { pinyin: 's', vi: 'xưa (đầu lưỡi thẳng)', ex: 'sān' },
+    { pinyin: 'y', vi: 'di (bán nguyên âm)', ex: 'yī' },
+    { pinyin: 'w', vi: 'ua (bán nguyên âm)', ex: 'wǒ' }
+  ],
+
+  finals: [
+    { pinyin: 'a', vi: 'a (mở to miệng)', ex: 'mā' },
+    { pinyin: 'o', vi: 'ua/ô (tròn môi)', ex: 'bō' },
+    { pinyin: 'e', vi: 'ưa (nửa mở)', ex: 'gē' },
+    { pinyin: 'i', vi: 'i (dẹt môi)', ex: 'qī' },
+    { pinyin: 'u', vi: 'u (tròn môi nhô)', ex: 'bù' },
+    { pinyin: 'ü', vi: 'uy (tròn môi giữ nguyên)', ex: 'yǚ' },
+    { pinyin: 'ai', vi: 'ai', ex: 'bái' },
+    { pinyin: 'ei', vi: 'ây', ex: 'běi' },
+    { pinyin: 'ao', vi: 'ao', ex: 'hǎo' },
+    { pinyin: 'ou', vi: 'âu', ex: 'dǒu' },
+    { pinyin: 'an', vi: 'an', ex: 'sān' },
+    { pinyin: 'en', vi: 'ơn/ân', ex: 'hěn' },
+    { pinyin: 'ang', vi: 'ang', ex: 'máng' },
+    { pinyin: 'eng', vi: 'âng/ơng', ex: 'fēng' },
+    { pinyin: 'ong', vi: 'ung', ex: 'zhōng' },
+    { pinyin: 'ia', vi: 'ia', ex: 'jiā' },
+    { pinyin: 'ie', vi: 'iê', ex: 'xiè' },
+    { pinyin: 'iao', vi: 'ieo', ex: 'xiǎo' },
+    { pinyin: 'iu', vi: 'iêu', ex: 'liù' },
+    { pinyin: 'ian', vi: 'iên', ex: 'tiān' },
+    { pinyin: 'in', vi: 'in', ex: 'jīn' },
+    { pinyin: 'iang', vi: 'iang', ex: 'liǎng' },
+    { pinyin: 'ing', vi: 'inh', ex: 'míng' },
+    { pinyin: 'iong', vi: 'iung', ex: 'xióng' },
+    { pinyin: 'ua', vi: 'oa', ex: 'huā' },
+    { pinyin: 'uo', vi: 'ua/uô', ex: 'zuò' },
+    { pinyin: 'uai', vi: 'oai', ex: 'kuài' },
+    { pinyin: 'ui', vi: 'uêi/ui', ex: 'duì' },
+    { pinyin: 'uan', vi: 'oan', ex: 'guān' },
+    { pinyin: 'un', vi: 'uân', ex: 'wún' },
+    { pinyin: 'uang', vi: 'oang', ex: 'huáng' },
+    { pinyin: 'üe', vi: 'uyê', ex: 'yuè' },
+    { pinyin: 'üan', vi: 'uyên', ex: 'yuán' },
+    { pinyin: 'ün', vi: 'uyn', ex: 'yún' }
+  ],
+
+  tones: [
+    { name: 'Thanh 1 (Âm Bình)', mark: 'ā (55)', desc: 'Cao, phẳng đều, ngân dài', sample: 'mā (妈 - mẹ)', sound: 'mā' },
+    { name: 'Thanh 2 (Dương Bình)', mark: 'á (35)', desc: 'Từ trung bình vút lên cao (như dấu sắc nhẹ)', sample: 'má (麻 - sợi đay)', sound: 'má' },
+    { name: 'Thanh 3 (Thượng Thanh)', mark: 'ǎ (214)', desc: 'Hạ thấp rồi uốn nhẹ lên (hơi giống dấu hỏi)', sample: 'mǎ (马 - con ngựa)', sound: 'mǎ' },
+    { name: 'Thanh 4 (Khứ Thanh)', mark: 'à (51)', desc: 'Rơi thẳng dứt khoát từ cao nhất xuống thấp nhất', sample: 'mà (骂 - mắng)', sound: 'mà' },
+    { name: 'Khinh Thanh (Thanh nhẹ)', mark: 'ma (0)', desc: 'Đọc thật ngắn, nhẹ và lướt', sample: 'ma (吗 - không?)', sound: 'ma' }
+  ],
+
+  openModal() {
+    const modal = document.getElementById('pinyin-matrix-modal');
+    if (!modal) return;
+    this.render();
+    modal.classList.add('active');
+  },
+
+  closeModal() {
+    const modal = document.getElementById('pinyin-matrix-modal');
+    if (modal) modal.classList.remove('active');
+  },
+
+  render() {
+    const initContainer = document.getElementById('pinyin-initials-grid');
+    const finalContainer = document.getElementById('pinyin-finals-grid');
+    const tonesContainer = document.getElementById('pinyin-tones-grid');
+
+    if (initContainer && !initContainer.children.length) {
+      initContainer.innerHTML = this.initials.map(item => `
+        <button class="pinyin-cell" onclick="AudioEngine.speak('${item.pinyin}')" title="Phát âm: ${item.vi}">
+          <span class="pinyin-name">${item.pinyin}</span>
+          <span class="pinyin-tip">${item.vi}</span>
+          <span class="pinyin-ex">VD: ${item.ex}</span>
+        </button>
+      `).join('');
+    }
+
+    if (finalContainer && !finalContainer.children.length) {
+      finalContainer.innerHTML = this.finals.map(item => `
+        <button class="pinyin-cell" onclick="AudioEngine.speak('${item.pinyin}')" title="Phát âm: ${item.vi}">
+          <span class="pinyin-name">${item.pinyin}</span>
+          <span class="pinyin-tip">${item.vi}</span>
+          <span class="pinyin-ex">VD: ${item.ex}</span>
+        </button>
+      `).join('');
+    }
+
+    if (tonesContainer && !tonesContainer.children.length) {
+      tonesContainer.innerHTML = this.tones.map(t => `
+        <div class="pinyin-tone-card" onclick="AudioEngine.speak('${t.sound}')">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:var(--primary); font-size:1.05rem;">${t.name}</strong>
+            <span style="background:var(--primary-light); color:var(--primary); font-weight:800; padding:0.15rem 0.5rem; border-radius:6px;">${t.mark}</span>
+          </div>
+          <div style="font-size:0.85rem; color:var(--text-muted); margin:0.35rem 0;">${t.desc}</div>
+          <div style="font-size:0.88rem; font-weight:600; color:var(--secondary); display:flex; justify-content:space-between; align-items:center;">
+            <span>Ví dụ: ${t.sample}</span>
+            <span style="font-size:1.2rem;">🔊</span>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+};
+
+
 /* === app.js === */
 /**
  * Main Application Orchestrator & Multi-User Auth Controller
@@ -1916,6 +2379,7 @@ const App = {
     this.initAudioSettings();
     this.setupEventListeners();
     this.checkPasswordRecoveryUrl();
+    this.initPWA();
 
     // Check User Session (Supabase Cloud + Local cache)
     const user = await StorageManager.checkSession();
@@ -2008,6 +2472,35 @@ const App = {
     const totalEl = document.getElementById('stat-total');
     if (totalEl) totalEl.innerText = this.data.total_words + stats.customCount;
 
+    // Update XP and Gamification
+    const lvl = StorageManager.getXPLevel(user ? user.xp : 0);
+    const lvlBadge = document.getElementById('user-level-badge');
+    if (lvlBadge) lvlBadge.innerText = `${lvl.badge} Cấp ${lvl.level}: ${lvl.title}`;
+
+    const xpText = document.getElementById('user-xp-text');
+    if (xpText) xpText.innerText = `${lvl.currentXP} / ${lvl.nextXP >= 99999 ? 'MAX' : `${lvl.nextXP} XP`}`;
+
+    const xpFill = document.getElementById('user-xp-fill');
+    if (xpFill) xpFill.style.width = `${lvl.progressPct}%`;
+
+    // Render Daily Goals
+    const goalsContainer = document.getElementById('daily-goals-list');
+    if (goalsContainer) {
+      const goals = StorageManager.getDailyGoals();
+      goalsContainer.innerHTML = Object.entries(goals).map(([key, g]) => {
+        const isDone = g.current >= g.target;
+        return `
+          <div class="goal-item ${isDone ? 'goal-completed' : ''}" style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.85rem; border-radius:var(--radius-md); background:var(--bg-main); border:1px solid var(--border); font-size:0.85rem; margin-bottom:0.4rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="font-size:1.1rem;">${isDone ? '✅' : '⬜'}</span>
+              <span style="font-weight:600; color:${isDone ? 'var(--text-muted)' : 'var(--text-main)'}; text-decoration:${isDone ? 'line-through' : 'none'};">${g.label}</span>
+            </div>
+            <span style="font-weight:700; color:${isDone ? 'var(--accent-jade)' : 'var(--primary)'};">${g.current} / ${g.target}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
     // Update Course Progress Bar
     const completedCount = stats.completedLessonsCount || 0;
     const completedPct = Math.round((completedCount / 30) * 100);
@@ -2028,6 +2521,40 @@ const App = {
         LessonBrowser.openLesson(lId);
       };
     }
+  },
+
+  deferredPrompt: null,
+
+  initPWA() {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this.deferredPrompt = e;
+      const installBtn = document.getElementById('btn-pwa-install');
+      if (installBtn) installBtn.style.display = 'inline-flex';
+    });
+  },
+
+  async installPWA() {
+    if (!this.deferredPrompt) {
+      this.toast('Để cài đặt: Trên Chrome hãy chọn biểu tượng Cài đặt trên thanh địa chỉ, hoặc trên Safari chọn "Chia sẻ" ➔ "Thêm vào MH chính"!', 'info', 5000);
+      return;
+    }
+    this.deferredPrompt.prompt();
+    const { outcome } = await this.deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      this.toast('🎉 Cảm ơn bạn đã cài đặt Hán Ngữ Master!', 'success');
+    }
+    this.deferredPrompt = null;
+    const installBtn = document.getElementById('btn-pwa-install');
+    if (installBtn) installBtn.style.display = 'none';
   },
 
   // AUTH MODAL & LOGIC

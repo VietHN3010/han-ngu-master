@@ -16,6 +16,7 @@ const App = {
     this.initAudioSettings();
     this.setupEventListeners();
     this.checkPasswordRecoveryUrl();
+    this.initPWA();
 
     // Check User Session (Supabase Cloud + Local cache)
     const user = await StorageManager.checkSession();
@@ -108,6 +109,35 @@ const App = {
     const totalEl = document.getElementById('stat-total');
     if (totalEl) totalEl.innerText = this.data.total_words + stats.customCount;
 
+    // Update XP and Gamification
+    const lvl = StorageManager.getXPLevel(user ? user.xp : 0);
+    const lvlBadge = document.getElementById('user-level-badge');
+    if (lvlBadge) lvlBadge.innerText = `${lvl.badge} Cấp ${lvl.level}: ${lvl.title}`;
+
+    const xpText = document.getElementById('user-xp-text');
+    if (xpText) xpText.innerText = `${lvl.currentXP} / ${lvl.nextXP >= 99999 ? 'MAX' : `${lvl.nextXP} XP`}`;
+
+    const xpFill = document.getElementById('user-xp-fill');
+    if (xpFill) xpFill.style.width = `${lvl.progressPct}%`;
+
+    // Render Daily Goals
+    const goalsContainer = document.getElementById('daily-goals-list');
+    if (goalsContainer) {
+      const goals = StorageManager.getDailyGoals();
+      goalsContainer.innerHTML = Object.entries(goals).map(([key, g]) => {
+        const isDone = g.current >= g.target;
+        return `
+          <div class="goal-item ${isDone ? 'goal-completed' : ''}" style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.85rem; border-radius:var(--radius-md); background:var(--bg-main); border:1px solid var(--border); font-size:0.85rem; margin-bottom:0.4rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="font-size:1.1rem;">${isDone ? '✅' : '⬜'}</span>
+              <span style="font-weight:600; color:${isDone ? 'var(--text-muted)' : 'var(--text-main)'}; text-decoration:${isDone ? 'line-through' : 'none'};">${g.label}</span>
+            </div>
+            <span style="font-weight:700; color:${isDone ? 'var(--accent-jade)' : 'var(--primary)'};">${g.current} / ${g.target}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
     // Update Course Progress Bar
     const completedCount = stats.completedLessonsCount || 0;
     const completedPct = Math.round((completedCount / 30) * 100);
@@ -128,6 +158,40 @@ const App = {
         LessonBrowser.openLesson(lId);
       };
     }
+  },
+
+  deferredPrompt: null,
+
+  initPWA() {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this.deferredPrompt = e;
+      const installBtn = document.getElementById('btn-pwa-install');
+      if (installBtn) installBtn.style.display = 'inline-flex';
+    });
+  },
+
+  async installPWA() {
+    if (!this.deferredPrompt) {
+      this.toast('Để cài đặt: Trên Chrome hãy chọn biểu tượng Cài đặt trên thanh địa chỉ, hoặc trên Safari chọn "Chia sẻ" ➔ "Thêm vào MH chính"!', 'info', 5000);
+      return;
+    }
+    this.deferredPrompt.prompt();
+    const { outcome } = await this.deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      this.toast('🎉 Cảm ơn bạn đã cài đặt Hán Ngữ Master!', 'success');
+    }
+    this.deferredPrompt = null;
+    const installBtn = document.getElementById('btn-pwa-install');
+    if (installBtn) installBtn.style.display = 'none';
   },
 
   // AUTH MODAL & LOGIC

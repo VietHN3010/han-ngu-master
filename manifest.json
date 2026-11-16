@@ -1,0 +1,30 @@
+{
+  "name": "Hán Ngữ Master",
+  "short_name": "Hán Ngữ",
+  "description": "Nền tảng học Tiếng Trung HSK 1 & 2 toàn diện với Flashcard SRS, Luyện viết Hanzi và Trắc nghiệm phản xạ.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d93829",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

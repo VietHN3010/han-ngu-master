@@ -159,6 +159,90 @@ const AudioEngine = {
       osc.start(now);
       osc.stop(now + 0.05);
     } catch(e) {}
+  },
+
+  _recognition: null,
+  isListening: false,
+
+  recognizeSpeech(expectedText, onResult) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      if (typeof App !== 'undefined' && App.toast) {
+        App.toast('Trình duyệt chưa hỗ trợ ghi âm tiếng Trung. Bạn hãy thử Google Chrome hoặc Edge nhé!', 'warning', 4000);
+      }
+      return;
+    }
+
+    if (this.isListening && this._recognition) {
+      try { this._recognition.stop(); } catch(e) {}
+      this.isListening = false;
+      return;
+    }
+
+    try {
+      this._recognition = new SpeechRecognition();
+      this._recognition.lang = 'zh-CN';
+      this._recognition.interimResults = false;
+      this._recognition.maxAlternatives = 3;
+
+      this.isListening = true;
+      if (typeof App !== 'undefined' && App.toast) {
+        App.toast(`🎙️ Đang nghe... Hãy đọc to: "${expectedText}"`, 'info', 3000);
+      }
+
+      this._recognition.onresult = (event) => {
+        this.isListening = false;
+        const results = event.results[0];
+        const spoken = results && results[0] ? results[0].transcript.trim() : '';
+        const cleanExp = (expectedText || '').replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '').toLowerCase();
+        const cleanSpoken = spoken.replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '').toLowerCase();
+
+        const isExact = cleanSpoken === cleanExp;
+        const isClose = cleanSpoken.includes(cleanExp) || cleanExp.includes(cleanSpoken);
+
+        if (isExact || (isClose && cleanSpoken.length > 0)) {
+          this.playCorrectSound();
+          if (typeof App !== 'undefined') {
+            App.toast(`🎉 Xuất sắc! Phát âm rất chuẩn: "${spoken}"`, 'success', 3500);
+            if (typeof StorageManager !== 'undefined' && StorageManager.addXP) {
+              StorageManager.addXP(10, 'Phát âm chuẩn');
+              StorageManager.recordDailyAction('speech', 1);
+            }
+          }
+          if (onResult) onResult({ success: true, spoken, expected: expectedText });
+        } else {
+          this.playWrongSound();
+          if (typeof App !== 'undefined') {
+            App.toast(`Âm bạn vừa đọc: "${spoken}". Chưa khớp với "${expectedText}", hãy thử lại!`, 'warning', 4000);
+          }
+          if (onResult) onResult({ success: false, spoken, expected: expectedText });
+        }
+      };
+
+      this._recognition.onerror = (e) => {
+        this.isListening = false;
+        console.warn('Speech recognition error:', e.error);
+        if (e.error === 'not-allowed') {
+          if (typeof App !== 'undefined' && App.toast) {
+            App.toast('Vui lòng cấp quyền truy cập Micro trên trình duyệt để luyện nói.', 'warning', 4000);
+          }
+        } else if (e.error !== 'aborted') {
+          if (typeof App !== 'undefined' && App.toast) {
+            App.toast('Chưa thu được âm thanh. Hãy nhấn lại Micro và đọc to rõ hơn nhé!', 'info', 3000);
+          }
+        }
+        if (onResult) onResult({ success: false, error: e.error });
+      };
+
+      this._recognition.onend = () => {
+        this.isListening = false;
+      };
+
+      this._recognition.start();
+    } catch (err) {
+      this.isListening = false;
+      console.warn('Failed to start speech recognition:', err);
+    }
   }
 };
 
