@@ -2883,72 +2883,88 @@ body {
 
       <!-- Lesson Detail View -->
       <div id="lesson-detail-view" style="display:none;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
-          <button class="btn btn-outline btn-sm" onclick="LessonBrowser.closeLesson()">
-            &larr; Danh sách bài
-          </button>
-          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-            <!-- Complete Lesson Toggle Button -->
-            <button id="btn-toggle-complete-lesson" class="btn btn-outline btn-sm" onclick="LessonBrowser.toggleCurrentLessonCompleted()">
+
+        <!-- 1. Lesson Main Content (Tabs, Vocabulary, Dialogue, Grammar) -->
+        <div id="lesson-main-wrapper">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.closeLesson()">
+              &larr; Danh sách bài
+            </button>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+              <!-- Complete Lesson Toggle Button -->
+              <button id="btn-toggle-complete-lesson" class="btn btn-outline btn-sm" onclick="LessonBrowser.toggleCurrentLessonCompleted()">
+                ⬜ Đánh dấu đã học xong
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="LessonBrowser.openLessonReviewModal()" style="font-weight:700; background:linear-gradient(135deg, var(--primary), var(--secondary)); border:none; box-shadow:var(--shadow-sm);" title="Mở trung tâm ôn tập từ vựng & ngữ pháp bài này">
+                ⚡ Ôn tập bài này
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="LessonBrowser.studyCurrentLessonFlashcards()">
+                🎴 Flashcard
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="LessonBrowser.quizCurrentLesson()">
+                📝 Trắc nghiệm
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="LessonBrowser.grammarPracticeCurrentLesson()" title="Luyện sắp xếp câu và dịch câu bài này">
+                📐 Ngữ pháp
+              </button>
+            </div>
+          </div>
+
+          <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1rem 1.25rem; margin-bottom:1rem;">
+            <h2 id="lesson-detail-title" style="font-size:1.25rem; font-weight:800; color:var(--text-main); margin-bottom:0.15rem;"></h2>
+            <p id="lesson-detail-subtitle" style="color:var(--text-muted); font-size:0.88rem;"></p>
+          </div>
+
+          <!-- Subtabs -->
+          <div style="display:flex; gap:0.4rem; border-bottom:1px solid var(--border); margin-bottom:1rem; padding-bottom:0.5rem; overflow-x:auto;">
+            <button id="lesson-tab-btn-vocab" class="btn btn-outline btn-sm lesson-subtab active" onclick="LessonBrowser.switchLessonTab('vocab')">
+              📖 Từ vựng
+            </button>
+            <button id="lesson-tab-btn-dialogue" class="btn btn-outline btn-sm lesson-subtab" onclick="LessonBrowser.switchLessonTab('dialogue')">
+              💬 Bài khóa (课文)
+            </button>
+            <button id="lesson-tab-btn-grammar" class="btn btn-outline btn-sm lesson-subtab" onclick="LessonBrowser.switchLessonTab('grammar')">
+              💡 Trọng tâm ngữ pháp
+            </button>
+            <button id="lesson-tab-btn-practice" class="btn btn-outline btn-sm lesson-subtab" onclick="LessonBrowser.switchLessonTab('practice')">
+              🎯 Bài tập bài này
+            </button>
+          </div>
+
+          <div id="lesson-subview-vocab">
+            <div id="lesson-vocab-container"></div>
+          </div>
+
+          <div id="lesson-subview-dialogue" style="display:none;">
+            <div id="lesson-dialogue-content"></div>
+          </div>
+
+          <div id="lesson-subview-grammar" style="display:none;">
+            <div id="lesson-grammar-content"></div>
+          </div>
+
+          <div id="lesson-subview-practice" style="display:none;">
+            <div id="lesson-practice-tab-content"></div>
+          </div>
+
+          <!-- Lesson Flow Navigation Footer -->
+          <div class="lesson-bottom-nav" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border); flex-wrap:wrap; gap:0.5rem;">
+            <button id="btn-lesson-prev" class="btn btn-outline btn-sm" onclick="LessonBrowser.prevLesson()">
+              ⬅️ Bài trước
+            </button>
+            <button id="btn-lesson-complete-bottom" class="btn btn-outline btn-sm" onclick="LessonBrowser.toggleCurrentLessonCompleted()">
               ⬜ Đánh dấu đã học xong
             </button>
-            <button class="btn btn-primary btn-sm" onclick="LessonBrowser.openLessonReviewModal()" style="font-weight:700; background:linear-gradient(135deg, var(--primary), var(--secondary)); border:none; box-shadow:var(--shadow-sm);" title="Mở trung tâm ôn tập từ vựng & ngữ pháp bài này">
-              ⚡ Ôn tập bài này
-            </button>
-            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.studyCurrentLessonFlashcards()">
-              🎴 Flashcard
-            </button>
-            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.quizCurrentLesson()">
-              📝 Trắc nghiệm
-            </button>
-            <button class="btn btn-outline btn-sm" onclick="LessonBrowser.grammarPracticeCurrentLesson()" title="Luyện sắp xếp câu và dịch câu bài này">
-              📐 Ngữ pháp
+            <button id="btn-lesson-next" class="btn btn-primary btn-sm" onclick="LessonBrowser.nextLesson()">
+              Bài tiếp theo ➡️
             </button>
           </div>
         </div>
 
-        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1rem 1.25rem; margin-bottom:1rem;">
-          <h2 id="lesson-detail-title" style="font-size:1.25rem; font-weight:800; color:var(--text-main); margin-bottom:0.15rem;"></h2>
-          <p id="lesson-detail-subtitle" style="color:var(--text-muted); font-size:0.88rem;"></p>
+        <!-- 2. Self-Contained In-Lesson Practice Container (Vòng khép kín bài học) -->
+        <div id="lesson-practice-wrapper" style="display:none; padding:0.5rem 0 2rem;">
         </div>
 
-        <!-- Subtabs -->
-        <div style="display:flex; gap:0.4rem; border-bottom:1px solid var(--border); margin-bottom:1rem; padding-bottom:0.5rem; overflow-x:auto;">
-          <button id="lesson-tab-btn-vocab" class="btn btn-outline btn-sm lesson-subtab active" onclick="LessonBrowser.switchLessonTab('vocab')">
-            📖 Từ vựng
-          </button>
-          <button id="lesson-tab-btn-dialogue" class="btn btn-outline btn-sm lesson-subtab" onclick="LessonBrowser.switchLessonTab('dialogue')">
-            💬 Bài khóa (课文)
-          </button>
-          <button id="lesson-tab-btn-grammar" class="btn btn-outline btn-sm lesson-subtab" onclick="LessonBrowser.switchLessonTab('grammar')">
-            💡 Trọng tâm ngữ pháp
-          </button>
-        </div>
-
-        <div id="lesson-subview-vocab">
-          <div id="lesson-vocab-container"></div>
-        </div>
-
-        <div id="lesson-subview-dialogue" style="display:none;">
-          <div id="lesson-dialogue-content"></div>
-        </div>
-
-        <div id="lesson-subview-grammar" style="display:none;">
-          <div id="lesson-grammar-content"></div>
-        </div>
-
-        <!-- Lesson Flow Navigation Footer -->
-        <div class="lesson-bottom-nav" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border); flex-wrap:wrap; gap:0.5rem;">
-          <button id="btn-lesson-prev" class="btn btn-outline btn-sm" onclick="LessonBrowser.prevLesson()">
-            ⬅️ Bài trước
-          </button>
-          <button id="btn-lesson-complete-bottom" class="btn btn-outline btn-sm" onclick="LessonBrowser.toggleCurrentLessonCompleted()">
-            ⬜ Đánh dấu đã học xong
-          </button>
-          <button id="btn-lesson-next" class="btn btn-primary btn-sm" onclick="LessonBrowser.nextLesson()">
-            Bài tiếp theo ➡️
-          </button>
-        </div>
       </div>
     </section>
 
@@ -3511,7 +3527,7 @@ body {
     </div>
   </div>
 
-  <!-- Application Bundle (Cache busted v9) -->
-  <script src="app.bundle.js?v=20261116-v9"></script>
+  <!-- Application Bundle (Cache busted v10) -->
+  <script src="app.bundle.js?v=20261116-v10"></script>
 </body>
 </html>
