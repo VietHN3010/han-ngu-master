@@ -2348,27 +2348,61 @@ const GrammarController = {
     }
   },
 
+  resetAnswerState() {
+    this.isAnswered = false;
+    const feedbackBox = document.getElementById('grammar-feedback-box');
+    if (feedbackBox) {
+      feedbackBox.style.display = 'none';
+      feedbackBox.innerHTML = '';
+    }
+    const checkBtn = document.getElementById('grammar-check-btn');
+    const nextBtn = document.getElementById('grammar-next-btn');
+    if (checkBtn) {
+      checkBtn.style.display = 'inline-flex';
+      checkBtn.disabled = this.selectedTokens.length === 0;
+    }
+    if (nextBtn) {
+      nextBtn.style.display = 'none';
+    }
+    const slot = document.getElementById('grammar-answer-slot');
+    if (slot) {
+      slot.classList.remove('slot-correct', 'slot-wrong');
+    }
+  },
+
   selectTile(poolIndex) {
-    if (this.isAnswered) return;
-    AudioEngine.playClickSound();
+    if (this.isAnswered) {
+      this.resetAnswerState();
+    }
+    if (typeof AudioEngine !== 'undefined' && AudioEngine.playClickSound) {
+      AudioEngine.playClickSound();
+    }
     const token = this.availableTokens.splice(poolIndex, 1)[0];
-    this.selectedTokens.push(token);
+    if (token) this.selectedTokens.push(token);
     this.renderTiles();
   },
 
   unselectTile(slotIndex) {
-    if (this.isAnswered) return;
-    AudioEngine.playClickSound();
+    if (this.isAnswered) {
+      this.resetAnswerState();
+    }
+    if (typeof AudioEngine !== 'undefined' && AudioEngine.playClickSound) {
+      AudioEngine.playClickSound();
+    }
     const token = this.selectedTokens.splice(slotIndex, 1)[0];
-    this.availableTokens.push(token);
+    if (token) this.availableTokens.push(token);
     this.renderTiles();
   },
 
   clearTiles() {
-    if (this.isAnswered) return;
-    AudioEngine.playClickSound();
-    this.availableTokens.push(...this.selectedTokens);
-    this.selectedTokens = [];
+    this.resetAnswerState();
+    if (typeof AudioEngine !== 'undefined' && AudioEngine.playClickSound) {
+      AudioEngine.playClickSound();
+    }
+    if (this.selectedTokens && this.selectedTokens.length) {
+      this.availableTokens.push(...this.selectedTokens);
+      this.selectedTokens = [];
+    }
     this.renderTiles();
   },
 

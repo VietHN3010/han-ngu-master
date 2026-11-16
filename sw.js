@@ -1,9 +1,9 @@
 /**
  * Hán Ngữ Master - Service Worker for PWA Offline Caching
- * Version: v6 (Network-First with offline fallback)
+ * Version: v7 (Network-First with offline fallback)
  */
 
-const CACHE_NAME = 'han-ngu-master-v6';
+const CACHE_NAME = 'han-ngu-master-v7';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
