@@ -125,3 +125,7 @@ const MatchGame = {
     });
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.MatchGame = MatchGame;
+}

@@ -157,3 +157,7 @@ const DictionaryController = {
     URL.revokeObjectURL(url);
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.DictionaryController = DictionaryController;
+}

@@ -1,26 +1,31 @@
 /**
  * Audio Engine: Web Speech API (Chinese TTS) + Web Audio API Sound Effects
+ * With online Chinese TTS fallback and Chromium GC/cancel protection.
  */
 const AudioEngine = {
   speechRate: 0.9,
   audioCtx: null,
+  _activeUtterances: [],
+  _fallbackAudio: null,
 
   initAudioContext() {
-    if (!this.audioCtx) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) {
-        this.audioCtx = new AudioContextClass();
+    try {
+      if (!this.audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          this.audioCtx = new AudioContextClass();
+        }
       }
-    }
-    if (this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
-    }
+      if (this.audioCtx && this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+    } catch(e) {}
   },
 
   _voice: null,
 
   getMandarinVoice() {
-    if (this._voice) return this._voice;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
     const voices = window.speechSynthesis.getVoices() || [];
     if (!voices.length) return null;
     const norm = v => (v.lang || '').toLowerCase().replace('_', '-');
@@ -45,27 +50,91 @@ const AudioEngine = {
 
   speak(text, onEnd) {
     if (!text) return;
-    if (!('speechSynthesis' in window)) {
-      if (typeof App !== 'undefined' && App.toast) App.toast('Trình duyệt này không hỗ trợ phát âm.', 'warning');
-      return;
-    }
-    window.speechSynthesis.cancel(); // Stop any pending speech
+    const cleanText = String(text).trim();
+    if (!cleanText) return;
 
-    const cleanText = text.replace(/[^\u4e00-\u9fa5a-zA-Z0-9,\.!\?，。！？]/g, '');
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'zh-CN';
-    utterance.rate = this.speechRate;
+    // First attempt: Native Web Speech API
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+        window.speechSynthesis.cancel();
+      } catch(e) {}
 
-    // Pick a Mandarin (Mainland) voice; avoid Cantonese (zh-HK) when possible
-    const zhVoice = this.getMandarinVoice();
-    if (zhVoice) {
-      utterance.voice = zhVoice;
-    }
+      // Short delay avoids Chromium race bug where cancel() immediately cancels following speak()
+      setTimeout(() => {
+        try {
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
 
-    if (onEnd) {
-      utterance.onend = onEnd;
+          // Strip any weird HTML or non-printable characters, but keep Hanzi, Pinyin & punctuation
+          const speechString = cleanText.replace(/<[^>]*>/g, '').trim();
+          const utterance = new SpeechSynthesisUtterance(speechString);
+          utterance.lang = 'zh-CN';
+          utterance.rate = this.speechRate || 0.9;
+
+          const zhVoice = this.getMandarinVoice();
+          if (zhVoice) {
+            utterance.voice = zhVoice;
+          }
+
+          // Retain utterance in array to prevent V8 Garbage Collector cutting off audio
+          this._activeUtterances.push(utterance);
+
+          let hasEnded = false;
+          const cleanup = () => {
+            if (hasEnded) return;
+            hasEnded = true;
+            const idx = this._activeUtterances.indexOf(utterance);
+            if (idx > -1) this._activeUtterances.splice(idx, 1);
+            if (onEnd) onEnd();
+          };
+
+          utterance.onend = cleanup;
+          utterance.onerror = (err) => {
+            console.warn('Native speech error, triggering online fallback:', err);
+            cleanup();
+            this.playFallbackAudio(speechString);
+          };
+
+          window.speechSynthesis.speak(utterance);
+
+          // Workaround for Chrome 15s pause bug
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
+        } catch(err) {
+          console.warn('Speech speak exception, using fallback:', err);
+          this.playFallbackAudio(cleanText, onEnd);
+        }
+      }, 25);
+    } else {
+      this.playFallbackAudio(cleanText, onEnd);
     }
-    window.speechSynthesis.speak(utterance);
+  },
+
+  playFallbackAudio(text, onEnd) {
+    try {
+      if (this._fallbackAudio) {
+        try { this._fallbackAudio.pause(); } catch(e) {}
+      }
+      const encoded = encodeURIComponent(text);
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-CN&q=${encoded}`;
+      const audio = new Audio(url);
+      this._fallbackAudio = audio;
+      if (onEnd) {
+        audio.onended = onEnd;
+        audio.onerror = onEnd;
+      }
+      audio.play().catch(e => {
+        console.warn('Audio play blocked:', e);
+        if (onEnd) onEnd();
+      });
+    } catch(e) {
+      if (onEnd) onEnd();
+    }
   },
 
   playCorrectSound() {
@@ -246,8 +315,20 @@ const AudioEngine = {
   }
 };
 
+// Global User Interaction Listener to unlock AudioContext and SpeechSynthesis
+if (typeof document !== 'undefined') {
+  const unlockAudio = () => {
+    AudioEngine.initAudioContext();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  };
+  document.addEventListener('click', unlockAudio, { passive: true });
+  document.addEventListener('touchstart', unlockAudio, { passive: true });
+}
+
 // Pre-load voices on browser
-if ('speechSynthesis' in window) {
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
   window.speechSynthesis.onvoiceschanged = () => {
     AudioEngine._voice = null;
     AudioEngine.getMandarinVoice();
@@ -264,4 +345,10 @@ function escapeHtml(str) {
 /** Escape text for use inside a single-quoted JS string within an HTML attribute. */
 function jsArg(str) {
   return escapeHtml(String(str == null ? '' : str).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+}
+
+if (typeof window !== 'undefined') {
+  window.AudioEngine = AudioEngine;
+  window.escapeHtml = escapeHtml;
+  window.jsArg = jsArg;
 }

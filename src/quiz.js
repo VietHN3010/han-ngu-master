@@ -264,3 +264,7 @@ const QuizController = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.QuizController = QuizController;
+}

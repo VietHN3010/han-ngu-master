@@ -134,3 +134,7 @@ const PinyinController = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.PinyinController = PinyinController;
+}

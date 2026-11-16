@@ -227,3 +227,7 @@ const FlashcardController = {
     });
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.FlashcardController = FlashcardController;
+}

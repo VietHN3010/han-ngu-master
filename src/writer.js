@@ -175,3 +175,7 @@ const HanziController = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.HanziController = HanziController;
+}
