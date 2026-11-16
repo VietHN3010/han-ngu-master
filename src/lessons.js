@@ -43,13 +43,17 @@ const LessonBrowser = {
     }).join('');
   },
 
-  openLesson(lessonId) {
+  openLesson(lessonId, pushHistory = true) {
     const lesson = this.lessons.find(l => l.id === lessonId);
     if (!lesson) return;
     this.currentLesson = lesson;
 
     this.stopDialogueAutoPlay();
     StorageManager.setLastActiveLesson(lessonId);
+
+    if (pushHistory && window.location.hash !== '#lesson-' + lessonId) {
+      history.pushState({ type: 'lesson', lessonId }, '', '#lesson-' + lessonId);
+    }
 
     document.getElementById('lesson-list-view').style.display = 'none';
     const detailView = document.getElementById('lesson-detail-view');
@@ -67,8 +71,12 @@ const LessonBrowser = {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
-  closeLesson() {
+  closeLesson(triggerHistoryBack = true) {
     this.stopDialogueAutoPlay();
+    if (triggerHistoryBack && window.location.hash.startsWith('#lesson-')) {
+      history.back();
+      return;
+    }
     document.getElementById('lesson-detail-view').style.display = 'none';
     document.getElementById('lesson-list-view').style.display = 'block';
     this.renderLessonList();

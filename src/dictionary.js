@@ -111,12 +111,18 @@ const DictionaryController = {
     }
   },
 
-  openAddModal() {
+  openAddModal(pushHistory = true) {
     document.getElementById('add-word-modal').classList.add('active');
+    if (pushHistory && window.location.hash !== '#add-word') {
+      history.pushState({ type: 'modal', modal: 'add-word' }, '', '#add-word');
+    }
   },
 
-  closeAddModal() {
+  closeAddModal(triggerHistoryBack = true) {
     document.getElementById('add-word-modal').classList.remove('active');
+    if (triggerHistoryBack && window.location.hash === '#add-word') {
+      history.back();
+    }
   },
 
   handleSaveCustomWord(e) {

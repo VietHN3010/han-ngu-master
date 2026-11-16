@@ -74,16 +74,22 @@ const PinyinController = {
     { name: 'Khinh Thanh (Thanh nhẹ)', mark: 'ma (0)', desc: 'Đọc thật ngắn, nhẹ và lướt', sample: 'ma (吗 - không?)', sound: 'ma' }
   ],
 
-  openModal() {
+  openModal(pushHistory = true) {
     const modal = document.getElementById('pinyin-matrix-modal');
     if (!modal) return;
     this.render();
     modal.classList.add('active');
+    if (pushHistory && window.location.hash !== '#pinyin') {
+      history.pushState({ type: 'modal', modal: 'pinyin' }, '', '#pinyin');
+    }
   },
 
-  closeModal() {
+  closeModal(triggerHistoryBack = true) {
     const modal = document.getElementById('pinyin-matrix-modal');
     if (modal) modal.classList.remove('active');
+    if (triggerHistoryBack && window.location.hash === '#pinyin') {
+      history.back();
+    }
   },
 
   render() {

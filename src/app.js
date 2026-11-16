@@ -17,6 +17,7 @@ const App = {
     this.setupEventListeners();
     this.checkPasswordRecoveryUrl();
     this.initPWA();
+    this.initRouting();
 
     // Check User Session (Supabase Cloud + Local cache)
     const user = await StorageManager.checkSession();
@@ -56,8 +57,81 @@ const App = {
     this.updateDashboardStats();
   },
 
-  navigateTo(tabId) {
+  initRouting() {
+    // If no initial state, replace state with current hash or home
+    const currentHash = window.location.hash || '#home';
+    if (!history.state) {
+      history.replaceState({ type: 'initial', hash: currentHash }, '', currentHash);
+    }
+
+    // Handle initial route on startup if present
+    if (window.location.hash && window.location.hash !== '#home') {
+      setTimeout(() => {
+        this.handleRoute(window.location.hash, false);
+      }, 80);
+    }
+
+    // Listen to browser Back / Forward events
+    window.addEventListener('popstate', (e) => {
+      const hash = window.location.hash || '#home';
+      this.handleRoute(hash, false);
+    });
+  },
+
+  handleRoute(hash, pushHistory = false) {
+    if (!hash || hash === '#' || hash === '#home') {
+      this.closeAllModals();
+      if (typeof LessonBrowser !== 'undefined' && LessonBrowser.closeLesson) {
+        LessonBrowser.closeLesson(false);
+      }
+      this.navigateTo('home', pushHistory);
+      return;
+    }
+
+    if (hash.startsWith('#lesson-')) {
+      const match = hash.match(/#lesson-(\d+)/);
+      if (match) {
+        const lId = parseInt(match[1], 10);
+        this.closeAllModals();
+        this.navigateTo('lessons', false);
+        if (typeof LessonBrowser !== 'undefined' && LessonBrowser.openLesson) {
+          LessonBrowser.openLesson(lId, pushHistory);
+        }
+        return;
+      }
+    }
+
+    if (hash === '#pinyin') {
+      if (typeof PinyinController !== 'undefined' && PinyinController.openModal) {
+        PinyinController.openModal(pushHistory);
+      }
+      return;
+    }
+
+    const tab = hash.replace('#', '');
+    const validTabs = ['home', 'lessons', 'flashcard', 'quiz', 'writer', 'match', 'dict'];
+    if (validTabs.includes(tab)) {
+      this.closeAllModals();
+      if (typeof LessonBrowser !== 'undefined' && LessonBrowser.closeLesson) {
+        LessonBrowser.closeLesson(false);
+      }
+      this.navigateTo(tab, pushHistory);
+    }
+  },
+
+  closeAllModals() {
+    const pinyinModal = document.getElementById('pinyin-matrix-modal');
+    if (pinyinModal) pinyinModal.classList.remove('active');
+    const addWordModal = document.getElementById('add-word-modal');
+    if (addWordModal) addWordModal.classList.remove('active');
+  },
+
+  navigateTo(tabId, pushHistory = true) {
     this.currentTab = tabId;
+
+    if (pushHistory && window.location.hash !== '#' + tabId) {
+      history.pushState({ type: 'tab', tab: tabId }, '', '#' + tabId);
+    }
 
     // Desktop Nav Sync
     document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
