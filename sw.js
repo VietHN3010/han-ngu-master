@@ -1,9 +1,9 @@
 /**
  * Hán Ngữ Master - Service Worker for PWA Offline Caching
- * Version: v11 (Network-First with offline fallback)
+ * Version: v12 (Network-First with offline fallback)
  */
 
-const CACHE_NAME = 'han-ngu-master-v11';
+const CACHE_NAME = 'han-ngu-master-v12';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -36,7 +36,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  if (url.origin.includes('supabase.co')) return;
+  if (url.origin.includes('supabase.co') || url.pathname.startsWith('/api/')) return;
 
   // Network-first strategy: always fetch freshest assets from network
   event.respondWith(

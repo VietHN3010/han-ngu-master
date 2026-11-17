@@ -668,13 +668,14 @@ if (typeof window !== 'undefined') {
 }
 /**
  * Audio Engine: Web Speech API (Chinese TTS) + Web Audio API Sound Effects
- * With online Chinese TTS fallback and Chromium GC/cancel protection.
+ * With high-reliability /api/tts serverless proxy fallback and Chromium/Safari protection.
  */
 const AudioEngine = {
   speechRate: 0.9,
   audioCtx: null,
   _activeUtterances: [],
   _fallbackAudio: null,
+  _voice: null,
 
   initAudioContext() {
     try {
@@ -689,8 +690,6 @@ const AudioEngine = {
       }
     } catch(e) {}
   },
-
-  _voice: null,
 
   getMandarinVoice() {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
@@ -707,7 +706,7 @@ const AudioEngine = {
       else if (l.startsWith('zh-hk') || l.startsWith('yue')) s -= 50;
       else if (l.startsWith('zh')) s += 30;
       else return -1000;
-      if (/google|tingting|ting-ting|xiaoxiao|yunxi|lili|meijia/.test(n)) s += 10;
+      if (/google|tingting|ting-ting|xiaoxiao|yunxi|lili|meijia|sinji|kangkang/.test(n)) s += 15;
       if (v.localService) s += 2;
       return s;
     };
@@ -718,89 +717,138 @@ const AudioEngine = {
 
   speak(text, onEnd) {
     if (!text) return;
-    const cleanText = String(text).trim();
+    const cleanText = String(text).replace(/<[^>]*>/g, '').trim();
     if (!cleanText) return;
 
-    // First attempt: Native Web Speech API
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    // Wake up AudioContext on user interaction
+    this.initAudioContext();
+
+    // Check if browser has Web Speech API support
+    const hasSpeech = (typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined');
+    
+    if (hasSpeech) {
       try {
         if (window.speechSynthesis.paused) {
           window.speechSynthesis.resume();
         }
-        window.speechSynthesis.cancel();
-      } catch(e) {}
 
-      // Short delay avoids Chromium race bug where cancel() immediately cancels following speak()
-      setTimeout(() => {
-        try {
-          if (window.speechSynthesis.paused) {
-            window.speechSynthesis.resume();
-          }
+        const voices = window.speechSynthesis.getVoices() || [];
+        const zhVoice = this.getMandarinVoice();
 
-          // Strip any weird HTML or non-printable characters, but keep Hanzi, Pinyin & punctuation
-          const speechString = cleanText.replace(/<[^>]*>/g, '').trim();
-          const utterance = new SpeechSynthesisUtterance(speechString);
-          utterance.lang = 'zh-CN';
-          utterance.rate = this.speechRate || 0.9;
-
-          const zhVoice = this.getMandarinVoice();
-          if (zhVoice) {
-            utterance.voice = zhVoice;
-          }
-
-          // Retain utterance in array to prevent V8 Garbage Collector cutting off audio
-          this._activeUtterances.push(utterance);
-
-          let hasEnded = false;
-          const cleanup = () => {
-            if (hasEnded) return;
-            hasEnded = true;
-            const idx = this._activeUtterances.indexOf(utterance);
-            if (idx > -1) this._activeUtterances.splice(idx, 1);
-            if (onEnd) onEnd();
-          };
-
-          utterance.onend = cleanup;
-          utterance.onerror = (err) => {
-            console.warn('Native speech error, triggering online fallback:', err);
-            cleanup();
-            this.playFallbackAudio(speechString);
-          };
-
-          window.speechSynthesis.speak(utterance);
-
-          // Workaround for Chrome 15s pause bug
-          if (window.speechSynthesis.paused) {
-            window.speechSynthesis.resume();
-          }
-        } catch(err) {
-          console.warn('Speech speak exception, using fallback:', err);
+        // If voices list is already populated and absolutely NO Chinese voice exists, jump directly to serverless TTS fallback
+        if (voices.length > 0 && !zhVoice) {
           this.playFallbackAudio(cleanText, onEnd);
+          return;
         }
-      }, 25);
-    } else {
-      this.playFallbackAudio(cleanText, onEnd);
+
+        // Only cancel if speech is currently playing to avoid Chromium idle cancel race
+        if (window.speechSynthesis.speaking) {
+          try { window.speechSynthesis.cancel(); } catch(e) {}
+        }
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'zh-CN';
+        utterance.rate = this.speechRate || 0.9;
+
+        if (zhVoice) {
+          utterance.voice = zhVoice;
+        }
+
+        this._activeUtterances.push(utterance);
+
+        let hasStarted = false;
+        let hasFinished = false;
+
+        const cleanup = () => {
+          if (hasFinished) return;
+          hasFinished = true;
+          if (watchdog) clearTimeout(watchdog);
+          const idx = this._activeUtterances.indexOf(utterance);
+          if (idx > -1) this._activeUtterances.splice(idx, 1);
+        };
+
+        // Watchdog: If native speech fails to trigger onstart within 350ms, switch to online fallback
+        const watchdog = setTimeout(() => {
+          if (!hasStarted && !hasFinished) {
+            console.warn('Native speech watchdog timed out, playing fallback audio');
+            cleanup();
+            try { window.speechSynthesis.cancel(); } catch(e) {}
+            this.playFallbackAudio(cleanText, onEnd);
+          }
+        }, 350);
+
+        utterance.onstart = () => {
+          hasStarted = true;
+          if (watchdog) clearTimeout(watchdog);
+        };
+
+        utterance.onend = () => {
+          cleanup();
+          if (onEnd) onEnd();
+        };
+
+        utterance.onerror = (err) => {
+          console.warn('Native speech utterance error:', err);
+          cleanup();
+          this.playFallbackAudio(cleanText, onEnd);
+        };
+
+        // Call speak synchronously inside user interaction
+        window.speechSynthesis.speak(utterance);
+
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+        return;
+      } catch (err) {
+        console.warn('SpeechSynthesis exception, using fallback:', err);
+        this.playFallbackAudio(cleanText, onEnd);
+        return;
+      }
     }
+
+    // Fallback if speechSynthesis is not available
+    this.playFallbackAudio(cleanText, onEnd);
   },
 
   playFallbackAudio(text, onEnd) {
     try {
       if (this._fallbackAudio) {
-        try { this._fallbackAudio.pause(); } catch(e) {}
+        try {
+          this._fallbackAudio.pause();
+          this._fallbackAudio.src = '';
+        } catch(e) {}
       }
-      const encoded = encodeURIComponent(text);
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-CN&q=${encoded}`;
-      const audio = new Audio(url);
+
+      const encoded = encodeURIComponent(String(text).trim());
+      // Proxy through high-speed Vercel serverless function with proper headers and caching
+      const audioUrl = `/api/tts?text=${encoded}`;
+      const audio = new Audio(audioUrl);
+      audio.crossOrigin = 'anonymous';
       this._fallbackAudio = audio;
-      if (onEnd) {
-        audio.onended = onEnd;
-        audio.onerror = onEnd;
-      }
-      audio.play().catch(e => {
-        console.warn('Audio play blocked:', e);
+
+      let hasFinished = false;
+      const done = () => {
+        if (hasFinished) return;
+        hasFinished = true;
         if (onEnd) onEnd();
-      });
+      };
+
+      audio.onended = done;
+      audio.onerror = (e) => {
+        console.warn('TTS proxy playback error:', e);
+        done();
+      };
+
+      const playPromise = audio.play();
+      if (playPromise && playPromise.catch) {
+        playPromise.catch(e => {
+          console.warn('Audio play() promise rejected:', e);
+          done();
+        });
+      }
     } catch(e) {
+      console.warn('playFallbackAudio exception:', e);
       if (onEnd) onEnd();
     }
   },
