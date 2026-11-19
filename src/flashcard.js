@@ -199,6 +199,8 @@ const FlashcardController = {
     }
 
     // Keyboard navigation
+    if (this._keydownBound) return;
+    this._keydownBound = true;
     window.addEventListener('keydown', (e) => {
       // Only trigger if flashcard view is active and no modal/input focused
       if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;

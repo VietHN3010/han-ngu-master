@@ -4,6 +4,9 @@
 const HanziController = {
   writerInstance: null,
   currentChar: '好',
+  currentWord: '好',
+  currentWordChars: ['好'],
+  currentCharIndex: 0,
   isQuizActive: false,
 
   init(containerId) {
@@ -11,9 +14,18 @@ const HanziController = {
     this.loadCharacter('好');
   },
 
-  loadCharacter(char) {
-    if (!char) return;
-    const target = char.charAt(0);
+  loadCharacter(input, charIdx = 0) {
+    if (!input) return;
+    const raw = String(input).trim();
+    if (!raw) return;
+    const matched = raw.match(/[\u4e00-\u9fa5]/g);
+    const chars = (matched && matched.length) ? matched : [raw.charAt(0)];
+    const safeIdx = Math.max(0, Math.min(parseInt(charIdx, 10) || 0, chars.length - 1));
+    const target = chars[safeIdx];
+
+    this.currentWord = raw;
+    this.currentWordChars = chars;
+    this.currentCharIndex = safeIdx;
     this.currentChar = target;
 
     const el = document.getElementById(this.containerId);
@@ -50,14 +62,29 @@ const HanziController = {
     // Update character details in UI
     const charDisplay = document.getElementById('writer-char-info');
     if (charDisplay) {
-      let infoText = target;
+      let infoText = chars.length > 1 ? chars.join('') : target;
       if (window.CHINESE_DATA && window.CHINESE_DATA.all_words) {
-        const found = window.CHINESE_DATA.all_words.find(w => w.hanzi === target || w.hanzi.includes(target));
+        const words = window.CHINESE_DATA.all_words;
+        const cleanWord = chars.join('');
+        const found = words.find(w => w.hanzi === raw || w.hanzi === cleanWord)
+          || words.find(w => w.hanzi === target)
+          || words.find(w => w.hanzi && w.hanzi.includes(target));
         if (found) {
           infoText = `${found.hanzi} [ ${found.pinyin} ] • ${found.hanviet ? `Hán Việt: ${found.hanviet} • ` : ''}${found.meaning}`;
         }
       }
-      charDisplay.innerText = infoText;
+      const safeInfo = typeof escapeHtml === 'function' ? escapeHtml(infoText) : infoText;
+      const safeWordArg = typeof jsArg === 'function' ? jsArg(raw) : raw;
+      const pillsHtml = chars.length > 1 ? `
+        <div style="display:flex; gap:0.35rem; justify-content:center; flex-wrap:wrap; margin-top:0.45rem;">
+          ${chars.map((ch, idx) => `
+            <button type="button" class="btn btn-sm ${idx === safeIdx ? 'btn-primary' : 'btn-outline'}" onclick="HanziController.loadCharacter('${safeWordArg}', ${idx})" style="font-family:var(--font-hanzi); font-size:1.1rem; min-width:36px; padding:0.2rem 0.55rem;">
+              ${ch}
+            </button>
+          `).join('')}
+        </div>
+      ` : '';
+      charDisplay.innerHTML = `<div>${safeInfo}</div>${pillsHtml}`;
     }
   },
 

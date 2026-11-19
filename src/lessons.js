@@ -504,10 +504,18 @@ const LessonBrowser = {
       if (!pool.length) {
         pool = allGrammar.filter(s => s.hsk === this.currentLesson.hsk);
       }
-      this.practiceQuestions = [...pool];
+      this.practiceQuestions = pool.map(s => {
+        let choices = [];
+        if (mode === 'vi_to_zh') {
+          choices = [s.zh, ...(s.wrongZh || []).slice(0, 3)].filter(Boolean).sort(() => 0.5 - Math.random());
+        } else if (mode === 'zh_to_vi') {
+          choices = [s.vi, ...(s.wrongVi || []).slice(0, 3)].filter(Boolean).sort(() => 0.5 - Math.random());
+        }
+        return { ...s, choices };
+      });
     } else if (type === 'quiz') {
       const words = this.currentLesson.words || [];
-      const allWords = (window.CHINESE_DATA && window.CHINESE_DATA.words) ? window.CHINESE_DATA.words : words;
+      const allWords = (window.CHINESE_DATA && window.CHINESE_DATA.all_words) ? window.CHINESE_DATA.all_words : words;
       this.practiceQuestions = words.map(w => {
         const otherWords = allWords.filter(other => other.id !== w.id && other.meaning !== w.meaning);
         const distractors = [...otherWords].sort(() => 0.5 - Math.random()).slice(0, 3).map(o => o.meaning);
@@ -593,7 +601,22 @@ const LessonBrowser = {
           </button>
         </div>
 
-        <!-- 3. Thi trắc nghiệm từ vựng -->
+        <!-- 3. Dịch câu Trung -> Việt -->
+        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.15rem; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+              <div style="width:38px; height:38px; border-radius:10px; background:#f0f9ff; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">🇻🇳</div>
+              <span style="font-size:0.7rem; font-weight:800; background:#f0f9ff; color:#0284c7; padding:0.15rem 0.55rem; border-radius:999px;">Dịch câu</span>
+            </div>
+            <h4 style="font-size:0.95rem; font-weight:800; color:var(--text-main); margin:0 0 0.25rem 0;">Luyện dịch Trung ➔ Việt</h4>
+            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4; margin:0;">Đọc câu chữ Hán và chọn nghĩa tiếng Việt chuẩn ngữ cảnh bài học.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="LessonBrowser.startLessonPractice('grammar', 'zh_to_vi')" style="margin-top:1rem; font-weight:700; border-color:#0284c7; color:#0284c7;">
+            Luyện dịch Zh ➔ Vi ▶
+          </button>
+        </div>
+
+        <!-- 4. Thi trắc nghiệm từ vựng -->
         <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.15rem; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
@@ -1039,7 +1062,7 @@ const LessonBrowser = {
           </div>
           <div style="color:var(--primary); font-size:0.85rem; font-weight:600; margin-bottom:0.25rem;">${q.py || q.pinyin || ''}</div>
           <div style="color:var(--text-muted); font-size:0.82rem;">${q.vi}</div>
-          ${q.point ? `<div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px dashed var(--border); font-size:0.8rem; color:#d97706; font-weight:600;">💡 Ngữ pháp: ${escapeHtml(q.point)}</div>` : ''}
+          ${(q.grammarNote || q.point) ? `<div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px dashed var(--border); font-size:0.8rem; color:#d97706; font-weight:600;">💡 Ngữ pháp: ${escapeHtml(q.grammarNote || q.point)}</div>` : ''}
         </div>
       `;
     }
@@ -1095,9 +1118,13 @@ const LessonBrowser = {
         <div style="padding:0.85rem; border-radius:var(--radius-md); background:${isCorrect ? '#f0fdf4' : '#fef2f2'}; border:1px solid ${isCorrect ? '#86efac' : '#fca5a5'}; font-size:0.88rem;">
           <strong>${isCorrect ? '🎉 Chính xác!' : '❌ Đáp án đúng:'}</strong> ${expected}
           ${(q.py || q.pinyin) ? `<div style="color:var(--text-muted); font-size:0.8rem; margin-top:0.2rem;">${q.py || q.pinyin}</div>` : ''}
-          ${q.point ? `<div style="color:#d97706; font-size:0.78rem; margin-top:0.25rem;">💡 ${escapeHtml(q.point)}</div>` : ''}
+          ${(q.grammarNote || q.point) ? `<div style="color:#d97706; font-size:0.78rem; margin-top:0.25rem;">💡 ${escapeHtml(q.grammarNote || q.point)}</div>` : ''}
         </div>
       `;
+    }
+
+    if (typeof AudioEngine !== 'undefined' && AudioEngine.speak) {
+      AudioEngine.speak(q.zh);
     }
   },
 

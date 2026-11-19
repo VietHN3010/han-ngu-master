@@ -165,10 +165,14 @@ const App = {
     if (tabId === 'home') {
       this.updateDashboardStats();
     } else if (tabId === 'lessons') {
-      LessonBrowser.renderLessonList();
+      if (typeof LessonBrowser !== 'undefined' && LessonBrowser.closeLesson) {
+        LessonBrowser.closeLesson(false);
+      } else {
+        LessonBrowser.renderLessonList();
+      }
     } else if (tabId === 'writer') {
       setTimeout(() => {
-        HanziController.loadCharacter(HanziController.currentChar || '好');
+        HanziController.loadCharacter(HanziController.currentWord || HanziController.currentChar || '好', HanziController.currentCharIndex || 0);
       }, 50);
     } else if (tabId === 'match') {
       MatchGame.startGame('hsk1');
@@ -278,7 +282,7 @@ const App = {
 
     // Last Active Lesson in Hero Card
     const lId = (user && user.lastActiveLesson) ? user.lastActiveLesson : 1;
-    const lessonObj = typeof LESSONS_DATA !== 'undefined' ? LESSONS_DATA.find(l => l.id === lId) : null;
+    const lessonObj = (this.data && this.data.lessons) ? this.data.lessons.find(l => l.id === lId) : null;
     const heroTitle = document.getElementById('hero-lesson-title');
     const heroSub = document.getElementById('hero-lesson-sub');
     const heroHsk = document.getElementById('hero-lesson-hsk-badge');
@@ -611,6 +615,8 @@ const App = {
     // Populate Lessons in Selects
     const quizScopeSelect = document.getElementById('quiz-scope-select');
     if (quizScopeSelect && fcFilterSelect) {
+      quizScopeSelect.querySelectorAll('option[value^="lesson_"]').forEach(o => o.remove());
+      fcFilterSelect.querySelectorAll('option[value^="lesson_"]').forEach(o => o.remove());
       this.data.lessons.forEach(l => {
         const opt = document.createElement('option');
         opt.value = `lesson_${l.id}`;

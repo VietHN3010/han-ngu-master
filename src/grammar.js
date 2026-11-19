@@ -3862,6 +3862,7 @@ const GrammarController = {
   populateSelects(lessons) {
     const scopeSelect = document.getElementById('grammar-scope-select');
     if (!scopeSelect || !lessons) return;
+    scopeSelect.querySelectorAll('option[value^="lesson_"]').forEach(o => o.remove());
     lessons.forEach(l => {
       const opt = document.createElement('option');
       opt.value = `lesson_${l.id}`;
@@ -3951,7 +3952,7 @@ const GrammarController = {
     const checkBtn = document.getElementById('grammar-check-btn');
     const nextBtn = document.getElementById('grammar-next-btn');
     if (checkBtn) {
-      checkBtn.style.display = 'inline-flex';
+      checkBtn.style.display = this.mode === 'reorder' ? 'inline-flex' : 'none';
       checkBtn.disabled = this.mode === 'reorder';
     }
     if (nextBtn) nextBtn.style.display = 'none';
