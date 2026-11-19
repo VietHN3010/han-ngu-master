@@ -16,6 +16,13 @@ Dự án này được phát triển song song giữa **Claude** và **Antigravi
 2. **Sau mỗi lần sửa file:**
    - Hook `PostToolUse` (`.claude/settings.json` và `.agents/hooks.json`) tự động chạy `node scripts/build.js --quiet` để cập nhật `app.bundle.js`, đồng bộ `style.css` ↔ `index.html`, băm SHA-256 cache-busting, cập nhật khối `AUTO-SYNC-STATE` bên dưới và đồng bộ `CLAUDE.md` ↔ `AGENTS.md` (ở cả `chinese-app/` và thư mục cha).
    - Không cần hỏi người dùng chuyện gì vừa thay đổi — hãy chủ động đọc từ khối trạng thái và git diff.
+3. **Phát hiện thay đổi của bên kia (`scripts/sync-tracker.js`):**
+   - Mỗi agent giữ một snapshot hash riêng tại `.git/agent-sync/<claude|antigravity>.json` (không commit).
+   - Claude: hook `SessionStart` + `UserPromptSubmit` (`scripts/claude-hook.js`) tự chèn danh sách file mà Antigravity/người dùng vừa sửa kể từ lần cuối Claude xem. Khi thấy danh sách này, **phải đọc lại các file đó trước khi sửa**.
+   - Antigravity: `scripts/agy-hook.js` chèn danh sách file Claude đã sửa vào đầu mỗi phiên.
+   - Hook `PostToolUse` của Claude trả exit code 2 nếu `build.js` lỗi (vd. lỗi cú pháp) để Claude thấy và sửa ngay.
+4. **Chống xung đột khi build đồng thời:** `build.js` dùng khóa liên tiến trình (`.git/han-ngu-master-build.lock`) và ghi file nguyên tử (temp + rename), nên hai agent có thể lưu cùng lúc mà không làm hỏng `app.bundle.js`/`index.html`.
+5. **Quy tắc làm việc song song:** tránh để Claude và Antigravity cùng sửa **một file** trong cùng thời điểm (đặc biệt `src/data.js`, `src/grammar.js`, `index.html`). Nên chia việc theo file/module.
 
 <!-- AUTO-SYNC-STATE:START -->
 - **Build Tag:** `v13-cbae7045`

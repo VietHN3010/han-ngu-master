@@ -1,12 +1,35 @@
 {
   "hooks": {
-    "PostToolUse": [
+    "SessionStart": [
       {
-        "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "node /Users/nguyenhoangviet/Downloads/汉语/chinese-app/scripts/build.js --quiet"
+            "command": "node /Users/nguyenhoangviet/Downloads/汉语/chinese-app/scripts/claude-hook.js",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/nguyenhoangviet/Downloads/汉语/chinese-app/scripts/claude-hook.js",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/nguyenhoangviet/Downloads/汉语/chinese-app/scripts/claude-hook.js",
+            "timeout": 20
           }
         ]
       }

@@ -59,12 +59,56 @@ function readUtf8(relPath) {
   return fs.readFileSync(path.join(ROOT, relPath), 'utf8');
 }
 
+// Write via temp file + rename so the other agent never reads a half-written file.
+function atomicWrite(fullPath, content) {
+  const tmp = `${fullPath}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, content, 'utf8');
+  fs.renameSync(tmp, fullPath);
+}
+
 function writeIfChanged(relPath, content) {
   const fullPath = path.join(ROOT, relPath);
   const existing = fs.existsSync(fullPath) ? fs.readFileSync(fullPath, 'utf8') : null;
   if (existing === content) return false;
-  fs.writeFileSync(fullPath, content, 'utf8');
+  atomicWrite(fullPath, content);
   return true;
+}
+
+// Cross-process lock: Claude and Antigravity hooks may run build.js at the same time.
+function acquireBuildLock() {
+  let lockBase = path.join(ROOT, '.git');
+  try {
+    if (!fs.statSync(lockBase).isDirectory()) lockBase = require('os').tmpdir();
+  } catch (e) {
+    lockBase = require('os').tmpdir();
+  }
+  const lockDir = path.join(lockBase, 'han-ngu-master-build.lock');
+  const started = Date.now();
+  const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  for (;;) {
+    try {
+      fs.mkdirSync(lockDir);
+      break;
+    } catch (e) {
+      if (e.code !== 'EEXIST') return; // cannot lock (read-only FS) -> proceed unlocked
+      try {
+        if (Date.now() - fs.statSync(lockDir).mtimeMs > 30000) {
+          fs.rmSync(lockDir, { recursive: true, force: true }); // stale lock from a crashed build
+          continue;
+        }
+      } catch (_) {
+        continue;
+      }
+      if (Date.now() - started > 12000) {
+        console.error(`ERROR: another build is still running (lock: ${lockDir}). Retry in a moment.`);
+        process.exit(1);
+      }
+      sleep(100);
+    }
+  }
+  process.on('exit', () => {
+    try { fs.rmdirSync(lockDir); } catch (_) { /* already released */ }
+  });
 }
 
 function validateSyntax(code, filename) {
@@ -233,7 +277,7 @@ function updateAutoSyncState(versionTag) {
   const nextClaude = before + blockLines.join('\n') + after;
 
   if (nextClaude === claudeContent) return false;
-  fs.writeFileSync(claudePath, nextClaude, 'utf8');
+  atomicWrite(claudePath, nextClaude);
   return true;
 }
 
@@ -247,7 +291,7 @@ function mirrorToParentWorkspace(claudeContent) {
         ? fs.readFileSync(target, 'utf8')
         : null;
       if (existing !== claudeContent) {
-        fs.writeFileSync(target, claudeContent, 'utf8');
+        atomicWrite(target, claudeContent);
       }
     }
   } catch (e) {
@@ -283,7 +327,7 @@ function syncAgentsFile() {
 
   if (!isCheck) {
     if (changed) {
-      fs.writeFileSync(agentsPath, claudeContent, 'utf8');
+      atomicWrite(agentsPath, claudeContent);
     }
     mirrorToParentWorkspace(claudeContent);
   }
@@ -292,6 +336,7 @@ function syncAgentsFile() {
 
 function run() {
   if (!isCheck) {
+    acquireBuildLock();
     checkDirectBundleEditGuard();
   }
 
