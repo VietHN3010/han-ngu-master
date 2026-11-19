@@ -1,0 +1,18 @@
+{
+  "name": "han-ngu-master",
+  "version": "1.12.0",
+  "description": "Ứng dụng học Hán Ngữ HSK 1 & 2 toàn diện với thẻ ghi nhớ, trắc nghiệm, tập viết chữ Hán và ngữ pháp.",
+  "private": true,
+  "scripts": {
+    "build": "cat src/data.js src/storage.js src/audio.js src/writer.js src/flashcard.js src/quiz.js src/grammar.js src/match.js src/lessons.js src/dictionary.js src/pinyin.js src/app.js > app.bundle.js && node -c app.bundle.js",
+    "test": "node -c app.bundle.js && node -c api/tts.js"
+  },
+  "keywords": [
+    "chinese",
+    "hsk",
+    "pwa",
+    "learning"
+  ],
+  "author": "Viet Hoang Nguyen",
+  "license": "MIT"
+}
