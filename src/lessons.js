@@ -309,7 +309,18 @@ const LessonBrowser = {
       </div>
     `;
 
-    const dialogueBubbles = this.currentLesson.dialogue.map((d, idx) => `
+    let lastSection = null;
+    const dialogueBubbles = this.currentLesson.dialogue.map((d, idx) => {
+      let sectionHeaderHtml = '';
+      if (d.section && d.section !== lastSection) {
+        lastSection = d.section;
+        sectionHeaderHtml = `
+          <div class="dialogue-section-header" style="margin:0.85rem 0 0.5rem; padding:0.5rem 0.85rem; border-radius:var(--radius-md); background:var(--bg-subtle); border-left:4px solid var(--secondary); font-weight:800; font-size:0.88rem; color:var(--secondary);">
+            📖 ${typeof escapeHtml === 'function' ? escapeHtml(d.section) : d.section}
+          </div>
+        `;
+      }
+      return `${sectionHeaderHtml}
       <div class="dialogue-bubble" style="padding:0.85rem 1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); margin-bottom:0.6rem; display:flex; align-items:flex-start; justify-content:space-between; gap:0.75rem; transition:all 0.25s ease;">
         <div style="min-width:0; flex:1; word-break:break-word;">
           <div style="font-weight:700; color:var(--secondary); font-size:0.8rem; margin-bottom:0.15rem;">${d.speaker || `Nhân vật ${idx + 1}`}:</div>
@@ -326,7 +337,8 @@ const LessonBrowser = {
           </button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     const wordCount = this.currentLesson.words ? this.currentLesson.words.length : 0;
     const reviewCta = `
@@ -380,12 +392,17 @@ const LessonBrowser = {
 
     let theoryHtml = '';
     if (grammarPoints.length > 0) {
-      theoryHtml = grammarPoints.map((g, idx) => `
+      theoryHtml = grammarPoints.map((g, idx) => {
+        const colonIdx = g.indexOf(':');
+        const title = colonIdx > -1 ? g.slice(0, colonIdx).trim() : g;
+        const body = colonIdx > -1 ? g.slice(colonIdx + 1).trim() : '';
+        return `
         <div style="padding:1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--primary); margin-bottom:0.65rem;">
-          <div style="font-weight:700; color:var(--text-main); font-size:0.92rem; margin-bottom:0.25rem;">Điểm ${idx + 1}: ${g.split(':')[0]}</div>
-          <div style="color:var(--text-muted); font-size:0.85rem; line-height:1.5;">${g.includes(':') ? g.split(':').slice(1).join(':') : g}</div>
+          <div style="font-weight:700; color:var(--text-main); font-size:0.92rem;${body ? ' margin-bottom:0.25rem;' : ''}">Điểm ${idx + 1}: ${typeof escapeHtml === 'function' ? escapeHtml(title) : title}</div>
+          ${body ? `<div style="color:var(--text-muted); font-size:0.85rem; line-height:1.5;">${typeof escapeHtml === 'function' ? escapeHtml(body) : body}</div>` : ''}
         </div>
-      `).join('');
+      `;
+      }).join('');
     } else {
       theoryHtml = '<p style="color:var(--text-muted); padding:0.5rem 0; font-size:0.85rem;">Bài này tập trung vào củng cố từ vựng và hội thoại.</p>';
     }
@@ -663,6 +680,7 @@ const LessonBrowser = {
       return;
     }
 
+    this.practiceIsAnswered = false;
     const q = this.practiceQuestions[this.practiceIndex];
     const total = this.practiceQuestions.length;
     const progressPct = Math.round((this.practiceIndex / total) * 100);
@@ -1164,9 +1182,32 @@ const LessonBrowser = {
 
     const nextBtn = document.getElementById('lesson-practice-next-btn');
     if (nextBtn) nextBtn.style.display = 'inline-flex';
+
+    const fb = document.getElementById('lesson-practice-feedback');
+    if (fb) {
+      const w = q.word || {};
+      const safeHanzi = typeof escapeHtml === 'function' ? escapeHtml(q.hanzi) : q.hanzi;
+      const safePinyin = typeof escapeHtml === 'function' ? escapeHtml(q.pinyin || '') : (q.pinyin || '');
+      const safeCorrect = typeof escapeHtml === 'function' ? escapeHtml(q.correct) : q.correct;
+      const safeHv = w.hanviet ? (typeof escapeHtml === 'function' ? escapeHtml(w.hanviet) : w.hanviet) : '';
+      const safeEx = w.example ? (typeof escapeHtml === 'function' ? escapeHtml(w.example) : w.example) : '';
+      fb.style.display = 'block';
+      fb.innerHTML = `
+        <div style="padding:0.85rem; border-radius:var(--radius-md); background:${isCorrect ? '#f0fdf4' : '#fef2f2'}; border:1px solid ${isCorrect ? '#86efac' : '#fca5a5'}; font-size:0.88rem;">
+          <strong>${isCorrect ? '🎉 Chính xác!' : '❌ Đáp án đúng:'}</strong> ${safeHanzi} (${safePinyin}) — ${safeCorrect}
+          ${safeHv ? `<div style="color:var(--secondary); font-size:0.8rem; margin-top:0.2rem; font-weight:600;">Hán Việt: ${safeHv}</div>` : ''}
+          ${safeEx ? `<div style="color:var(--text-muted); font-size:0.78rem; margin-top:0.25rem; font-style:italic;">💡 ${safeEx}</div>` : ''}
+        </div>
+      `;
+    }
+
+    if (typeof AudioEngine !== 'undefined' && AudioEngine.speak) {
+      AudioEngine.speak(q.hanzi);
+    }
   },
 
   nextPracticeStep() {
+    this.practiceIsAnswered = false;
     this.practiceIndex++;
     this.renderCurrentPracticeStep();
   },

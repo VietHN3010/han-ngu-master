@@ -69,31 +69,36 @@ function validateSyntax(code, filename) {
   }
 }
 
-function checkDirectBundleEditGuard() {
+function getGitChangedFiles() {
   try {
     const status = execSync('git status --porcelain', {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore']
     });
-    const changed = status
+    return status
       .split(/\r?\n/)
       .filter(Boolean)
       .map((line) => line.slice(3).trim().replace(/^.* -> /, ''));
-
-    const bundleModified = changed.some((f) => f === BUNDLE_FILE);
-    const srcModified = changed.some((f) => f.startsWith('src/'));
-
-    if (bundleModified && !srcModified && !isForce) {
-      console.error(
-        `ERROR: "${BUNDLE_FILE}" has direct modifications in git working tree while no file in "src/" is modified.\n` +
-        `Never edit "${BUNDLE_FILE}" directly because it is generated from "src/*.js".\n` +
-        `Port your changes into "src/" or pass "--force" if you intentionally want to overwrite "${BUNDLE_FILE}".`
-      );
-      process.exit(1);
-    }
   } catch (e) {
-    // Not a git repo or git unavailable; skip git guard safely
+    return [];
+  }
+}
+
+function checkDirectBundleEditGuard() {
+  const changed = getGitChangedFiles();
+  if (!changed.length) return;
+
+  const bundleModified = changed.some((f) => f === BUNDLE_FILE);
+  const srcModified = changed.some((f) => f.startsWith('src/'));
+
+  if (bundleModified && !srcModified && !isForce) {
+    console.error(
+      `ERROR: "${BUNDLE_FILE}" has direct modifications in git working tree while no file in "src/" is modified.\n` +
+      `Never edit "${BUNDLE_FILE}" directly because it is generated from "src/*.js".\n` +
+      `Port your changes into "src/" or pass "--force" if you intentionally want to overwrite "${BUNDLE_FILE}".`
+    );
+    process.exit(1);
   }
 }
 
@@ -125,12 +130,24 @@ function syncCss(indexContent) {
     return { indexContent, styleCss, synced: false, direction: null };
   }
 
-  const htmlLineCount = htmlCss.trimEnd().split('\n').length;
-  const styleLineCount = styleCss ? styleCss.trimEnd().split('\n').length : 0;
-  const htmlStat = fs.statSync(indexPath);
-  const styleStat = styleExists ? fs.statSync(stylePath) : { mtimeMs: 0 };
+  let extractToStyle = !styleExists;
+  if (styleExists) {
+    const changed = getGitChangedFiles();
+    const styleModified = changed.includes(STYLE_FILE);
+    const indexModified = changed.includes(INDEX_FILE);
 
-  if (!styleExists || styleLineCount < htmlLineCount || htmlStat.mtimeMs > styleStat.mtimeMs) {
+    if (styleModified && !indexModified) {
+      extractToStyle = false;
+    } else if (indexModified && !styleModified) {
+      extractToStyle = true;
+    } else {
+      const htmlStat = fs.statSync(indexPath);
+      const styleStat = fs.statSync(stylePath);
+      extractToStyle = htmlStat.mtimeMs > styleStat.mtimeMs;
+    }
+  }
+
+  if (extractToStyle) {
     // Extract inline <style> from index.html -> style.css
     if (!isCheck) {
       writeIfChanged(STYLE_FILE, htmlCss);

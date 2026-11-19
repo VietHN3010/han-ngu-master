@@ -76,7 +76,10 @@ const MatchGame = {
 
       // Check match
       if (first.card.wordId === card.wordId && first.card.type !== card.type) {
-        // MATCH!
+        // MATCH! Speak synchronously in user gesture handler for mobile browser compatibility
+        if (first.card.word && first.card.word.hanzi && typeof AudioEngine !== 'undefined' && AudioEngine.speak) {
+          AudioEngine.speak(first.card.word.hanzi);
+        }
         setTimeout(() => {
           first.element.classList.remove('selected');
           element.classList.remove('selected');
@@ -88,6 +91,10 @@ const MatchGame = {
           if (this.matchedCount === this.cards.length / 2) {
             clearInterval(this.timerInterval);
             AudioEngine.playVictorySound();
+            if (typeof StorageManager !== 'undefined' && StorageManager.addXP) {
+              StorageManager.addXP(15, 'Hoàn thành ghép từ');
+              StorageManager.recordDailyAction('vocab', 2);
+            }
             if (typeof App !== 'undefined' && App.toast) {
               App.toast(`🎉 Chúc mừng! Bạn đã ghép đúng tất cả trong ${this.secondsElapsed} giây!`, 'success', 5000);
             } else {

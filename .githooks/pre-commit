@@ -1,4 +1,5 @@
 #!/bin/sh
 set -e
 node scripts/build.js
+node scripts/verify.js
 git add app.bundle.js index.html sw.js style.css AGENTS.md

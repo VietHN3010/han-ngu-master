@@ -376,7 +376,7 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Câu vị ngữ hình dung từ: Chủ ngữ + (很) + Tính từ (汉语不太难)",
-        "Phủ định với 不 (bù / bú)",
+        "Phủ định với 不 (bù / bú): Đặt 不 trước động từ hoặc tính từ để phủ định (不忙, 不太难). Lưu ý biến điệu: 不 đọc là bú khi đứng trước âm tiết thanh 4 (不是 → bú shì, 不去 → bú qù).",
         "Câu hỏi tỉnh lược với 呢: [Danh từ] + 呢？"
       ]
     },
@@ -668,8 +668,8 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Câu hỏi chính phản: V + 不 + V (去不去？)",
-        "Đoản ngữ thời gian và sự kiện (明天见)",
-        "Đại từ chỉ định 这 và 那"
+        "Đoản ngữ thời gian + 见 (Hẹn gặp lại): Đặt từ chỉ thời gian trước 见 để chào hẹn gặp lại (明天见 - Ngày mai gặp, 一会儿见 - Lát nữa gặp, 星期一见 - Thứ Hai gặp).",
+        "Đại từ chỉ định 这 (đây) và 那 (kia): Dùng 这 / 那 + 是 + Danh từ để giới thiệu hoặc chỉ định sự vật ở gần hay ở xa (这是汉语书，那是英语书)."
       ]
     },
     {
@@ -936,7 +936,7 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Quy tắc vàng Trạng ngữ chỉ thời gian / địa điểm đứng TRƯỚC Động từ: Chủ ngữ + [Thời gian] + [Địa điểm] + V + O",
-        "Đại từ nghi vấn 几 (hỏi số lượng nhỏ) vs 哪儿 (ở đâu)"
+        "Đại từ nghi vấn 几 và 哪儿: 几 dùng để hỏi số lượng nhỏ (thường dưới 10) hoặc thứ/ngày (星期几？); 哪儿 dùng để hỏi địa điểm, nơi chốn (你去哪儿？)."
       ]
     },
     {
@@ -1728,7 +1728,7 @@ window.CHINESE_DATA = {
       "grammar": [
         "Câu có hai động từ liên tiếp (Câu liên động): 去食堂吃饭",
         "Hỏi và đáp về ăn uống: 吃什么, 要几个",
-        "Lượng từ cơ bản 个 (yí ge mántou)"
+        "Lượng từ cơ bản 个 (ge): Lượng từ phổ biến nhất đứng giữa số từ/đại từ nghi vấn và danh từ (一个馒头, 几个包子, 三个人)."
       ]
     },
     {
@@ -2036,21 +2036,33 @@ window.CHINESE_DATA = {
         },
         {
           "speaker": "买者",
-          "zh": "我买五斤。还要别的吗？",
-          "py": "Wǒ mǎi wǔ jīn. Hái yào bié de ma?",
-          "vi": "Tôi mua 5 cân. Còn muốn gì khác không?"
+          "zh": "我买五斤。",
+          "py": "Wǒ mǎi wǔ jīn.",
+          "vi": "Tôi mua 5 cân."
         },
         {
           "speaker": "售货员",
+          "zh": "还要别的吗？",
+          "py": "Hái yào bié de ma?",
+          "vi": "Còn mua gì khác không?"
+        },
+        {
+          "speaker": "买者",
           "zh": "橘子多少钱一斤？",
           "py": "Júzi duōshao qián yì jīn?",
           "vi": "Quýt bao nhiêu tiền một cân?"
         },
         {
+          "speaker": "售货员",
+          "zh": "两块。",
+          "py": "Liǎng kuài.",
+          "vi": "2 tệ một cân."
+        },
+        {
           "speaker": "买者",
-          "zh": "两块。要两斤。一共多少钱？",
-          "py": "Liǎng kuài. Yào liǎng jīn. Yígòng duōshao qián?",
-          "vi": "2 tệ. Lấy 2 cân. Tổng cộng bao nhiêu tiền?"
+          "zh": "要两斤。一共多少钱？",
+          "py": "Yào liǎng jīn. Yígòng duōshao qián?",
+          "vi": "Lấy 2 cân. Tổng cộng bao nhiêu tiền?"
         },
         {
           "speaker": "售货员",
@@ -2062,7 +2074,7 @@ window.CHINESE_DATA = {
       "grammar": [
         "Hỏi giá tiền: ... 多少钱？ / 怎么卖？",
         "Hệ thống tiền tệ: 块 (kuài) - 毛 (máo) - 分 (fēn)",
-        "Phân biệt 两 (liǎng) vs 二 (èr)"
+        "Phân biệt 两 (liǎng) và 二 (èr): Dùng 两 khi đứng trước lượng từ chỉ số lượng (两斤苹果, 两个人, 两块钱); dùng 二 khi đếm số, số thứ tự, số điện thoại (一、二、三, 第二, 二楼)."
       ]
     },
     {
@@ -2336,15 +2348,27 @@ window.CHINESE_DATA = {
         },
         {
           "speaker": "麦克",
-          "zh": "五百美元。请等一会儿。",
-          "py": "Wǔbǎi měiyuán. Qǐng děng yíhuìr.",
-          "vi": "500 Đô la Mỹ. Xin chờ một lát."
+          "zh": "五百美元。",
+          "py": "Wǔbǎi měiyuán.",
+          "vi": "500 Đô la Mỹ."
+        },
+        {
+          "speaker": "营业员",
+          "zh": "请等一会儿。给您钱，请数数。",
+          "py": "Qǐng děng yíhuìr. Gěi nín qián, qǐng shǔshu.",
+          "vi": "Xin chờ một lát. Gửi ngài tiền, xin hãy đếm lại."
+        },
+        {
+          "speaker": "麦克",
+          "zh": "对了。谢谢！",
+          "py": "Duì le. Xièxie!",
+          "vi": "Đúng rồi. Cảm ơn!"
         }
       ],
       "grammar": [
         "Động từ năng nguyện 要 (muốn / cần): 我要去银行换钱",
         "Biểu đạt thời gian trong ngày: 上午, 中午, 下午",
-        "Cấu trúc 请等一会儿"
+        "Cấu trúc 请等一会儿 (Xin chờ một lát): Động từ + 一会儿 biểu thị hành động diễn ra trong thời gian ngắn (等一会儿 - đợi một lát, 休息一会儿 - nghỉ một lát)."
       ]
     },
     {
@@ -2576,7 +2600,7 @@ window.CHINESE_DATA = {
       "grammar": [
         "Giới từ 在 chỉ vị trí / nơi chốn: 在家, 在学校",
         "Động từ 住: 住哪儿, 住十八楼",
-        "Cách đọc số phòng, số nhà, số điện thoại (1 đọc là yāo)"
+        "Cách đọc số hiệu (phòng, nhà, điện thoại): Đọc từng chữ số rời nhau; đặc biệt chữ số 1 thường đọc là yāo để tránh nhầm với 7 (qī) (701号 → qī líng yāo hào)."
       ]
     },
     {
@@ -2826,7 +2850,7 @@ window.CHINESE_DATA = {
       "grammar": [
         "Phó từ 都 (đều) và quy tắc: 都不是 (hoàn toàn không phải) vs 不都是 (không phải tất cả)",
         "Giới từ 跟 (cùng với): 跟谁一起",
-        "Định ngữ nhiều tầng"
+        "Định ngữ nhiều tầng với 的: Định ngữ chỉ sở hữu/nơi chốn đứng trước định ngữ chỉ tính chất hoặc danh từ trung tâm (语言学院的学生 - sinh viên của Học viện Ngôn ngữ)."
       ]
     },
     {
@@ -3108,21 +3132,27 @@ window.CHINESE_DATA = {
         },
         {
           "speaker": "罗兰",
-          "zh": "很好！觉得汉语难不难？",
-          "py": "Hěn hǎo! Juéde Hànyǔ nán bu nán?",
-          "vi": "Rất tuyệt! Bạn cảm thấy tiếng Hán có khó không?"
+          "zh": "她很好。",
+          "py": "Tā hěn hǎo.",
+          "vi": "Cô ấy rất tốt."
+        },
+        {
+          "speaker": "张东",
+          "zh": "你觉得学习汉语难吗？",
+          "py": "Nǐ juéde xuéxí Hànyǔ nán ma?",
+          "vi": "Bạn cảm thấy học tiếng Hán có khó không?"
         },
         {
           "speaker": "罗兰",
-          "zh": "听和说比较容易，看和写很客气，不对，是很困难！",
-          "py": "Tīng hé shuō bǐjiào róngyì, kàn hé xiě hěn kùnnan!",
-          "vi": "Nghe và nói tương đối dễ, đọc và viết thì rất khó!"
+          "zh": "我觉得语法不太难，听和说也比较容易，但是看和写很困难！",
+          "py": "Wǒ juéde yǔfǎ bú tài nán, tīng hé shuō yě bǐjiào róngyì, dànshì kàn hé xiě hěn kùnnan!",
+          "vi": "Tôi thấy ngữ pháp không khó lắm, nghe và nói cũng tương đối dễ, nhưng đọc và viết thì rất khó!"
         }
       ],
       "grammar": [
         "Giới từ 在 làm trạng ngữ chỉ nơi chốn: 在哪儿 + Động từ (在语言学院学习)",
         "Cụm tính từ miêu tả: 怎么样 (thế nào)",
-        "Cấu trúc 觉得 (cảm thấy)"
+        "Động từ tâm lý 觉得 (cảm thấy): Chủ ngữ + 觉得 + Mệnh đề / Cụm tính từ để nêu cảm nhận, đánh giá cá nhân (我觉得语法不太难，听和说比较容易)."
       ]
     },
     {
@@ -3494,7 +3524,7 @@ window.CHINESE_DATA = {
       "grammar": [
         "Động từ 有 / 没有: Diễn tả sự tồn tại và sở hữu (phủ định bắt buộc dùng 没, không dùng 不)",
         "Câu hỏi chính phản với 是: 是不是 (có phải là... không)",
-        "Phân biệt 中药 (Đông y) vs 西药 (Tây y)"
+        "Từ vựng đối lập 中药 (Đông y) và 西药 (Tây y): Kết hợp với câu hỏi chính phản 是不是 để xác nhận thông tin (这是不是中药？这不是中药，这是西药)."
       ]
     },
     {
@@ -3818,7 +3848,7 @@ window.CHINESE_DATA = {
       "grammar": [
         "Câu hỏi lựa chọn với 还是: A 还是 B？ (Chỉ dùng trong câu hỏi nghi vấn)",
         "Cấu trúc chữ 的 rút gọn thay thế danh từ: 新的 (cái mới), 旧的 (cái cũ)",
-        "Câu miêu tả màu sắc"
+        "Câu miêu tả màu sắc với 的: Màu sắc + 的 + Danh từ (蓝色的自行车 - xe đạp màu xanh lam, 黑色的箱子 - vali màu đen)."
       ]
     },
     {
@@ -4057,7 +4087,7 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Lượng từ chỉ người trong gia đình 口 (kǒu): 几口人",
-        "Tổng kết toàn diện hệ thống Lượng từ HSK1 (个, 本, 张, 辆, 支, 瓶, 碗...)",
+        "Tổng kết hệ thống Lượng từ HSK 1: 个 (người/vật chung), 口 (nhân khẩu), 本 (sách/từ điển), 张 (vật phẳng: ảnh/vé), 辆 (xe cộ), 支 (bút), 瓶 (chai/lọ), 件 (áo/việc).",
         "Cấu trúc 全 (toàn bộ): 全家, 全班"
       ]
     },
@@ -4443,8 +4473,8 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Phó từ tần suất: 常常 (chángcháng), 有时候 (yǒushíhou), 平时 (píngshí)",
-        "Liên từ 还是 vs 或者 (Ôn tập & nâng cao)",
-        "Cấu trúc 跟...一起 + V (cùng với ai làm gì)"
+        "Phân biệt 还是 (háishi) và 或者 (huòzhě): 还是 dùng trong câu hỏi lựa chọn (你喝茶还是喝咖啡？); 或者 dùng trong câu trần thuật (晚上我看电视或者听音乐).",
+        "Cấu trúc 跟…一起 + Động từ: A + 跟 + B + 一起 + V biểu thị A cùng với B làm việc gì (你跟我一起去图书馆，好吗？)."
       ]
     },
     {
@@ -4728,7 +4758,7 @@ window.CHINESE_DATA = {
       "grammar": [
         "Hành động đang tiếp diễn với 在, 正, 正在, ...呢: 主语 + (正/在/正在) + 动词 + (宾语) + 呢",
         "Câu có hai tân ngữ (双宾语句): V + Tân ngữ 1 (người) + Tân ngữ 2 (vật): 教、给、问、借",
-        "Phó từ 就 biểu thị sự nhanh chóng, thuận lợi"
+        "Phó từ 就 (jiù) chỉ sự thuận tiện, nhanh chóng: Đứng trước động từ biểu thị hành động xảy ra sớm hoặc đưa ra quyết định dứt khoát (那就骑车去吧！)."
       ]
     },
     {
@@ -5073,8 +5103,8 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Câu liên động (连动句): Chủ ngữ + V1 + (O1) + V2 + (O2) chỉ mục đích di chuyển",
-        "Giới từ 顺便 (thuận tiện, nhân tiện), 替 (thay mặt, giúp)",
-        "Cấu trúc ...的时候 (lúc, khi)"
+        "Phó từ 顺便 (tiện thể) và Giới từ 替 (thay/giúp): 顺便 + V (tiện đường làm thêm việc gì); 替 + Ai + V (làm hộ ai việc gì: 你顺便替我买几张邮票吧).",
+        "Cấu trúc …的时候 (khi, lúc): [Mệnh đề / Thời gian] + 的时候 làm trạng ngữ chỉ thời điểm diễn ra hành động (休息的时候我常听音乐)."
       ]
     },
     {
@@ -5342,8 +5372,8 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Hình thức trùng điệp của động từ: AA (看看, 听听) hoặc A 一 A (看一看), ABAB (休息休息) biểu thị thử nghiệm, thời gian ngắn, giọng điệu nhẹ nhàng",
-        "Cấu trúc 有点儿 (hơi/hơi quá - tiêu cực) vs 一点儿 (một chút - đứng sau tính từ hoặc trước danh từ)",
-        "Trợ từ ngữ khí 吧 trong câu cầu khiến, đề nghị"
+        "Phân biệt 有点儿 và 一点儿: 有点儿 + Tính từ (hơi… quá, thường mang ý chưa hài lòng: 有点儿深, 有点儿贵); Tính từ + 一点儿 (…hơn một chút, dùng để so sánh/đề nghị: 便宜一点儿, 短一点儿).",
+        "Trợ từ ngữ khí 吧 (ba) cuối câu cầu khiến: Đặt ở cuối câu đề nghị, thương lượng hoặc khuyên nhủ để làm mềm giọng điệu (便宜一点儿吧！你试试吧！)."
       ]
     },
     {
@@ -5802,8 +5832,8 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Câu vị ngữ danh từ: Chủ ngữ + Cụm danh từ chỉ tuổi tác, ngày tháng, giá tiền, thời tiết (今天星期三, 我二十岁)",
-        "Biểu đạt ngày sinh, tuổi tác, 12 con giáp (属...)",
-        "Trợ từ ngữ khí 了 biểu thị sự thay đổi trạng thái"
+        "Biểu đạt ngày sinh, tuổi tác & con giáp: Hỏi tuổi với 多大 (你今年多大？); hỏi tuổi cầm tinh với 属 (你属什么？我属狗); nói ngày tháng theo thứ tự Năm → Tháng → Ngày.",
+        "Trợ từ ngữ khí 了 cuối câu chỉ sự thay đổi: Biểu thị tình huống mới xuất hiện hoặc trạng thái đã thay đổi (我今年二十岁了)."
       ]
     },
     {
@@ -6049,9 +6079,23 @@ window.CHINESE_DATA = {
       "dialogue": [
         {
           "speaker": "叙述",
-          "zh": "我每天早上六点半起床，七点吃早饭，七点四十五分去教室，八点上课。上午有四节课，十二点下课。中午我去食堂吃午饭，吃完饭常常睡一会儿午觉。下午有时候有两节课，四点下课以后我去操场锻炼身体。晚上我常在宿舍复习功课、预习生词、写作业，十一点半睡觉。",
-          "py": "Wǒ měitiān zǎoshang liù diǎn bàn qǐchuáng, qī diǎn chī zǎofàn, qī diǎn sìshíwǔ fēn qù jiàoshì, bā diǎn shàngkè. Shàngwǔ yǒu sì jié kè, shí'èr diǎn xiàkè. Zhōngwǔ wǒ qù shítáng chī wǔfàn, chī wán fàn chángcháng shuì yíhuìr wǔjiào. Xiàwǔ yǒushíhou yǒu liǎng jié kè, sì diǎn xiàkè yǐhòu wǒ qù cāochǎng duànliàn shēntǐ. Wǎnshang wǒ cháng zài sùshè fùxí gōngkè, yùxí shēngcí, xiě zuòyè, shíyī diǎn bàn shuìjiào.",
-          "vi": "Hàng ngày tôi thức dậy lúc 6h30 sáng, 7h ăn sáng, 7h45 đến lớp học, 8h bắt đầu vào học. Buổi sáng có 4 tiết, 12h tan học. Buổi trưa tôi đến căng tin ăn trưa, ăn xong thường ngủ trưa một lát. Buổi chiều đôi khi có 2 tiết học, sau khi tan học lúc 4h tôi ra sân tập thể dục rèn luyện thân thể. Buổi tối tôi thường ở ký túc xá ôn bài, chuẩn bị từ mới, làm bài tập, 11h30 thì đi ngủ.",
+          "zh": "我每天早上六点半起床，七点吃早饭，七点四十五分去教室，八点上课。上午有四节课，十二点下课。",
+          "py": "Wǒ měitiān zǎoshang liù diǎn bàn qǐchuáng, qī diǎn chī zǎofàn, qī diǎn sìshíwǔ fēn qù jiàoshì, bā diǎn shàngkè. Shàngwǔ yǒu sì jié kè, shí'èr diǎn xiàkè.",
+          "vi": "Hàng ngày tôi thức dậy lúc 6h30 sáng, 7h ăn sáng, 7h45 đến lớp học, 8h bắt đầu vào học. Buổi sáng có 4 tiết, 12h tan học.",
+          "section": "（一）我的一天 (Một ngày của tôi)"
+        },
+        {
+          "speaker": "叙述",
+          "zh": "中午我去食堂吃午饭，吃完饭常常睡一会儿午觉。下午有时候有两节课，四点下课以后我去操场锻炼身体。",
+          "py": "Zhōngwǔ wǒ qù shítáng chī wǔfàn, chī wán fàn chángcháng shuì yíhuìr wǔjiào. Xiàwǔ yǒushíhou yǒu liǎng jié kè, sì diǎn xiàkè yǐhòu wǒ qù cāochǎng duànliàn shēntǐ.",
+          "vi": "Buổi trưa tôi đến căng tin ăn trưa, ăn xong thường ngủ trưa một lát. Buổi chiều đôi khi có 2 tiết học, sau khi tan học lúc 4h tôi ra sân tập thể dục rèn luyện thân thể.",
+          "section": "（一）我的一天 (Một ngày của tôi)"
+        },
+        {
+          "speaker": "叙述",
+          "zh": "晚上我常在宿舍复习功课、预习生词、写作业，十一点半睡觉。",
+          "py": "Wǎnshang wǒ cháng zài sùshè fùxí gōngkè, yùxí shēngcí, xiě zuòyè, shíyī diǎn bàn shuìjiào.",
+          "vi": "Buổi tối tôi thường ở ký túc xá ôn bài, chuẩn bị từ mới, làm bài tập, 11h30 thì đi ngủ.",
           "section": "（一）我的一天 (Một ngày của tôi)"
         },
         {
@@ -6079,7 +6123,7 @@ window.CHINESE_DATA = {
       "grammar": [
         "Cách biểu đạt giờ giấc: 点 (giờ), 分 (phút), 刻 (khắc = 15 phút), 半 (rưỡi = 30 phút), 差 (kém)",
         "Cấu trúc 每...都...: 每天我都..., 每个人都...",
-        "Cấu trúc 以前 (trước khi) / 以后 (sau khi)"
+        "Cấu trúc thời gian 以前 (trước khi) và 以后 (sau khi): [Sự việc / Mốc thời gian] + 以前 / 以后 làm trạng ngữ chỉ thời gian (四点下课以后我去操场锻炼身体)."
       ]
     },
     {
@@ -6384,7 +6428,7 @@ window.CHINESE_DATA = {
         {
           "speaker": "罗兰",
           "zh": "玛丽，你看过京剧吗？",
-          "py": "Luólán, nǐ kànguò Jīngjù ma?",
+          "py": "Mǎlì, nǐ kànguò Jīngjù ma?",
           "vi": "Mary, cậu đã xem Kinh kịch bao giờ chưa?",
           "section": "（一）我打算请老师教我京剧 (Tôi dự định mời giáo viên dạy Kinh kịch)"
         },
@@ -6440,8 +6484,8 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Câu kiêm ngữ (兼语句): Tân ngữ của Động từ 1 đồng thời là Chủ ngữ của Động từ 2 (请、让、叫、使): 我请老师教我京剧",
-        "Động từ năng nguyện 打算, 想, 要",
-        "Cấu trúc biểu đạt nguyện vọng và kế hoạch"
+        "Động từ/Danh từ kế hoạch 打算 (dự định): Chủ ngữ + 打算 + Động từ + Tân ngữ dùng để nói về kế hoạch, dự định (我打算请老师教我京剧).",
+        "Biểu đạt sở thích & năng lực: Kết hợp 喜欢 (thích), 想 (muốn), 非常 (vô cùng) và 会 (biết làm gì qua học tập: 你会唱京剧吗？)."
       ]
     },
     {
@@ -6854,7 +6898,7 @@ window.CHINESE_DATA = {
       "grammar": [
         "Phương vị từ (方位词): 上, 下, 前, 后, 左, 右, 里, 外, 东, 南, 西, 北",
         "3 Mẫu câu tồn hiện: 地点 + 有 + 人/物 (Trong trường có bưu cục), 地点 + 是 + 人/物, 人/物 + 在 + 地点",
-        "Giới từ 往 (hướng về phía), 离 (cách xa), 从...到... (từ... đến...)"
+        "Giới từ chỉ hướng & khoảng cách 往, 离, 从…到…: 往 + Hướng + V (往前走, 往右拐); A + 离 + B + 远/近 (离这儿不远); 从 + A + 到 + B (从这儿到故宫有多远？)."
       ]
     },
     {
@@ -7153,8 +7197,8 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Động từ năng nguyện toàn diện: 会 (biết qua học tập), 能 (có năng lực/điều kiện), 可以 (được phép/khả thi), 应该 (nên)",
-        "Phân biệt 会 vs 能 vs 可以",
-        "Cấu trúc thỉnh cầu lịch sự"
+        "Phân biệt 会, 能 và 可以: 会 chỉ kỹ năng học được (会打太极拳); 能 chỉ năng lực hoặc điều kiện cho phép (您能再说一遍吗？); 可以 chỉ sự cho phép hoặc khả thi (我可以报名吗？).",
+        "Cấu trúc thỉnh cầu lặp lại hành động: 能 / 可以 + 再 + V + 一遍 + 吗？ (Thầy có thể nói lại một lần nữa được không?: 您能再说一遍吗？)."
       ]
     },
     {
@@ -7477,7 +7521,7 @@ window.CHINESE_DATA = {
         {
           "speaker": "罗兰",
           "zh": "玛丽，你看，那位中国姑娘太极拳打得真好！",
-          "py": "Luólán, nǐ kàn, nà wèi Zhōngguó gūniang tàijíquán dǎ de zhēn hǎo!",
+          "py": "Mǎlì, nǐ kàn, nà wèi Zhōngguó gūniang tàijíquán dǎ de zhēn hǎo!",
           "vi": "Mary, cậu nhìn kìa, cô gái Trung Quốc kia đánh Thái Cực Quyền đẹp thật đấy!",
           "section": "（一）她学得很好 (Cô ấy học rất giỏi)"
         },
@@ -7901,7 +7945,7 @@ window.CHINESE_DATA = {
         {
           "speaker": "玛丽",
           "zh": "罗兰，快开门，大卫又来了！",
-          "py": "Mǎlì, kuài kāi mén, Dàwèi yòu lái le!",
+          "py": "Luólán, kuài kāi mén, Dàwèi yòu lái le!",
           "vi": "Roland, mau mở cửa ra, David lại đến rồi kìa!",
           "section": "（二）他又来了 (Anh ấy lại tới rồi)"
         },
@@ -7922,7 +7966,7 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Trợ từ động thái 了 biểu thị hành động đã hoàn thành: V + 了",
-        "Phân biệt 了1 (cuối động từ - hoàn thành) vs 了2 (cuối câu - biến đổi trạng thái / ngữ khí)",
+        "Phân biệt 了1 (sau động từ) và 了2 (cuối câu): V + 了 biểu thị động tác đã hoàn thành; 了 ở cuối câu xác nhận sự việc đã xảy ra hoặc tình huống thay đổi (她去同学家了).",
         "Dạng phủ định của động tác hoàn thành: 没 / 没有 + V (TUYỆT ĐỐI KHÔNG DÙNG 不 + V + 了)"
       ]
     },
@@ -8288,7 +8332,7 @@ window.CHINESE_DATA = {
       ],
       "grammar": [
         "Cấu trúc biến đổi trạng thái: ...了 (Mary khóc rồi)",
-        "Nguyên nhân kết quả với 因为...所以...",
+        "Cặp liên từ nhân quả 因为…所以… (Bởi vì… cho nên…): 因为 nêu nguyên nhân, 所以 nêu kết quả (因为我感冒了，所以身体很不舒服).",
         "Biểu thị cảm xúc, triệu chứng bệnh tật: 舒服, 疼, 感冒, 发烧"
       ]
     },
@@ -8712,7 +8756,7 @@ window.CHINESE_DATA = {
       "grammar": [
         "Cấu trúc liên kết hai hành động liên tiếp: V1 + 了... 就 + V2... (Ăn sáng xong là đi ngay)",
         "Động từ xu hướng đơn: 来 / 去 (进/出/上/下/回/过/起 + 来/去)",
-        "Cấu trúc 又...又... (vừa... lại vừa...)"
+        "Cấu trúc liệt kê đặc điểm 又…又… (vừa… lại vừa…): Dùng để nối hai tính từ hoặc động từ cùng tính chất (这套房子又安静又方便)."
       ]
     },
     {
@@ -9514,9 +9558,23 @@ window.CHINESE_DATA = {
       "dialogue": [
         {
           "speaker": "叙述",
-          "zh": "我来了两个多月了，对这儿的生活差不多已经习惯了，不过有的地方还不太习惯。总觉得这儿的气候特别干燥，宿舍周围不太干净，也不太安静，食堂里的菜太油腻。我每天早上七点多才起床，所以常常没时间吃早饭，喝杯牛奶就去上课了。不过，课间休息的时候，我可以吃点儿点心。中午我去食堂吃午饭，吃完饭回宿舍睡午觉。下午有时候有课，有时候没有课，我就去图书馆看书，或者跟中国朋友一起练习说汉语。晚上我一般在宿舍复习功课、写作业，或者上网跟朋友聊天儿。十一点多睡觉。",
-          "py": "Wǒ lái le liǎng ge duō yuè le, duì zhèr de shēnghuó chàbuduō yǐjīng xíguàn le, búguò yǒu de dìfang hái bú tài xíguàn. Zǒng juéde zhèr de qìhòu tèbié gānzào, sùshè zhōuwéi bú tài gānjìng, yě bú tài ānjìng, shítáng lǐ de cài tài yóunì. Wǒ měitiān zǎoshang qī diǎn duō cái qǐchuáng, suǒyǐ chángcháng méi shíjiān chī zǎofàn, hē bēi niúnǎi jiù qù shàngkè le. Búguò, kèjiān xiūxi de shíhou, wǒ kěyǐ chī diǎnr diǎnxin. Zhōngwǔ wǒ qù shítáng chī wǔfàn, chī wán fàn huí sùshè shuì wǔjiào. Xiàwǔ yǒushíhou yǒu kè, yǒushíhou méiyǒu kè, wǒ jiù qù túshūguǎn kàn shū, huòzhě gēn Zhōngguó péngyou yìqǐ liànxí shuō Hànyǔ. Wǎnshang wǒ yìbān zài sùshè fùxí gōngkè, xiě zuòyè, huòzhě shàngwǎng gēn péngyou liáotiānr. Shíyī diǎn duō shuìjiào.",
-          "vi": "Tôi đã đến đây được hơn hai tháng rồi, đối với cuộc sống ở đây gần như đã quen dần, nhưng vẫn có vài điểm chưa quen lắm. Tôi luôn cảm thấy khí hậu ở đây đặc biệt khô hanh, xung quanh ký túc xá chưa sạch sẽ lắm, cũng không yên tĩnh lắm, đồ ăn trong nhà ăn thì nhiều dầu mỡ quá. Mỗi sáng hơn 7 giờ tôi mới dậy, vì thế thường không kịp ăn sáng, uống cốc sữa là đi học ngay. Nhưng giờ giải lao giữa tiết, tôi có thể ăn chút điểm tâm. Buổi trưa tôi đến căng tin ăn trưa, ăn xong về phòng ngủ trưa một lát. Buổi chiều có khi có tiết học, có khi không có tiết, tôi liền đến thư viện đọc sách, hoặc cùng bạn Trung Quốc luyện nói tiếng Hán. Buổi tối tôi thường ở ký túc xá ôn bài, làm bài tập, hoặc lên mạng tán gẫu với bạn bè. Hơn 11 giờ thì đi ngủ.",
+          "zh": "我来了两个多月了，对这儿的生活差不多已经习惯了，不过有的地方还不太习惯。总觉得这儿的气候特别干燥，宿舍周围不太干净，也不太安静，食堂里的菜太油腻。",
+          "py": "Wǒ lái le liǎng ge duō yuè le, duì zhèr de shēnghuó chàbuduō yǐjīng xíguàn le, búguò yǒu de dìfang hái bú tài xíguàn. Zǒng juéde zhèr de qìhòu tèbié gānzào, sùshè zhōuwéi bú tài gānjìng, yě bú tài ānjìng, shítáng lǐ de cài tài yóunì.",
+          "vi": "Tôi đã đến đây được hơn hai tháng rồi, đối với cuộc sống ở đây gần như đã quen dần, nhưng vẫn có vài điểm chưa quen lắm. Tôi luôn cảm thấy khí hậu ở đây đặc biệt khô hanh, xung quanh ký túc xá chưa sạch sẽ lắm, cũng không yên tĩnh lắm, đồ ăn trong nhà ăn thì nhiều dầu mỡ quá.",
+          "section": "（一）我来了两个多月了 (Tôi đến đây được hơn 2 tháng rồi)"
+        },
+        {
+          "speaker": "叙述",
+          "zh": "我每天早上七点多才起床，所以常常没时间吃早饭，喝杯牛奶就去上课了。不过，课间休息的时候，我可以吃点儿点心。中午我去食堂吃午饭，吃完饭回宿舍睡午觉。",
+          "py": "Wǒ měitiān zǎoshang qī diǎn duō cái qǐchuáng, suǒyǐ chángcháng méi shíjiān chī zǎofàn, hē bēi niúnǎi jiù qù shàngkè le. Búguò, kèjiān xiūxi de shíhou, wǒ kěyǐ chī diǎnr diǎnxin. Zhōngwǔ wǒ qù shítáng chī wǔfàn, chī wán fàn huí sùshè shuì wǔjiào.",
+          "vi": "Mỗi sáng hơn 7 giờ tôi mới dậy, vì thế thường không kịp ăn sáng, uống cốc sữa là đi học ngay. Nhưng giờ giải lao giữa tiết, tôi có thể ăn chút điểm tâm. Buổi trưa tôi đến căng tin ăn trưa, ăn xong về phòng ngủ trưa một lát.",
+          "section": "（一）我来了两个多月了 (Tôi đến đây được hơn 2 tháng rồi)"
+        },
+        {
+          "speaker": "叙述",
+          "zh": "下午有时候有课，有时候没有课，我就去图书馆看书，或者跟中国朋友一起练习说汉语。晚上我一般在宿舍复习功课、写作业，或者上网跟朋友聊天儿。十一点多睡觉。",
+          "py": "Xiàwǔ yǒushíhou yǒu kè, yǒushíhou méiyǒu kè, wǒ jiù qù túshūguǎn kàn shū, huòzhě gēn Zhōngguó péngyou yìqǐ liànxí shuō Hànyǔ. Wǎnshang wǒ yìbān zài sùshè fùxí gōngkè, xiě zuòyè, huòzhě shàngwǎng gēn péngyou liáotiānr. Shíyī diǎn duō shuìjiào.",
+          "vi": "Buổi chiều có khi có tiết học, có khi không có tiết, tôi liền đến thư viện đọc sách, hoặc cùng bạn Trung Quốc luyện nói tiếng Hán. Buổi tối tôi thường ở ký túc xá ôn bài, làm bài tập, hoặc lên mạng tán gẫu với bạn bè. Hơn 11 giờ thì đi ngủ.",
           "section": "（一）我来了两个多月了 (Tôi đến đây được hơn 2 tháng rồi)"
         },
         {
