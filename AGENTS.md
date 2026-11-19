@@ -31,15 +31,23 @@ Dự án này được phát triển song song giữa **Claude** và **Antigravi
    - Ép nhả khi cần: `node scripts/agent-sync.js release <agent> --all`.
 
 <!-- AUTO-SYNC-STATE:START -->
-- **Build Tag:** `v13-cbae7045`
-- **Trạng thái nguồn:** Commit gần nhất: fix(curriculum,practice): fix question 2+ freeze in lesson practice, enrich 31 grammar notes, fix dialogues and add verify suite
-- **Các file nguồn liên quan:** `index.html`, `src/data.js`, `src/lessons.js`, `src/match.js`
+- **Build Tag:** `v13-27d0f920`
+- **Trạng thái nguồn:** Thay đổi đang thực hiện trong working tree (chưa commit)
+- **Các file nguồn liên quan:** `index.html`, `src/app.js`, `src/dictionary.js`, `src/flashcard.js`, `src/lessons.js`, `src/match.js`, `src/quiz.js`, `src/review.js`, `src/storage.js`, `src/ui.js`, `src/writer.js`, `style.css`
 ```text
-index.html     |   4 +-
- src/data.js    | 168 ++++++++++++++++++++++++++++++++++++++-------------------
- src/lessons.js |  53 +++++++++++++++---
- src/match.js   |   9 +++-
- 4 files changed, 170 insertions(+), 64 deletions(-)
+index.html        | 1041 ++++++++++++++++++++++++++++++++++-------------------
+ src/app.js        |  498 +++++++++++++------------
+ src/dictionary.js |   49 +--
+ src/flashcard.js  |   90 +++--
+ src/lessons.js    |  470 ++++++++++--------------
+ src/match.js      |    2 +-
+ src/quiz.js       |   16 +-
+ src/review.js     |  402 +++++++++++++++++++++
+ src/storage.js    |  159 +++++++-
+ src/ui.js         |  251 +++++++++++++
+ src/writer.js     |   11 +-
+ style.css         |  400 +++++++++++++++++++-
+ 12 files changed, 2403 insertions(+), 986 deletions(-)
 ```
 <!-- AUTO-SYNC-STATE:END -->
 
@@ -67,7 +75,7 @@ index.html     |   4 +-
 > ⚠️ **QUY TẮC QUAN TRỌNG:** KHÔNG BAO GIỜ chỉnh sửa trực tiếp file `app.bundle.js` vì nó được tự động tạo từ thư mục `src/`. Script `scripts/build.js` có cơ chế chặn ghi đè nếu phát hiện `app.bundle.js` bị sửa trực tiếp trong khi `src/` không đổi. Mọi thay đổi logic phải được thực hiện trong `src/`.
 
 Các file nguồn trong `src/`:
-1. `src/data.js`: Chứa `CHINESE_DATA` (30 bài học chuẩn, 744 từ vựng HSK 1 & 2, bộ thủ; `all_words` được tự động tổng hợp từ `lessons`).
+1. `src/data.js`: Chứa `CHINESE_DATA` (30 bài học chuẩn, 744 từ vựng HSK 1 & 2, bộ thủ; `all_words` được tự động tổng hợp từ `lessons`). **Đóng gói riêng thành `data.bundle.js`** (tải trước `app.bundle.js`, cả hai `defer`).
 2. `src/storage.js`: `StorageManager` (Quản lý tiến độ học, XP, streak hàng ngày, bộ nhớ đệm `localStorage` và đồng bộ Supabase Cloud).
 3. `src/audio.js`: `AudioEngine` (Web Speech API Mandarin `zh-CN`, hiệu ứng âm thanh Web Audio API, và fallback tự động qua `/api/tts`).
 4. `src/writer.js`: `HanziController` (Vẽ và kiểm tra nét thuận chữ Hán qua `HanziWriter`, hỗ trợ chọn từng chữ đối với từ ghép nhiều chữ).
@@ -78,7 +86,13 @@ Các file nguồn trong `src/`:
 9. `src/lessons.js`: `LessonBrowser` (Hiển thị chi tiết từng bài học, từ vựng, bài khóa, trọng tâm ngữ pháp và hệ thống bài tập khép kín theo từng bài).
 10. `src/dictionary.js`: `DictionaryController` (Tra cứu từ điển nhanh HSK 1 & 2).
 11. `src/pinyin.js`: `PinyinController` (Bảng 23 thanh mẫu, 36 vận mẫu và 5 thanh điệu Pinyin kèm chữ Hán đại diện chuẩn âm Bắc Kinh `sound`).
-12. `src/app.js`: `App` (Điều hướng tabs, hash routing `#lesson-X`, `#grammar`, cập nhật dashboard và khởi tạo toàn ứng dụng).
+12. `src/ui.js`: `Icon` (bộ biểu tượng SVG dùng chung, thay emoji), `Tone` (tách âm tiết pinyin + tô màu thanh điệu `.t1`–`.t5`), `Prefs` (bật/tắt Pinyin, Hán Việt, màu thanh điệu, số từ mới/ngày), `UI` (`toast`, `confirm`, `alert`, `loadScript`). **Không dùng `window.alert/confirm`** — dùng `UI.confirm/UI.alert`.
+13. `src/review.js`: `Review` (hàng đợi ôn tập hôm nay theo lịch ôn ngắt quãng, trộn dạng bài: intro / flip / meaning / reverse / listen / write; luyện nghe). HanziWriter được tải lười qua `HANZI_WRITER_URL`.
+14. `src/app.js`: `App` (Điều hướng **4 tab** `learn · review · dict · me` qua `TAB_GROUP`; các view: `home` (Hôm nay), `lessons`, `review`, `flashcard`, `quiz`, `grammar`, `writer`, `match`, `dict`, `me`; hash routing `#lesson-X`; màn Hôm nay, trang Tôi, chế độ khách).
+
+**Chế độ khách (v14):** không còn bắt đăng nhập. `StorageManager.ensureGuest()` tạo học viên trên máy (`isGuest: true`, không đồng bộ). Khi đăng nhập/đăng ký, `_mergeGuestInto()` gộp tiến độ khách vào tài khoản. Lời mời tạo tài khoản hiện sau khi hoàn thành bài.
+
+**Bài học 4 bước (v14):** `LessonBrowser.STEPS = ['vocab','dialogue','grammar','practice']`, nút Tiếp/Quay lại cố định ở đáy (`nextStep/prevStep`), bước đang học lưu ở `user.lessonSteps`, hoàn thành bài bằng `completeCurrentLesson()` / `StorageManager.markLessonCompleted()`.
 
 Các file cấu hình & tự động hóa:
 - `scripts/build.js`: Pipeline build, kiểm tra cú pháp, đồng bộ CSS hai chiều, sinh mã hash cache-busting và đồng bộ `AGENTS.md`.
@@ -112,7 +126,7 @@ npm test
 2. **Đồng bộ CSS hai chiều (`style.css` <-> `index.html`):**
    - Nếu `style.css` được sửa mới hơn, CSS sẽ tự động được nạp vào `<style>` của `index.html`.
    - Nếu `<style>` trong `index.html` mới hơn (hoặc `style.css` cũ hơn), CSS sẽ được trích xuất sang `style.css`.
-3. **Đóng gói & Kiểm tra cú pháp (`vm.Script`):** Ghép `src/*.js` -> `app.bundle.js` và kiểm tra cú pháp từng file nguồn, bundle và `api/tts.js`.
+3. **Đóng gói & Kiểm tra cú pháp (`vm.Script`):** Ghép `src/data.js` -> `data.bundle.js` và các `src/*.js` còn lại -> `app.bundle.js`, kiểm tra cú pháp từng file nguồn, hai bundle và `api/tts.js`. Thêm file mới vào `SRC_FILES` trong `scripts/build.js`.
 4. **Content-Hash Cache Busting tự động:** Tự động băm SHA-256 của `app.bundle.js` + `style.css` (`v13-<8charhash>`) và cập nhật đồng thời vào `index.html` (`?v=v13-...`) và `sw.js` (`CACHE_NAME`), không cần cập nhật số phiên bản thủ công.
 5. **Đồng bộ `AGENTS.md`:** Giữ `AGENTS.md` luôn là file thường giống hệt `CLAUDE.md`.
 

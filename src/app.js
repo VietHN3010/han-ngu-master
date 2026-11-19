@@ -5,6 +5,15 @@ const App = {
   data: null,
   currentTab: 'home',
 
+  // Which bottom-nav tab each view belongs to
+  TAB_GROUP: {
+    home: 'learn', lessons: 'learn',
+    review: 'review', flashcard: 'review', quiz: 'review', grammar: 'review', writer: 'review', match: 'review',
+    dict: 'dict', me: 'me'
+  },
+  VALID_VIEWS: ['home', 'lessons', 'review', 'flashcard', 'quiz', 'grammar', 'writer', 'match', 'dict', 'me'],
+  STEP_NAMES: ['Từ vựng', 'Bài khóa', 'Ngữ pháp', 'Luyện tập'],
+
   async init() {
     if (!window.CHINESE_DATA) {
       console.error('CHINESE_DATA not found.');
@@ -12,123 +21,131 @@ const App = {
     }
     this.data = window.CHINESE_DATA;
 
+    if (typeof Prefs !== 'undefined') Prefs.load();
     this.initTheme();
     this.initAudioSettings();
     this.setupEventListeners();
     this.checkPasswordRecoveryUrl();
     this.initPWA();
-    this.initRouting();
 
-    // Pre-initialize modules with curriculum data so UI components are immediately ready
-    if (this.data) {
-      if (typeof LessonBrowser !== 'undefined') LessonBrowser.init(this.data.lessons);
-      if (typeof GrammarController !== 'undefined') GrammarController.init(this.data.lessons);
-      if (typeof FlashcardController !== 'undefined') FlashcardController.init(this.data.all_words);
-      if (typeof QuizController !== 'undefined') QuizController.init(this.data.all_words);
-      if (typeof HanziController !== 'undefined') HanziController.init('hanzi-writer-target');
-      if (typeof MatchGame !== 'undefined') MatchGame.init(this.data.all_words);
-      if (typeof DictionaryController !== 'undefined') DictionaryController.init(this.data.all_words);
-    }
+    // Modules render immediately from curriculum data (works before the session resolves)
+    if (typeof LessonBrowser !== 'undefined') LessonBrowser.init(this.data.lessons);
+    if (typeof GrammarController !== 'undefined') GrammarController.init(this.data.lessons);
+    if (typeof QuizController !== 'undefined') QuizController.init(this.data.all_words);
+    if (typeof HanziController !== 'undefined') HanziController.containerId = 'hanzi-writer-target';
+    if (typeof DictionaryController !== 'undefined') DictionaryController.init(this.data.all_words);
 
-    // Check User Session (Supabase Cloud + Local cache)
+    // Cloud session if any, otherwise an on-device guest learner (no login wall)
     const user = await StorageManager.checkSession();
-    if (!user) {
-      this.showAuthModal('login');
-    } else {
-      this.onUserLoggedIn(user);
-    }
+    this.onUserLoggedIn(user || StorageManager.ensureGuest(), { silent: true });
+    this.initRouting();
   },
 
-  onUserLoggedIn(user) {
+  onUserLoggedIn(user, opts = {}) {
+    if (!user) return;
     this.hideAuthModal();
     StorageManager.updateStreak();
 
-    // Initialize all modules with active user state
     FlashcardController.init(this.data.all_words);
+    if (FlashcardController.setScope) FlashcardController.setScope('due');
     QuizController.init(this.data.all_words);
-    HanziController.init('hanzi-writer-target');
     MatchGame.init(this.data.all_words);
     LessonBrowser.init(this.data.lessons);
     DictionaryController.init(this.data.all_words);
-    if (typeof GrammarController !== 'undefined') {
-      GrammarController.init(this.data.lessons);
-    }
+    if (typeof GrammarController !== 'undefined') GrammarController.init(this.data.lessons);
 
-    // Update Header with User Info
-    const userBadge = document.getElementById('header-user-btn');
-    if (userBadge) {
-      const shortName = user.fullName.split(' ').pop();
-      userBadge.innerHTML = `<span>👤</span> <span>${shortName}</span>`;
-      userBadge.title = `Đang đăng nhập: ${user.fullName} (@${user.username})`;
-    }
-
-    // Update Dashboard Welcome & Progress
-    const welcomeTitle = document.getElementById('welcome-user-name');
-    if (welcomeTitle) {
-      welcomeTitle.innerHTML = `Chào bạn, <span style="color:#fde047;">${user.fullName || 'bạn'}</span>! 👋`;
-    }
-
+    this.renderAccountUI(user);
     this.updateDashboardStats();
+    if (!opts.silent && !StorageManager.isGuest(user)) {
+      this.toast(`Đã đăng nhập: ${user.fullName || user.email}`, 'success');
+    }
+  },
+
+  renderAccountUI(user) {
+    const isGuest = StorageManager.isGuest(user);
+    const name = (user && user.fullName) || 'Bạn';
+    const initial = isGuest ? '?' : (name.trim().split(/\s+/).pop() || '?').charAt(0).toUpperCase();
+
+    const badge = document.getElementById('header-user-btn');
+    if (badge) {
+      badge.innerHTML = `<span class="avatar-initial">${UI.esc(initial)}</span>`;
+      badge.setAttribute('aria-label', isGuest ? 'Tài khoản: đang học không đăng nhập' : `Tài khoản: ${name}`);
+      badge.classList.toggle('is-guest', isGuest);
+    }
+
+    const welcome = document.getElementById('welcome-user-name');
+    if (welcome) welcome.innerText = isGuest ? 'Chào bạn!' : `Chào ${name.trim().split(/\s+/).pop()}!`;
+
+    const meAvatar = document.getElementById('me-avatar');
+    if (meAvatar) meAvatar.innerText = initial;
+    const meName = document.getElementById('me-name');
+    if (meName) meName.innerText = isGuest ? 'Bạn đang học thử' : name;
+    const meStatus = document.getElementById('me-status');
+    if (meStatus) {
+      meStatus.innerText = isGuest
+        ? 'Tiến độ chỉ lưu trên máy này. Tạo tài khoản để đồng bộ.'
+        : `${user.email || '@' + user.username} · Đã đồng bộ đám mây`;
+    }
+    const actions = document.getElementById('me-account-actions');
+    if (actions) {
+      actions.innerHTML = isGuest
+        ? `<button class="btn btn-primary btn-sm" onclick="App.showAuthModal('register')">Tạo tài khoản</button>
+           <button class="btn btn-outline btn-sm" onclick="App.showAuthModal('login')">Đăng nhập</button>`
+        : `<button class="btn btn-outline btn-sm" onclick="App.handleLogout()">${Icon.svg('logout')}<span>Đăng xuất</span></button>`;
+    }
+    const banner = document.getElementById('guest-banner');
+    if (banner) banner.hidden = !(isGuest && StorageManager.guestHasProgress());
   },
 
   initRouting() {
-    // If no initial state, replace state with current hash or home
     const currentHash = window.location.hash || '#home';
     if (!history.state) {
       history.replaceState({ type: 'initial', hash: currentHash }, '', currentHash);
     }
+    const installBtn = document.getElementById('btn-pwa-install');
+    if (installBtn) installBtn.style.display = 'none';
 
-    // Handle initial route on startup if present
-    if (window.location.hash && window.location.hash !== '#home') {
-      setTimeout(() => {
-        this.handleRoute(window.location.hash, false);
-      }, 80);
-    }
+    // Resolve the initial route synchronously once the session is known
+    this.handleRoute(currentHash, false);
 
-    // Listen to browser Back / Forward events
-    window.addEventListener('popstate', (e) => {
-      const hash = window.location.hash || '#home';
-      this.handleRoute(hash, false);
+    window.addEventListener('popstate', () => {
+      this.handleRoute(window.location.hash || '#home', false);
+    });
+    window.addEventListener('hashchange', () => {
+      const h = window.location.hash || '#home';
+      const expected = this.currentTab === 'lessons' && LessonBrowser.currentLesson ? `#lesson-${LessonBrowser.currentLesson.id}` : `#${this.currentTab}`;
+      if (h !== expected) this.handleRoute(h, false);
     });
   },
 
   handleRoute(hash, pushHistory = false) {
+    if (hash.includes('access_token') || hash.includes('type=recovery')) return;
     if (!hash || hash === '#' || hash === '#home') {
       this.closeAllModals();
-      if (typeof LessonBrowser !== 'undefined' && LessonBrowser.closeLesson) {
-        LessonBrowser.closeLesson(false);
-      }
+      if (typeof LessonBrowser !== 'undefined' && LessonBrowser.closeLesson) LessonBrowser.closeLesson(false);
       this.navigateTo('home', pushHistory);
       return;
     }
 
-    if (hash.startsWith('#lesson-')) {
-      const match = hash.match(/#lesson-(\d+)/);
-      if (match) {
-        const lId = parseInt(match[1], 10);
-        this.closeAllModals();
-        this.navigateTo('lessons', false);
-        if (typeof LessonBrowser !== 'undefined' && LessonBrowser.openLesson) {
-          LessonBrowser.openLesson(lId, pushHistory);
-        }
-        return;
-      }
-    }
-
-    if (hash === '#pinyin') {
-      if (typeof PinyinController !== 'undefined' && PinyinController.openModal) {
-        PinyinController.openModal(pushHistory);
+    const lessonMatch = hash.match(/^#lesson-(\d+)/);
+    if (lessonMatch) {
+      this.closeAllModals();
+      this.navigateTo('lessons', false, { keepLesson: true });
+      if (typeof LessonBrowser !== 'undefined' && LessonBrowser.openLesson) {
+        LessonBrowser.openLesson(parseInt(lessonMatch[1], 10), pushHistory);
       }
       return;
     }
 
+    if (hash === '#pinyin') {
+      if (typeof PinyinController !== 'undefined' && PinyinController.openModal) PinyinController.openModal(pushHistory);
+      return;
+    }
+
     const tab = hash.replace('#', '');
-    const validTabs = ['home', 'lessons', 'flashcard', 'quiz', 'grammar', 'writer', 'match', 'dict'];
-    if (validTabs.includes(tab)) {
+    if (this.VALID_VIEWS.includes(tab)) {
       this.closeAllModals();
-      if (typeof LessonBrowser !== 'undefined' && LessonBrowser.closeLesson) {
-        LessonBrowser.closeLesson(false);
-      }
+      if (typeof LessonBrowser !== 'undefined' && LessonBrowser.closeLesson) LessonBrowser.closeLesson(false);
       this.navigateTo(tab, pushHistory);
     }
   },
@@ -140,171 +157,181 @@ const App = {
     if (addWordModal) addWordModal.classList.remove('active');
   },
 
-  navigateTo(tabId, pushHistory = true) {
+  navigateTo(tabId, pushHistory = true, opts = {}) {
+    if (!this.VALID_VIEWS.includes(tabId)) tabId = 'home';
+    const leavingReviewSession = this.currentTab === 'review' && tabId !== 'review';
     this.currentTab = tabId;
 
     if (pushHistory && window.location.hash !== '#' + tabId) {
       history.pushState({ type: 'tab', tab: tabId }, '', '#' + tabId);
     }
 
-    // Desktop Nav Sync
-    document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
-      tab.classList.toggle('active', tab.dataset.target === tabId);
+    // One source of truth for the active tab (desktop + mobile)
+    const group = this.TAB_GROUP[tabId] || 'learn';
+    document.querySelectorAll('[data-tab]').forEach((btn) => {
+      const on = btn.dataset.tab === group;
+      btn.classList.toggle('active', on);
+      if (on) btn.setAttribute('aria-current', 'page'); else btn.removeAttribute('aria-current');
     });
 
-    // Mobile Bottom Nav Sync
-    document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.target === tabId);
-    });
-
-    // Toggle Views
-    document.querySelectorAll('.view-section').forEach(view => {
+    document.querySelectorAll('.view-section').forEach((view) => {
       view.classList.toggle('active', view.id === `view-${tabId}`);
     });
 
-    if (tabId === 'home') {
+    if (leavingReviewSession && typeof Review !== 'undefined') Review.exit(false);
+
+    if (tabId === 'home' || tabId === 'me') {
       this.updateDashboardStats();
+    } else if (tabId === 'review') {
+      if (typeof Review !== 'undefined') Review.renderHub();
     } else if (tabId === 'lessons') {
-      if (typeof LessonBrowser !== 'undefined' && LessonBrowser.closeLesson) {
-        LessonBrowser.closeLesson(false);
-      } else {
-        LessonBrowser.renderLessonList();
-      }
+      if (!opts.keepLesson && typeof LessonBrowser !== 'undefined') LessonBrowser.closeLesson(false);
     } else if (tabId === 'writer') {
-      setTimeout(() => {
-        HanziController.loadCharacter(HanziController.currentWord || HanziController.currentChar || '好', HanziController.currentCharIndex || 0);
-      }, 50);
+      HanziController.loadCharacter(HanziController.currentWord || HanziController.currentChar || '好', HanziController.currentCharIndex || 0);
     } else if (tabId === 'match') {
       MatchGame.startGame('hsk1');
     } else if (tabId === 'grammar') {
-      if (typeof GrammarController !== 'undefined') {
-        GrammarController.resetToSetup();
-      }
+      if (typeof GrammarController !== 'undefined') GrammarController.resetToSetup();
+    } else if (tabId === 'flashcard') {
+      if (FlashcardController.refreshDue) FlashcardController.refreshDue();
     }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  },
+
+  togglePref(key, value) {
+    if (typeof Prefs === 'undefined') return;
+    const next = value === undefined ? !Prefs.data[key] : value;
+    Prefs.set(key, next);
+    this.syncPrefControls();
+    if (key === 'newPerDay') this.updateDashboardStats();
+  },
+
+  syncPrefControls() {
+    if (typeof Prefs === 'undefined') return;
+    ['pinyin', 'hanviet', 'toneColors'].forEach((k) => {
+      const cb = document.getElementById(`pref-${k}`);
+      if (cb) cb.checked = !!Prefs.data[k];
+      document.querySelectorAll(`.chip-toggle[data-pref="${k}"]`).forEach((b) => {
+        b.classList.toggle('on', !!Prefs.data[k]);
+        b.setAttribute('aria-pressed', Prefs.data[k] ? 'true' : 'false');
+      });
+    });
+    const sel = document.getElementById('pref-newPerDay');
+    if (sel) sel.value = String(Prefs.data.newPerDay || 10);
   },
 
   updateDashboardStats() {
     const stats = StorageManager.getStats(this.data.total_words);
     const user = StorageManager.getCurrentUser();
 
-    // Update KPI Numbers
-    const streakEl = document.getElementById('stat-streak');
-    if (streakEl) streakEl.innerText = stats.streak;
+    // Header + Me stats
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+    setText('stat-streak', stats.streak);
+    setText('header-streak-count', stats.streak);
+    setText('stat-mastered', stats.mastered);
+    setText('stat-learning', stats.learning);
+    setText('stat-total', this.data.total_words + stats.customCount);
 
-    const streakHeaderEl = document.getElementById('header-streak-count');
-    if (streakHeaderEl) streakHeaderEl.innerText = `${stats.streak} ngày`;
-
-    const masteredEl = document.getElementById('stat-mastered');
-    if (masteredEl) masteredEl.innerText = stats.mastered;
-
-    const learningEl = document.getElementById('stat-learning');
-    if (learningEl) learningEl.innerText = stats.learning;
-
-    const totalEl = document.getElementById('stat-total');
-    if (totalEl) totalEl.innerText = this.data.total_words + stats.customCount;
-
-    // Update XP and Gamification
     const lvl = StorageManager.getXPLevel(user ? user.xp : 0);
-    const lvlBadge = document.getElementById('user-level-badge');
-    if (lvlBadge) lvlBadge.innerText = `${lvl.badge} Cấp ${lvl.level}: ${lvl.title}`;
-
-    const xpText = document.getElementById('user-xp-text');
-    if (xpText) xpText.innerText = `${lvl.currentXP} / ${lvl.nextXP >= 99999 ? 'MAX' : `${lvl.nextXP} XP`}`;
-
+    setText('user-level-badge', `Cấp ${lvl.level}: ${lvl.title}`);
+    setText('user-xp-text', `${lvl.currentXP} / ${lvl.nextXP >= 99999 ? 'MAX' : `${lvl.nextXP} XP`}`);
     const xpFill = document.getElementById('user-xp-fill');
     if (xpFill) xpFill.style.width = `${lvl.progressPct}%`;
+    setText('user-xp-tip', lvl.nextXP >= 99999 ? 'Bạn đã đạt cấp độ tối đa!' : `Còn ${lvl.nextXP - lvl.currentXP} XP để lên Cấp ${lvl.level + 1}`);
 
-    // Render Daily Goals
+    // Today: date line
+    const dateEl = document.getElementById('today-date');
+    if (dateEl) {
+      const d = new Date();
+      const days = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+      dateEl.innerText = `${days[d.getDay()]}, ${d.getDate()}/${d.getMonth() + 1}`;
+    }
+
+    // Today: daily goal ring + compact list
+    const goals = StorageManager.getDailyGoals();
+    const entries = Object.values(goals);
+    const doneCount = entries.filter((g) => g.current >= g.target).length;
+    const pct = Math.round(entries.reduce((a, g) => a + Math.min(1, g.current / g.target), 0) / entries.length * 100);
+    const ring = document.getElementById('goal-ring');
+    if (ring && ring.style && ring.style.setProperty) ring.style.setProperty('--p', pct);
+    setText('goal-ring-text', `${pct}%`);
+    setText('goal-summary', `${doneCount}/${entries.length} việc`);
     const goalsContainer = document.getElementById('daily-goals-list');
     if (goalsContainer) {
-      const goals = StorageManager.getDailyGoals();
-      goalsContainer.innerHTML = Object.entries(goals).map(([key, g]) => {
-        const isDone = g.current >= g.target;
-        return `
-          <div class="goal-item ${isDone ? 'goal-completed' : ''}" style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.85rem; border-radius:var(--radius-md); background:var(--bg-main); border:1px solid var(--border); font-size:0.85rem; margin-bottom:0.4rem;">
-            <div style="display:flex; align-items:center; gap:0.5rem;">
-              <span style="font-size:1.1rem;">${isDone ? '✅' : '⬜'}</span>
-              <span style="font-weight:600; color:${isDone ? 'var(--text-muted)' : 'var(--text-main)'}; text-decoration:${isDone ? 'line-through' : 'none'};">${g.label}</span>
-            </div>
-            <span style="font-weight:700; color:${isDone ? 'var(--accent-jade)' : 'var(--primary)'};">${g.current} / ${g.target}</span>
-          </div>
-        `;
+      goalsContainer.innerHTML = entries.map((g) => {
+        const done = g.current >= g.target;
+        return `<div class="goal-item ${done ? 'done' : ''}">${Icon.svg(done ? 'check' : 'target')}<span>${UI.esc(g.label)}</span><b>${Math.min(g.current, g.target)}/${g.target}</b></div>`;
       }).join('');
     }
 
-    // Update Course Progress Bar
+    // Today: course progress
     const completedCount = stats.completedLessonsCount || 0;
     const completedPct = Math.round((completedCount / 30) * 100);
-
-    const progText = document.getElementById('course-progress-text');
-    if (progText) progText.innerText = `Đã hoàn thành ${completedCount}/30 bài (${completedPct}%)`;
-
-    const progPctBadge = document.getElementById('course-progress-badge');
-    if (progPctBadge) progPctBadge.innerText = `${completedPct}%`;
-
+    setText('course-progress-text', `Đã hoàn thành ${completedCount}/30 bài`);
+    setText('course-progress-badge', `${completedPct}%`);
     const progFill = document.getElementById('course-progress-fill');
     if (progFill) progFill.style.width = `${completedPct}%`;
 
-    // Render Weekly Streak Dots
+    // Me: weekly dots
     const streakDots = document.getElementById('weekly-streak-dots');
     if (streakDots) {
       const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-      const currentDayOfWeek = new Date().getDay(); // 0 is Sun, 1 is Mon...
-      const todayIndex = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
+      const dow = new Date().getDay();
+      const todayIndex = dow === 0 ? 6 : dow - 1;
       streakDots.innerHTML = days.map((day, idx) => {
         const isToday = idx === todayIndex;
-        const isCompleted = idx <= todayIndex && stats.streak > 0;
-        return `
-          <div class="streak-day-item ${isCompleted ? 'streak-active' : ''} ${isToday ? 'streak-today' : ''}">
-            <span class="streak-day-name">${day}</span>
-            <span class="streak-day-bubble">${isCompleted ? '🔥' : '○'}</span>
-          </div>
-        `;
+        const active = idx <= todayIndex && idx > todayIndex - stats.streak;
+        return `<div class="week-dot ${active ? 'on' : ''} ${isToday ? 'today' : ''}"><span>${day}</span><i>${active ? Icon.svg('flame') : ''}</i></div>`;
       }).join('');
     }
-    const weeklyLabel = document.getElementById('weekly-streak-label');
-    if (weeklyLabel) {
-      weeklyLabel.innerText = `${stats.streak} ngày streak`;
-    }
+    setText('weekly-streak-label', `${stats.streak} ngày liên tiếp`);
 
-    // Update XP remaining tip
-    const xpTip = document.getElementById('user-xp-tip');
-    if (xpTip) {
-      if (lvl.nextXP >= 99999) {
-        xpTip.innerText = 'Bạn đã đạt cấp độ tối đa!';
-      } else {
-        const diff = lvl.nextXP - lvl.currentXP;
-        xpTip.innerText = `Chỉ còn ${diff} XP nữa để thăng hạng Cấp ${lvl.level + 1}! 🚀`;
-      }
-    }
-
-    // Last Active Lesson in Hero Card
+    // Today hero: next lesson to study + step
     const lId = (user && user.lastActiveLesson) ? user.lastActiveLesson : 1;
-    const lessonObj = (this.data && this.data.lessons) ? this.data.lessons.find(l => l.id === lId) : null;
-    const heroTitle = document.getElementById('hero-lesson-title');
-    const heroSub = document.getElementById('hero-lesson-sub');
-    const heroHsk = document.getElementById('hero-lesson-hsk-badge');
-    if (heroTitle && lessonObj) {
-      heroTitle.innerText = `Bài ${lessonObj.id}: ${lessonObj.zh_title}`;
+    const lessonObj = (this.data && this.data.lessons) ? this.data.lessons.find((l) => l.id === lId) : null;
+    if (lessonObj) {
+      setText('hero-lesson-title', `Bài ${lessonObj.id}: ${lessonObj.zh_title}`);
+      setText('hero-lesson-sub', `${lessonObj.pinyin_title || ''} • ${lessonObj.title}`);
+      setText('hero-lesson-hsk-badge', `HSK ${lessonObj.hsk}`);
+      setText('hero-lesson-han', (lessonObj.zh_title || '你').charAt(0));
+      const done = StorageManager.isLessonCompleted(lessonObj.id);
+      const step = StorageManager.getLessonStep ? StorageManager.getLessonStep(lessonObj.id) : 0;
+      setText('hero-lesson-step', done ? 'Đã hoàn thành · ôn lại hoặc sang bài tiếp' : `Bước ${step + 1}/4: ${this.STEP_NAMES[Math.min(step, 3)]}`);
+      const prog = document.getElementById('hero-lesson-progress');
+      if (prog) prog.style.width = `${done ? 100 : Math.round(step / 4 * 100)}%`;
     }
-    if (heroSub && lessonObj) {
-      heroSub.innerText = `${lessonObj.pinyin_title || ''} • ${lessonObj.title}`;
-    }
-    if (heroHsk && lessonObj) {
-      heroHsk.innerText = `HSK ${lessonObj.hsk}`;
-    }
-
-    // Last Active Lesson button
     const resumeBtn = document.getElementById('btn-resume-lesson');
     if (resumeBtn) {
       resumeBtn.onclick = (e) => {
         if (e && e.stopPropagation) e.stopPropagation();
-        App.navigateTo('lessons');
+        App.navigateTo('lessons', true, { keepLesson: true });
         LessonBrowser.openLesson(lId);
       };
     }
+
+    // Review queue counts (Today + Review hub + nav badge)
+    if (StorageManager.getReviewQueue) {
+      const newLimit = (typeof Prefs !== 'undefined' && Prefs.data.newPerDay) || 10;
+      const q = StorageManager.getReviewQueue(this.data.all_words, newLimit);
+      const total = q.due.length + q.fresh.length;
+      const eta = Math.max(1, Math.round(total * 0.25));
+      ['today', 'hub'].forEach((pre) => {
+        setText(`${pre}-due`, q.due.length);
+        setText(`${pre}-new`, q.fresh.length);
+        setText(`${pre}-hard`, q.hard.length);
+        setText(`${pre}-review-eta`, total ? `khoảng ${eta} phút` : 'đã xong hôm nay');
+      });
+      const startBtn = document.getElementById('btn-start-review');
+      if (startBtn) startBtn.innerText = total ? `Bắt đầu ôn ${total} thẻ` : 'Ôn thêm từ đã học';
+      document.querySelectorAll('[data-due-badge]').forEach((b) => {
+        b.hidden = q.due.length === 0;
+        b.textContent = q.due.length > 99 ? '99+' : String(q.due.length);
+      });
+    }
+
+    if (user) this.renderAccountUI(user);
+    this.syncPrefControls();
   },
 
   deferredPrompt: null,
@@ -346,6 +373,8 @@ const App = {
     const modal = document.getElementById('auth-gate-modal');
     if (modal) modal.style.display = 'flex';
     this.switchAuthTab(tab);
+    const first = document.querySelector(`#auth-form-${tab} input`);
+    if (first && first.focus) setTimeout(() => first.focus(), 50);
   },
 
   hideAuthModal() {
@@ -412,12 +441,13 @@ const App = {
       }
     } else {
       AudioEngine.playVictorySound();
-      if (!res.hasSession) {
-        alert(`🎉 Đăng ký thành công! Hãy kiểm tra hòm thư ${emailField} (kể cả hòm Spam) để kích hoạt tài khoản nếu được yêu cầu.`);
-      } else {
-        alert(`🎉 Chúc mừng ${res.user.fullName}! Tài khoản đã được kích hoạt thành công trên đám mây.`);
+      if (res.needsConfirm || !res.user) {
+        this.hideAuthModal();
+        UI.alert('Kiểm tra email để kích hoạt', `Đã gửi thư xác nhận tới <b>${UI.esc(emailField)}</b>. Mở thư (kể cả mục Spam) rồi đăng nhập lại. Tiến độ trên máy này vẫn được giữ và sẽ chuyển vào tài khoản khi bạn đăng nhập.`);
+        return;
       }
       this.onUserLoggedIn(res.user);
+      UI.alert(`Chào mừng ${res.user.fullName}!`, res.merged ? 'Tài khoản đã được tạo và tiến độ học thử đã được chuyển vào tài khoản.' : 'Tài khoản đã được tạo. Tiến độ từ giờ sẽ đồng bộ giữa các thiết bị.');
     }
   },
 
@@ -475,78 +505,53 @@ const App = {
         msgBox.style.display = 'block';
       }
     } else {
-      alert('🎉 Đặt lại mật khẩu thành công! Bạn đã được đăng nhập an toàn.');
+      await UI.alert('Đã đổi mật khẩu', 'Bạn đã được đăng nhập bằng mật khẩu mới.');
       window.location.hash = '';
       window.location.reload();
     }
   },
 
   handleUserBadgeClick() {
-    const user = StorageManager.getCurrentUser();
-    if (!user) {
-      this.showAuthModal('login');
-      return;
-    }
-    const email = user.email || 'Chưa liên kết email';
-    const isCloud = user.id && user.id.length > 20;
-    const msg = `👤 Tài khoản: ${user.fullName} (@${user.username})\n📧 Email: ${email}\n☁️ Trạng thái: ${isCloud ? 'Đã liên kết Cloud Supabase' : 'Lưu cục bộ'}\n\nBạn có muốn đăng xuất không?`;
-    if (confirm(msg)) {
-      this.handleLogout(true);
-    }
+    this.navigateTo('me');
   },
 
   async handleLogout(skipConfirm = false) {
-    if (skipConfirm || confirm('Bạn có chắc muốn đăng xuất khỏi tài khoản này? Toàn bộ tiến độ của bạn đã được lưu an toàn trên đám mây.')) {
+    const ok = skipConfirm || await UI.confirm({
+      title: 'Đăng xuất khỏi tài khoản?',
+      body: 'Tiến độ đã được lưu trên đám mây. Đăng nhập lại bất cứ lúc nào để học tiếp.',
+      ok: 'Đăng xuất',
+      danger: true
+    });
+    if (ok) {
       await StorageManager.logout();
       location.reload();
     }
   },
 
-  toast(message, type = 'info', duration = 3000) {
-    let container = document.getElementById('app-toast-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'app-toast-container';
-      container.style.cssText = 'position:fixed; bottom:80px; left:50%; transform:translateX(-50%); z-index:99999; display:flex; flex-direction:column; gap:8px; pointer-events:none; max-width:90vw; width:max-content;';
-      document.body.appendChild(container);
-    }
-    const toast = document.createElement('div');
-    const bg = type === 'success' ? '#10b981' : (type === 'error' ? '#ef4444' : (type === 'warning' ? '#f59e0b' : '#1e293b'));
-    toast.style.cssText = `background:${bg}; color:#fff; padding:10px 18px; border-radius:30px; font-size:0.9rem; font-weight:600; box-shadow:0 10px 25px rgba(0,0,0,0.25); opacity:0; transform:translateY(15px); transition:all 0.25s ease; text-align:center; pointer-events:auto; display:flex; align-items:center; gap:8px;`;
-    const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : (type === 'warning' ? '⚠️' : 'ℹ️'));
-    const safeMsg = typeof escapeHtml === 'function' ? escapeHtml(message) : message;
-    toast.innerHTML = `<span>${icon}</span> <span>${safeMsg}</span>`;
-    container.appendChild(toast);
-    requestAnimationFrame(() => {
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateY(0)';
-    });
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(10px)';
-      setTimeout(() => toast.remove(), 250);
-    }, duration);
+  toast(message, type = 'info', duration = 2600) {
+    const clean = String(message).replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F\s]+/u, '');
+    if (typeof UI !== 'undefined') UI.toast(clean, type, duration);
   },
 
   initTheme() {
-    const savedTheme = localStorage.getItem('chinese_app_theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    const themeBtn = document.getElementById('btn-toggle-theme');
-    if (themeBtn) {
-      themeBtn.innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
-    }
+    let saved = null;
+    try { saved = localStorage.getItem('chinese_app_theme'); } catch (e) { saved = null; }
+    const prefersDark = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = saved || (prefersDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+    const cb = document.getElementById('btn-toggle-theme');
+    if (cb) cb.checked = theme === 'dark';
   },
 
   toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme') || 'light';
     const next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('chinese_app_theme', next);
-
-    const themeBtn = document.getElementById('btn-toggle-theme');
-    if (themeBtn) {
-      themeBtn.innerHTML = next === 'dark' ? '☀️' : '🌙';
-    }
+    try { localStorage.setItem('chinese_app_theme', next); } catch (e) { /* ignore */ }
+    const cb = document.getElementById('btn-toggle-theme');
+    if (cb) cb.checked = next === 'dark';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', next === 'dark' ? '#0f1220' : '#d93829');
   },
 
   initAudioSettings() {
@@ -560,44 +565,27 @@ const App = {
   },
 
   startDailyReview() {
-    const user = StorageManager.getCurrentUser();
-    if (!user) return;
-    const progress = user.wordProgress || {};
-    
-    const dueWords = this.data.all_words.filter(w => {
-      const p = progress[w.id];
-      return p && (p.srsLevel < 3 || (p.nextReview && p.nextReview <= Date.now()));
-    });
-
-    this.navigateTo('flashcard');
-    if (dueWords.length > 0) {
-      FlashcardController.setWords(dueWords);
-    } else {
-      FlashcardController.setWords(this.data.all_words.slice(0, 30));
-    }
+    if (typeof Review !== 'undefined') Review.startToday();
   },
 
   setupEventListeners() {
-    // Desktop Nav
-    document.querySelectorAll('.desktop-nav .nav-item').forEach(tab => {
-      tab.onclick = () => this.navigateTo(tab.dataset.target);
-    });
-
-    // Mobile Bottom Nav
-    document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn').forEach(btn => {
+    // Primary navigation (desktop top bar + mobile bottom bar)
+    document.querySelectorAll('[data-tab][data-target]').forEach((btn) => {
       btn.onclick = () => this.navigateTo(btn.dataset.target);
     });
 
-    // Theme toggle
+    // Theme switch (Me > Settings)
     const themeBtn = document.getElementById('btn-toggle-theme');
-    if (themeBtn) themeBtn.onclick = () => this.toggleTheme();
+    if (themeBtn) themeBtn.onchange = () => this.toggleTheme();
 
     // Flashcard Scope
     const fcFilterSelect = document.getElementById('fc-scope-select');
     if (fcFilterSelect) {
       fcFilterSelect.onchange = (e) => {
         const val = e.target.value;
-        if (val === 'all') {
+        if (val === 'due') {
+          FlashcardController.setScope('due');
+        } else if (val === 'all') {
           FlashcardController.setWords(this.data.all_words);
         } else if (val === 'hsk1') {
           FlashcardController.setWords(this.data.all_words.filter(w => w.hsk === 1));

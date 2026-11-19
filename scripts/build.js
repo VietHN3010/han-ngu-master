@@ -32,10 +32,13 @@ function log(msg) {
   if (!isQuiet) console.log(msg);
 }
 
+// Curriculum data ships as its own bundle: it rarely changes, so browsers keep it cached
+// while app code updates.
+const DATA_FILES = ['src/data.js'];
 const SRC_FILES = [
-  'src/data.js',
   'src/storage.js',
   'src/audio.js',
+  'src/ui.js',
   'src/writer.js',
   'src/flashcard.js',
   'src/quiz.js',
@@ -44,10 +47,12 @@ const SRC_FILES = [
   'src/lessons.js',
   'src/dictionary.js',
   'src/pinyin.js',
+  'src/review.js',
   'src/app.js'
 ];
 
 const BUNDLE_FILE = 'app.bundle.js';
+const DATA_BUNDLE_FILE = 'data.bundle.js';
 const INDEX_FILE = 'index.html';
 const STYLE_FILE = 'style.css';
 const SW_FILE = 'sw.js';
@@ -341,6 +346,15 @@ function run() {
   }
 
   // 1. Validate individual src/*.js & api/*.js syntax
+  const dataParts = [];
+  for (const rel of DATA_FILES) {
+    const content = readUtf8(rel);
+    validateSyntax(content, rel);
+    dataParts.push(content.endsWith('\n') ? content : content + '\n');
+  }
+  const expectedDataBundle = dataParts.join('');
+  validateSyntax(expectedDataBundle, DATA_BUNDLE_FILE);
+
   const parts = [];
   for (const rel of SRC_FILES) {
     const content = readUtf8(rel);
@@ -365,6 +379,7 @@ function run() {
   // 4. Compute deterministic content-hash cache tag
   const hash = crypto
     .createHash('sha256')
+    .update(expectedDataBundle)
     .update(expectedBundle)
     .update(cssSync.styleCss)
     .digest('hex')
@@ -376,6 +391,13 @@ function run() {
     const currentBundle = fs.existsSync(path.join(ROOT, BUNDLE_FILE)) ? readUtf8(BUNDLE_FILE) : '';
     if (currentBundle !== expectedBundle) {
       errors.push(`${BUNDLE_FILE} is out of sync with src/*.js (run npm run build).`);
+    }
+    const currentData = fs.existsSync(path.join(ROOT, DATA_BUNDLE_FILE)) ? readUtf8(DATA_BUNDLE_FILE) : '';
+    if (currentData !== expectedDataBundle) {
+      errors.push(`${DATA_BUNDLE_FILE} is out of sync with src/data.js (run npm run build).`);
+    }
+    if (!indexContent.includes(`data.bundle.js?v=${versionTag}`)) {
+      errors.push(`index.html data bundle cache tag is not ${versionTag}.`);
     }
     if (cssSync.synced) {
       errors.push(`style.css and index.html <style> differ (${cssSync.direction}).`);
@@ -406,6 +428,7 @@ function run() {
 
   // Write updated app.bundle.js
   const bundleUpdated = writeIfChanged(BUNDLE_FILE, expectedBundle);
+  const dataBundleUpdated = writeIfChanged(DATA_BUNDLE_FILE, expectedDataBundle);
 
   // Update cache-busting tag in index.html
   indexContent = indexContent.replace(
@@ -415,6 +438,10 @@ function run() {
   indexContent = indexContent.replace(
     /app\.bundle\.js\?v=[^"]+/,
     `app.bundle.js?v=${versionTag}`
+  );
+  indexContent = indexContent.replace(
+    /data\.bundle\.js\?v=[^"]+/,
+    `data.bundle.js?v=${versionTag}`
   );
   const indexUpdated = writeIfChanged(INDEX_FILE, indexContent);
 
@@ -436,6 +463,7 @@ function run() {
 
   log(`Build complete (${versionTag}):`);
   log(` - ${BUNDLE_FILE}: ${bundleUpdated ? 'updated' : 'unchanged'}`);
+  log(` - ${DATA_BUNDLE_FILE}: ${dataBundleUpdated ? 'updated' : 'unchanged'}`);
   log(` - ${STYLE_FILE}/${INDEX_FILE} CSS: ${cssSync.synced ? cssSync.direction : 'already in sync'}`);
   log(` - ${INDEX_FILE}: ${indexUpdated ? 'updated' : 'unchanged'}`);
   log(` - ${SW_FILE}: ${swUpdated ? 'updated' : 'unchanged'}`);

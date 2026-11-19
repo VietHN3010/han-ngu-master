@@ -32,7 +32,16 @@ const HanziController = {
     if (!el) return;
     el.innerHTML = '';
 
-    // Check if HanziWriter library is loaded
+    // HanziWriter is loaded on demand (only when the learner opens writing practice)
+    if (typeof HanziWriter === 'undefined' && typeof UI !== 'undefined' && UI.loadScript && typeof HANZI_WRITER_URL !== 'undefined' && !this._libTried) {
+      this._libTried = true;
+      el.innerHTML = '<p class="muted-sm" style="padding:2rem 0; text-align:center;">Đang tải bộ nét chữ...</p>';
+      UI.loadScript(HANZI_WRITER_URL)
+        .then(() => this.loadCharacter(this.currentWord, this.currentCharIndex))
+        .catch(() => this.drawCanvasFallback(target));
+      return;
+    }
+
     if (typeof HanziWriter !== 'undefined') {
       try {
         const frameWidth = el.clientWidth || 270;

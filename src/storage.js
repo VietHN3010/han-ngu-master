@@ -26,7 +26,7 @@ function getSupabase() {
 const PROGRESS_FIELDS = [
   'completedLessons', 'lastActiveLesson', 'bookmarks', 'wordProgress',
   'customWords', 'streak', 'lastActiveDate', 'quizHighScores', 'updatedAt',
-  'xp', 'dailyGoals'
+  'xp', 'dailyGoals', 'lessonSteps'
 ];
 
 function emptyProgress() {
@@ -41,6 +41,7 @@ function emptyProgress() {
     quizHighScores: { totalQuizzes: 0, totalCorrect: 0, bestScore: 0 },
     xp: 0,
     dailyGoals: {},
+    lessonSteps: {},
     updatedAt: 0
   };
 }
@@ -57,6 +58,7 @@ function pickProgress(src) {
 const StorageManager = {
   KEY_USERS: 'chinese_app_users_v3',
   KEY_CURRENT_USER: 'chinese_app_session_v3',
+  GUEST_KEY: '__guest__',
   useProgressTable: null,   // null = unknown, true/false after first probe
   _syncTimer: null,
   _pendingSync: null,
@@ -91,7 +93,7 @@ const StorageManager = {
   },
 
   _cacheUser(user) {
-    const key = (user.email || user.username || '').toLowerCase();
+    const key = this.isGuest(user) ? this.GUEST_KEY : (user.email || user.username || '').toLowerCase();
     if (!key) return;
     const users = this.getAllUsers();
     // Never keep passwords in local cache
@@ -126,6 +128,7 @@ const StorageManager = {
   },
 
   scheduleSync(user) {
+    if (this.isGuest(user)) return; // guest progress stays on this device only
     this._pendingSync = user;
     clearTimeout(this._syncTimer);
     this.setSyncState('saving');
@@ -233,20 +236,113 @@ const StorageManager = {
     return user;
   },
 
+  // ---------- GUEST MODE ----------
+  isGuest(user) {
+    return !!(user && user.isGuest);
+  },
+
+  /** Returns the on-device guest learner, creating it on first visit. */
+  ensureGuest() {
+    const users = this.getAllUsers();
+    let guest = users[this.GUEST_KEY];
+    if (!guest) {
+      guest = { id: null, isGuest: true, email: '', username: this.GUEST_KEY, fullName: 'Bạn', ...emptyProgress() };
+      users[this.GUEST_KEY] = guest;
+      this.saveAllUsers(users);
+    }
+    localStorage.setItem(this.KEY_CURRENT_USER, this.GUEST_KEY);
+    return guest;
+  },
+
+  /** True when the guest has progress worth keeping (used to prompt sign-up). */
+  guestHasProgress() {
+    const g = this.getAllUsers()[this.GUEST_KEY];
+    if (!g) return false;
+    return (g.completedLessons || []).length > 0 || (g.xp || 0) > 0 || Object.keys(g.wordProgress || {}).length > 0;
+  },
+
+  /** Merge on-device guest progress into a real account, then drop the guest record. */
+  _mergeGuestInto(user) {
+    const users = this.getAllUsers();
+    const g = users[this.GUEST_KEY];
+    if (!g || !user || this.isGuest(user)) return false;
+    const hasProgress = (g.completedLessons || []).length || (g.xp || 0) || Object.keys(g.wordProgress || {}).length;
+    if (!hasProgress) {
+      delete users[this.GUEST_KEY];
+      this.saveAllUsers(users);
+      return false;
+    }
+    const union = (a, b) => Array.from(new Set([...(a || []), ...(b || [])]));
+    user.completedLessons = union(user.completedLessons, g.completedLessons);
+    user.bookmarks = union(user.bookmarks, g.bookmarks);
+    user.wordProgress = user.wordProgress || {};
+    Object.entries(g.wordProgress || {}).forEach(([id, gp]) => {
+      const cur = user.wordProgress[id];
+      if (!cur || (gp.lastStudied || 0) > (cur.lastStudied || 0)) user.wordProgress[id] = gp;
+    });
+    user.customWords = [...(user.customWords || []), ...(g.customWords || []).filter((cw) => !(user.customWords || []).some((u) => u.id === cw.id))];
+    user.xp = (user.xp || 0) + (g.xp || 0);
+    if ((g.lastActiveLesson || 1) > (user.lastActiveLesson || 1)) user.lastActiveLesson = g.lastActiveLesson;
+    user.dailyGoals = { ...(g.dailyGoals || {}), ...(user.dailyGoals || {}) };
+    delete users[this.GUEST_KEY];
+    this.saveAllUsers(users);
+    this.saveCurrentUser(user);
+    return true;
+  },
+
+  // ---------- SPACED REPETITION QUEUE ----------
+  /**
+   * Builds today's review queue: words whose nextReview is due (most overdue first),
+   * then up to `newLimit` new words from lessons the learner has opened/completed.
+   */
+  getReviewQueue(allWords, newLimit = 10) {
+    const user = this.getCurrentUser();
+    const progress = (user && user.wordProgress) || {};
+    const now = Date.now();
+    const due = allWords
+      .filter((w) => progress[w.id] && (progress[w.id].nextReview || 0) <= now)
+      .sort((a, b) => (progress[a.id].nextReview || 0) - (progress[b.id].nextReview || 0));
+    const reached = new Set([...(user && user.completedLessons) || [], (user && user.lastActiveLesson) || 1]);
+    const maxLesson = Math.max(...reached);
+    const today = new Date().toISOString().slice(0, 10);
+    const introducedToday = Object.values(progress).filter((p) => p.firstSeen === today).length;
+    const room = Math.max(0, newLimit - introducedToday);
+    const fresh = allWords
+      .filter((w) => !progress[w.id] && typeof w.lesson === 'number' && w.lesson <= maxLesson)
+      .sort((a, b) => a.lesson - b.lesson)
+      .slice(0, room);
+    const hard = allWords.filter((w) => progress[w.id] && (progress[w.id].lapses || 0) >= 2 && (progress[w.id].nextReview || 0) <= now);
+    return { due, fresh, hard, all: [...due, ...fresh] };
+  },
+
+  /** Days until next review for a given rating (for button labels). */
+  previewInterval(wordId, quality) {
+    const user = this.getCurrentUser();
+    const p = (user && user.wordProgress && user.wordProgress[wordId]) || { srsLevel: 0 };
+    const intervals = [1, 2, 4, 7, 14, 30];
+    let lvl = p.srsLevel || 0;
+    if (quality === 'again') return 0;
+    if (quality === 'hard') lvl = Math.max(0, lvl);
+    if (quality === 'good') lvl = Math.min(intervals.length - 1, lvl + 1);
+    if (quality === 'easy') lvl = Math.min(intervals.length - 1, lvl + 2);
+    return intervals[lvl];
+  },
+
   async checkSession() {
     const sb = getSupabase();
-    if (!sb) return this.getCurrentUser();   // offline: use cached session
+    if (!sb) return this.getCurrentUser() || this.ensureGuest();   // offline: cached session or guest
     try {
       const { data } = await sb.auth.getSession();
       if (data && data.session && data.session.user) {
-        return await this._hydrateFromCloud(data.session.user);
+        const user = await this._hydrateFromCloud(data.session.user);
+        this._mergeGuestInto(user);
+        return this.getCurrentUser() || user;
       }
-      // No valid cloud session -> forget stale local session
-      localStorage.removeItem(this.KEY_CURRENT_USER);
-      return null;
+      // No cloud session -> learn as an on-device guest
+      return this.ensureGuest();
     } catch (e) {
       console.warn('Supabase getSession failed:', e);
-      return this.getCurrentUser();
+      return this.getCurrentUser() || this.ensureGuest();
     }
   },
 
@@ -294,7 +390,8 @@ const StorageManager = {
       }
 
       const user = await this._hydrateFromCloud(data.user);
-      return { success: true, user, needsConfirm: false };
+      const merged = this._mergeGuestInto(user);
+      return { success: true, user: this.getCurrentUser() || user, needsConfirm: false, hasSession: true, merged };
     } catch (err) {
       return { success: false, message: this.translateError(err.message) };
     }
@@ -319,8 +416,9 @@ const StorageManager = {
       const { data, error } = await sb.auth.signInWithPassword({ email: targetEmail, password });
       if (error) return { success: false, message: this.translateError(error.message) };
       const user = await this._hydrateFromCloud(data.user);
+      const merged = this._mergeGuestInto(user);
       this.updateStreak();
-      return { success: true, user };
+      return { success: true, user: this.getCurrentUser() || user, merged };
     } catch (err) {
       return { success: false, message: this.translateError(err.message) };
     }
@@ -367,6 +465,9 @@ const StorageManager = {
       try { await sb.auth.signOut(); } catch (e) { /* ignore */ }
     }
     localStorage.removeItem(this.KEY_CURRENT_USER);
+    const users = this.getAllUsers();
+    delete users[this.GUEST_KEY];
+    this.saveAllUsers(users);
   },
 
   updateStreak() {
@@ -406,6 +507,32 @@ const StorageManager = {
     }
     this.saveCurrentUser(user);
     return isCompleted;
+  },
+
+  /** Mark a lesson as completed (idempotent, never un-completes). Returns true if newly completed. */
+  markLessonCompleted(lessonId) {
+    const user = this.getCurrentUser();
+    if (!user) return false;
+    user.completedLessons = user.completedLessons || [];
+    if (user.completedLessons.includes(lessonId)) return false;
+    user.completedLessons.push(lessonId);
+    this.saveCurrentUser(user);
+    this.addXP(50, `Hoàn thành Bài ${lessonId}`);
+    return true;
+  },
+
+  getLessonStep(lessonId) {
+    const user = this.getCurrentUser();
+    return (user && user.lessonSteps && user.lessonSteps[lessonId]) || 0;
+  },
+
+  setLessonStep(lessonId, step) {
+    const user = this.getCurrentUser();
+    if (!user) return;
+    user.lessonSteps = user.lessonSteps || {};
+    if ((user.lessonSteps[lessonId] || 0) >= step) return;
+    user.lessonSteps[lessonId] = step;
+    this.saveCurrentUser(user);
   },
 
   isLessonCompleted(lessonId) {
@@ -451,20 +578,26 @@ const StorageManager = {
       user.wordProgress[wordId] = { srsLevel: 0, reviewCount: 0 };
     }
     const item = user.wordProgress[wordId];
+    if (!item.firstSeen) item.firstSeen = new Date().toISOString().slice(0, 10);
     item.reviewCount = (item.reviewCount || 0) + 1;
     item.lastStudied = Date.now();
 
     const intervals = [1, 2, 4, 7, 14, 30];
     if (quality === 'again') {
       item.srsLevel = 0;
+      item.lapses = (item.lapses || 0) + 1;
+    } else if (quality === 'hard') {
+      item.srsLevel = Math.max(0, item.srsLevel || 0);
     } else if (quality === 'good') {
       item.srsLevel = Math.min(intervals.length - 1, (item.srsLevel || 0) + 1);
     } else if (quality === 'easy') {
       item.srsLevel = Math.min(intervals.length - 1, (item.srsLevel || 0) + 2);
     }
 
-    const daysToAdd = intervals[item.srsLevel];
-    item.nextReview = Date.now() + daysToAdd * 86400000;
+    // "again" comes back in ~10 minutes within the same session; others after N days
+    item.nextReview = quality === 'again'
+      ? Date.now() + 10 * 60000
+      : Date.now() + intervals[item.srsLevel] * 86400000;
     this.saveCurrentUser(user);
     this.addXP(2, 'Ôn từ vựng');
     this.recordDailyAction('vocab', 1);
@@ -533,7 +666,7 @@ const StorageManager = {
       if (typeof App !== 'undefined' && App.toast) {
         App.toast(`🎉 Chúc mừng! Bạn đã thăng cấp: ${newLevel.badge} ${newLevel.title}!`, 'success', 5000);
       }
-    } else if (amount > 0 && typeof App !== 'undefined' && App.toast) {
+    } else if (amount >= 10 && typeof App !== 'undefined' && App.toast) {
       App.toast(`+${amount} XP ${reason ? `(${reason})` : ''}`, 'info', 2000);
     }
 

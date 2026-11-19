@@ -39,6 +39,11 @@ function createMockEnvironment() {
       disabled: false,
       clientWidth: 280,
       addEventListener() {},
+      _attrs: {},
+      setAttribute(k, v) { this._attrs[k] = String(v); },
+      getAttribute(k) { return Object.prototype.hasOwnProperty.call(this._attrs, k) ? this._attrs[k] : null; },
+      removeAttribute(k) { delete this._attrs[k]; },
+      focus() {},
       getContext() {
         return { beginPath() {}, moveTo() {}, lineTo() {}, stroke() {}, clearRect() {} };
       },
@@ -70,6 +75,7 @@ function createMockEnvironment() {
     addEventListener() {},
     getElementById(id) { return elements[id] || makeEl(id); },
     querySelectorAll() { return []; },
+    querySelector() { return null; },
     createElement(tag) { return makeEl('', tag); },
     activeElement: null,
     body: makeEl('body')
@@ -112,9 +118,11 @@ function createMockEnvironment() {
 }
 
 function run() {
+  const dataCode = fs.readFileSync(path.join(ROOT, 'data.bundle.js'), 'utf8');
   const bundleCode = fs.readFileSync(path.join(ROOT, 'app.bundle.js'), 'utf8');
   const { sandbox, elements, makeEl, win } = createMockEnvironment();
   vm.createContext(sandbox);
+  vm.runInContext(dataCode, sandbox);
   vm.runInContext(bundleCode, sandbox);
 
   const data = sandbox.window.CHINESE_DATA;

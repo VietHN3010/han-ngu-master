@@ -20,25 +20,31 @@ const LessonBrowser = {
     const container = document.getElementById('lesson-grid-container');
     if (!container) return;
 
+    document.querySelectorAll('.seg-btn[data-filter]').forEach((b) => b.classList.toggle('active', b.dataset.filter === this.activeFilter));
+
     let filtered = this.lessons;
     if (this.activeFilter === 'hsk1') filtered = filtered.filter(l => l.hsk === 1);
     else if (this.activeFilter === 'hsk2') filtered = filtered.filter(l => l.hsk === 2);
 
+    const user = StorageManager.getCurrentUser();
+    const current = (user && user.lastActiveLesson) || 1;
     container.innerHTML = filtered.map(l => {
       const isCompleted = StorageManager.isLessonCompleted(l.id);
+      const step = StorageManager.getLessonStep ? StorageManager.getLessonStep(l.id) : 0;
+      const isCurrent = !isCompleted && l.id === current;
+      const status = isCompleted
+        ? `<span class="lc-status done">${Icon.svg('check')}Đã xong</span>`
+        : (step > 0 ? `<span class="lc-status doing">Bước ${step + 1}/4</span>` : `<span class="lc-status">${l.words ? l.words.length : 0} từ</span>`);
       return `
-        <div class="lesson-card ${isCompleted ? 'lesson-card-completed' : ''}" onclick="LessonBrowser.openLesson(${l.id})">
-          <div class="lesson-card-header">
-            <span class="lesson-num-pill">Bài ${l.id} • HSK ${l.hsk}</span>
-            ${isCompleted ? '<span class="lesson-status-completed">✅ Đã học xong</span>' : `<span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">${l.words ? l.words.length : 0} từ</span>`}
-          </div>
-          <div class="lesson-card-zh">${l.zh_title}</div>
-          <div class="lesson-card-vi">${l.title}</div>
-          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid var(--border-light);">
-            <span>💬 ${l.dialogue ? l.dialogue.length : 0} câu thoại</span>
-            <span>💡 ${l.grammar ? l.grammar.length : 0} ngữ pháp</span>
-          </div>
-        </div>
+        <button class="lesson-card ${isCompleted ? 'lesson-card-completed' : ''} ${isCurrent ? 'lesson-card-current' : ''}" onclick="LessonBrowser.openLesson(${l.id})">
+          <span class="lc-num">${l.id}</span>
+          <span class="lc-body">
+            <span class="lesson-card-zh hanzi">${l.zh_title}</span>
+            <span class="lesson-card-vi">${UI.esc(l.title)}</span>
+            <span class="lc-meter"><i style="width:${isCompleted ? 100 : step * 25}%"></i></span>
+          </span>
+          <span class="lc-side"><span class="lc-hsk">HSK ${l.hsk}</span>${status}</span>
+        </button>
       `;
     }).join('');
   },
@@ -79,8 +85,10 @@ const LessonBrowser = {
     this.renderVocabTab();
     this.renderDialogueTab();
     this.renderGrammarTab();
-    this.switchLessonTab('vocab');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const saved = StorageManager.getLessonStep ? StorageManager.getLessonStep(lessonId) : 0;
+    const done = StorageManager.isLessonCompleted(lessonId);
+    this.switchLessonTab(done ? 'vocab' : this.STEPS[Math.min(saved, 3)]);
+    window.scrollTo({ top: 0, behavior: 'auto' });
   },
 
   closeLesson(triggerHistoryBack = true) {
@@ -151,80 +159,141 @@ const LessonBrowser = {
     App.updateDashboardStats();
   },
 
+  STEPS: ['vocab', 'dialogue', 'grammar', 'practice'],
+  STEP_LABELS: { vocab: 'Từ vựng', dialogue: 'Bài khóa', grammar: 'Ngữ pháp', practice: 'Luyện tập' },
+  currentStep: 'vocab',
+
   switchLessonTab(tab) {
-    document.querySelectorAll('.lesson-subtab').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.getElementById(`lesson-tab-btn-${tab}`);
-    if (activeBtn) activeBtn.classList.add('active');
+    if (!this.STEPS.includes(tab)) tab = 'vocab';
+    this.currentStep = tab;
+    const idx = this.STEPS.indexOf(tab);
+    const lessonId = this.currentLesson ? this.currentLesson.id : null;
+    const done = lessonId ? StorageManager.isLessonCompleted(lessonId) : false;
+    const reached = lessonId && StorageManager.getLessonStep ? StorageManager.getLessonStep(lessonId) : 0;
 
-    const vVocab = document.getElementById('lesson-subview-vocab');
-    const vDialogue = document.getElementById('lesson-subview-dialogue');
-    const vGrammar = document.getElementById('lesson-subview-grammar');
-    const vPractice = document.getElementById('lesson-subview-practice');
+    this.STEPS.forEach((name, i) => {
+      const btn = document.getElementById(`lesson-tab-btn-${name}`);
+      if (btn) {
+        btn.classList.toggle('active', name === tab);
+        btn.classList.toggle('done', done || i < Math.max(idx, reached));
+        if (btn.setAttribute) btn.setAttribute('aria-selected', name === tab ? 'true' : 'false');
+      }
+      const view = document.getElementById(`lesson-subview-${name}`);
+      if (view) view.style.display = name === tab ? 'block' : 'none';
+    });
 
-    if (vVocab) vVocab.style.display = tab === 'vocab' ? 'block' : 'none';
-    if (vDialogue) vDialogue.style.display = tab === 'dialogue' ? 'block' : 'none';
-    if (vGrammar) vGrammar.style.display = tab === 'grammar' ? 'block' : 'none';
-    if (vPractice) vPractice.style.display = tab === 'practice' ? 'block' : 'none';
+    const count = document.getElementById('lesson-step-count');
+    if (count) count.innerText = `${idx + 1}/4`;
+
+    const prev = document.getElementById('btn-step-prev');
+    if (prev) prev.style.visibility = idx === 0 ? 'hidden' : 'visible';
+    const next = document.getElementById('btn-step-next');
+    if (next) {
+      const isLast = idx === this.STEPS.length - 1;
+      const label = isLast
+        ? (done ? (lessonId < 30 ? `Sang Bài ${lessonId + 1}` : 'Về lộ trình') : 'Hoàn thành bài')
+        : `Tiếp: ${this.STEP_LABELS[this.STEPS[idx + 1]]}`;
+      next.innerHTML = `<span>${label}</span>${typeof Icon !== 'undefined' ? Icon.svg(isLast && !done ? 'check' : 'arrowRight') : ''}`;
+    }
+
+    if (lessonId && StorageManager.setLessonStep) StorageManager.setLessonStep(lessonId, idx);
+    if (typeof App !== 'undefined' && App.syncPrefControls) App.syncPrefControls();
 
     if (tab === 'grammar') {
       this.renderGrammarTab();
     } else if (tab === 'practice') {
       this.renderPracticeTab();
+    } else if (tab !== 'dialogue') {
+      this.stopDialogueAutoPlay();
+    }
+  },
+
+  prevStep() {
+    const idx = this.STEPS.indexOf(this.currentStep);
+    if (idx > 0) {
+      this.switchLessonTab(this.STEPS[idx - 1]);
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  },
+
+  async nextStep() {
+    const idx = this.STEPS.indexOf(this.currentStep);
+    if (idx < this.STEPS.length - 1) {
+      this.switchLessonTab(this.STEPS[idx + 1]);
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      return;
+    }
+    if (!this.currentLesson) return;
+    const id = this.currentLesson.id;
+    if (!StorageManager.isLessonCompleted(id)) {
+      this.completeCurrentLesson();
+      return;
+    }
+    if (id < 30) this.openLesson(id + 1);
+    else this.closeLesson();
+  },
+
+  /** Marks the lesson complete, celebrates and (for guests) offers to save progress. */
+  completeCurrentLesson() {
+    if (!this.currentLesson) return;
+    const id = this.currentLesson.id;
+    const newly = StorageManager.markLessonCompleted ? StorageManager.markLessonCompleted(id) : false;
+    if (newly && typeof AudioEngine !== 'undefined') AudioEngine.playVictorySound();
+    if (id < 30) StorageManager.setLastActiveLesson(id + 1);
+    this.switchLessonTab('practice');
+    if (typeof App !== 'undefined' && App.updateDashboardStats) App.updateDashboardStats();
+    const user = StorageManager.getCurrentUser();
+    if (newly && StorageManager.isGuest && StorageManager.isGuest(user) && typeof UI !== 'undefined') {
+      UI.confirm({
+        title: `Hoàn thành Bài ${id}!`,
+        body: 'Tiến độ đang lưu trên máy này. Tạo tài khoản miễn phí để không bị mất và học tiếp trên thiết bị khác.',
+        ok: 'Tạo tài khoản',
+        cancel: 'Để sau'
+      }).then((yes) => { if (yes) App.showAuthModal('register'); });
+    } else if (newly && typeof App !== 'undefined') {
+      App.toast(`Hoàn thành Bài ${id}`, 'success');
     }
   },
 
   renderVocabTab() {
     const container = document.getElementById('lesson-vocab-container');
     if (!container || !this.currentLesson) return;
+    const arg = (v) => (typeof jsArg === 'function' ? jsArg(v) : v);
+    const esc = (v) => (typeof escapeHtml === 'function' ? escapeHtml(v) : v);
+    const py = (v) => (typeof Tone !== 'undefined' ? Tone.html(v) : esc(v));
+    const ico = (n) => (typeof Icon !== 'undefined' ? Icon.svg(n) : '');
 
     container.innerHTML = `
+      <p class="step-intro">Nghe từng từ, chú ý thanh điệu. Bấm ${ico('star')} để lưu từ khó vào Sổ tay.</p>
       <div class="vocab-cards-list">
         ${this.currentLesson.words.map(w => {
           const isFav = StorageManager.isBookmarked(w.id);
           return `
             <div class="vocab-item-card">
-              <div class="vocab-item-left">
-                <button class="btn-speaker" onclick="AudioEngine.speak('${w.hanzi}')">🔊</button>
-                <div class="vocab-item-info">
-                  <div style="display:flex; align-items:baseline; gap:0.4rem;">
-                    <span class="vocab-item-hanzi">${w.hanzi}</span>
-                    <span class="vocab-item-py">${w.pinyin}</span>
-                  </div>
-                  <div class="vocab-item-mean">${w.meaning}</div>
-                  ${w.example ? `<div style="font-size:0.78rem; color:var(--text-muted); font-style:italic; margin-top:0.25rem;">💡 ${typeof escapeHtml === 'function' ? escapeHtml(w.example) : w.example}</div>` : ''}
-                  <div class="vocab-item-meta">${w.pos ? `<span class="flashcard-pos" style="margin:0.15rem 0.35rem 0 0;">${w.pos}</span>` : ''}${w.hanviet ? `Hán Việt: ${w.hanviet}` : ''}</div>
+              <button class="vocab-play" onclick="AudioEngine.speak('${arg(w.hanzi)}')" aria-label="Nghe ${esc(w.hanzi)}">${ico('sound')}</button>
+              <div class="vocab-item-info">
+                <div class="vocab-line">
+                  <span class="vocab-item-hanzi hanzi">${w.hanzi}</span>
+                  <span class="vocab-item-py py">${py(w.pinyin)}</span>
                 </div>
+                <div class="vocab-item-mean">${esc(w.meaning)}</div>
+                <div class="vocab-item-meta">
+                  ${w.hanviet ? `<span class="hv-badge">${esc(w.hanviet)}</span>` : ''}
+                  ${w.pos ? `<span class="pos-badge">${esc(w.pos)}</span>` : ''}
+                </div>
+                ${w.example ? `<div class="vocab-example">${esc(w.example)}</div>` : ''}
               </div>
-              <div style="display:flex; gap:0.3rem; flex-shrink:0;">
-                <button class="btn btn-outline btn-sm" onclick="AudioEngine.recognizeSpeech('${typeof jsArg === 'function' ? jsArg(w.hanzi) : w.hanzi}')" title="Luyện phát âm với Micro">🎙️</button>
-                <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${typeof jsArg === 'function' ? jsArg(w.hanzi) : w.hanzi}');" title="Tập viết">✍️</button>
-                <button class="btn btn-outline btn-sm" onclick="LessonBrowser.toggleBookmark('${w.id}', this)" title="Lưu">
-                  ${isFav ? '★' : '☆'}
-                </button>
+              <div class="vocab-actions">
+                <button class="icon-btn" onclick="AudioEngine.recognizeSpeech('${arg(w.hanzi)}')" aria-label="Luyện phát âm ${esc(w.hanzi)}" title="Luyện phát âm">${ico('mic')}</button>
+                <button class="icon-btn" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${arg(w.hanzi)}');" aria-label="Tập viết ${esc(w.hanzi)}" title="Tập viết">${ico('pen')}</button>
+                <button class="icon-btn ${isFav ? 'on' : ''}" onclick="LessonBrowser.toggleBookmark('${w.id}', this)" aria-label="Lưu ${esc(w.hanzi)} vào Sổ tay" aria-pressed="${isFav}" title="Lưu vào Sổ tay">${ico(isFav ? 'starFill' : 'star')}</button>
               </div>
             </div>
           `;
         }).join('')}
       </div>
-
-      <!-- Quick Review Footer inside Vocab Tab -->
-      <div style="margin-top:1.25rem; padding:1.1rem 1.25rem; border-radius:var(--radius-lg); background:linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(59, 130, 246, 0.06)); border:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; box-shadow:var(--shadow-sm);">
-        <div>
-          <div style="font-weight:800; font-size:0.95rem; color:var(--text-main);">🎯 Ôn luyện Từ vựng & Ngữ pháp Bài ${this.currentLesson.id}</div>
-          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.15rem;">Củng cố phản xạ qua Flashcard, Trắc nghiệm và Ghép câu ngữ pháp bài này</div>
-        </div>
-        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-          <button class="btn btn-primary btn-sm" onclick="LessonBrowser.studyCurrentLessonFlashcards()">🎴 Ôn Flashcard</button>
-          <button class="btn btn-secondary btn-sm" onclick="LessonBrowser.quizCurrentLesson()">📝 Trắc nghiệm</button>
-          <button class="btn btn-outline btn-sm" onclick="LessonBrowser.grammarPracticeMode('reorder')" style="border-color:#d97706; color:#d97706; background:var(--bg-card);">🧩 Ghép câu</button>
-        </div>
-      </div>
     `;
   },
-
-  isDialoguePlaying: false,
-  dialogueIndex: 0,
-  dialogueTimeout: null,
 
   toggleDialogueAutoPlay() {
     if (this.isDialoguePlaying) {
@@ -240,7 +309,7 @@ const LessonBrowser = {
     this.dialogueIndex = 0;
     const btn = document.getElementById('btn-dialogue-autoplay');
     if (btn) {
-      btn.innerHTML = '⏸️ Tạm dừng phát';
+      btn.innerHTML = `${typeof Icon !== 'undefined' ? Icon.svg('pause') : ''}<span>Tạm dừng</span>`;
       btn.className = 'btn btn-secondary btn-sm';
     }
     this.playCurrentDialogueSentence();
@@ -253,7 +322,7 @@ const LessonBrowser = {
     document.querySelectorAll('.dialogue-bubble').forEach(el => el.classList.remove('active-reading'));
     const btn = document.getElementById('btn-dialogue-autoplay');
     if (btn) {
-      btn.innerHTML = '▶️ Tự động phát hội thoại';
+      btn.innerHTML = `${typeof Icon !== 'undefined' ? Icon.svg('play') : ''}<span>Nghe cả bài</span>`;
       btn.className = 'btn btn-primary btn-sm';
     }
   },
@@ -295,17 +364,13 @@ const LessonBrowser = {
       return;
     }
 
+    const ico = (n) => (typeof Icon !== 'undefined' ? Icon.svg(n) : '');
     const toolbar = `
-      <div class="dialogue-toolbar" style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-card); padding:0.6rem 0.9rem; border-radius:var(--radius-md); border:1px solid var(--border); margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
-        <span style="font-weight:700; font-size:0.85rem; color:var(--text-main);">🎧 Nghe tự động toàn bài</span>
-        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-          <button id="btn-dialogue-autoplay" class="btn btn-primary btn-sm" onclick="LessonBrowser.toggleDialogueAutoPlay()">
-            ▶️ Tự động phát hội thoại
-          </button>
-          <button class="btn btn-outline btn-sm" onclick="LessonBrowser.openLessonReviewModal()" style="border-color:var(--secondary); color:var(--secondary); font-weight:700;" title="Ôn tập từ vựng & ngữ pháp bài này">
-            ⚡ Ôn tập bài này
-          </button>
-        </div>
+      <div class="dialogue-toolbar">
+        <span class="step-intro">Nghe cả bài, rồi bấm vào từng câu để luyện đọc theo.</span>
+        <button id="btn-dialogue-autoplay" class="btn btn-primary btn-sm" onclick="LessonBrowser.toggleDialogueAutoPlay()">
+          ${ico('play')}<span>Nghe cả bài</span>
+        </button>
       </div>
     `;
 
@@ -316,7 +381,7 @@ const LessonBrowser = {
         lastSection = d.section;
         sectionHeaderHtml = `
           <div class="dialogue-section-header" style="margin:0.85rem 0 0.5rem; padding:0.5rem 0.85rem; border-radius:var(--radius-md); background:var(--bg-subtle); border-left:4px solid var(--secondary); font-weight:800; font-size:0.88rem; color:var(--secondary);">
-            📖 ${typeof escapeHtml === 'function' ? escapeHtml(d.section) : d.section}
+            ${typeof escapeHtml === 'function' ? escapeHtml(d.section) : d.section}
           </div>
         `;
       }
@@ -325,63 +390,18 @@ const LessonBrowser = {
         <div style="min-width:0; flex:1; word-break:break-word;">
           <div style="font-weight:700; color:var(--secondary); font-size:0.8rem; margin-bottom:0.15rem;">${d.speaker || `Nhân vật ${idx + 1}`}:</div>
           <div class="hanzi" style="font-size:1.15rem; color:var(--text-main); font-weight:600; margin-bottom:0.15rem;">${d.zh}</div>
-          <div style="color:var(--primary); font-size:0.82rem; font-weight:600; margin-bottom:0.15rem;">${d.py}</div>
+          <div class="py dialogue-py">${typeof Tone !== 'undefined' ? Tone.html(d.py) : d.py}</div>
           <div style="color:var(--text-muted); font-size:0.82rem;">${d.vi}</div>
         </div>
         <div style="display:flex; gap:0.3rem; flex-shrink:0;">
-          <button class="btn btn-outline btn-sm" onclick="AudioEngine.recognizeSpeech('${typeof jsArg === 'function' ? jsArg(d.zh) : d.zh}')" title="Luyện đọc câu này" style="font-size:1.05rem;">
-            🎙️
-          </button>
-          <button class="btn-speaker" onclick="AudioEngine.speak('${typeof jsArg === 'function' ? jsArg(d.zh) : d.zh}')" title="Nghe câu" style="font-size:1.2rem; flex-shrink:0;">
-            🔊
-          </button>
+          <button class="icon-btn" onclick="AudioEngine.recognizeSpeech('${typeof jsArg === 'function' ? jsArg(d.zh) : d.zh}')" aria-label="Luyện đọc câu này" title="Luyện đọc câu này">${ico('mic')}</button>
+          <button class="icon-btn icon-btn-primary" onclick="AudioEngine.speak('${typeof jsArg === 'function' ? jsArg(d.zh) : d.zh}')" aria-label="Nghe câu này" title="Nghe câu">${ico('sound')}</button>
         </div>
       </div>
     `;
     }).join('');
 
-    const wordCount = this.currentLesson.words ? this.currentLesson.words.length : 0;
-    const reviewCta = `
-      <div class="dialogue-review-cta" style="margin-top:1.5rem; padding:1.25rem; border-radius:var(--radius-lg); background:linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(59, 130, 246, 0.06)); border:1.5px solid var(--border); box-shadow:var(--shadow-sm);">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
-          <div>
-            <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-main); margin:0 0 0.2rem 0; display:flex; align-items:center; gap:0.4rem;">
-              <span>🎯</span> <span>Ôn tập toàn diện Bài ${this.currentLesson.id} (Từ vựng & Ngữ pháp)</span>
-            </h3>
-            <p style="font-size:0.8rem; color:var(--text-muted); margin:0;">
-              Luyện ngay toàn bộ ${wordCount} từ mới và các mẫu câu ngữ pháp xuất hiện trong bài khóa này:
-            </p>
-          </div>
-          <span style="background:var(--secondary); color:white; font-size:0.75rem; padding:0.25rem 0.65rem; border-radius:999px; font-weight:700;">
-            Bài ${this.currentLesson.id} • HSK ${this.currentLesson.hsk}
-          </span>
-        </div>
-
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:0.65rem; margin-top:0.75rem;">
-          <!-- 1. Flashcard bài này -->
-          <button class="btn btn-primary" onclick="LessonBrowser.studyCurrentLessonFlashcards()" style="padding:0.75rem 0.6rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; font-size:0.85rem; font-weight:700;">
-            <span>🎴</span> <span>Ôn Flashcard (${wordCount} từ)</span>
-          </button>
-
-          <!-- 2. Trắc nghiệm bài này -->
-          <button class="btn btn-secondary" onclick="LessonBrowser.quizCurrentLesson()" style="padding:0.75rem 0.6rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; font-size:0.85rem; font-weight:700;">
-            <span>📝</span> <span>Thi trắc nghiệm từ vựng</span>
-          </button>
-
-          <!-- 3. Sắp xếp câu ngữ pháp bài này -->
-          <button class="btn btn-outline" onclick="LessonBrowser.grammarPracticeMode('reorder')" style="padding:0.75rem 0.6rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; font-size:0.85rem; font-weight:700; border-color:#d97706; color:#d97706; background:var(--bg-card);">
-            <span>🧩</span> <span>Sắp xếp câu ngữ pháp</span>
-          </button>
-
-          <!-- 4. Dịch câu bài này -->
-          <button class="btn btn-outline" onclick="LessonBrowser.grammarPracticeMode('vi_to_zh')" style="padding:0.75rem 0.6rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; font-size:0.85rem; font-weight:700; border-color:var(--accent-jade); color:var(--accent-jade); background:var(--bg-card);">
-            <span>🇨🇳</span> <span>Luyện dịch câu Vi ➔ Zh</span>
-          </button>
-        </div>
-      </div>
-    `;
-
-    container.innerHTML = toolbar + dialogueBubbles + reviewCta;
+    container.innerHTML = toolbar + dialogueBubbles;
   },
 
   renderGrammarTab() {
@@ -397,9 +417,12 @@ const LessonBrowser = {
         const title = colonIdx > -1 ? g.slice(0, colonIdx).trim() : g;
         const body = colonIdx > -1 ? g.slice(colonIdx + 1).trim() : '';
         return `
-        <div style="padding:1rem; border-radius:var(--radius-md); background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--primary); margin-bottom:0.65rem;">
-          <div style="font-weight:700; color:var(--text-main); font-size:0.92rem;${body ? ' margin-bottom:0.25rem;' : ''}">Điểm ${idx + 1}: ${typeof escapeHtml === 'function' ? escapeHtml(title) : title}</div>
-          ${body ? `<div style="color:var(--text-muted); font-size:0.85rem; line-height:1.5;">${typeof escapeHtml === 'function' ? escapeHtml(body) : body}</div>` : ''}
+        <div class="grammar-point">
+          <span class="gp-num">${idx + 1}</span>
+          <div>
+            <div class="gp-title">${typeof escapeHtml === 'function' ? escapeHtml(title) : title}</div>
+            ${body ? `<div class="gp-body">${typeof escapeHtml === 'function' ? escapeHtml(body) : body}</div>` : ''}
+          </div>
         </div>
       `;
       }).join('');
@@ -407,87 +430,21 @@ const LessonBrowser = {
       theoryHtml = '<p style="color:var(--text-muted); padding:0.5rem 0; font-size:0.85rem;">Bài này tập trung vào củng cố từ vựng và hội thoại.</p>';
     }
 
-    const practiceCardHtml = `
-      <div class="lesson-grammar-practice-card" style="margin-top:1.25rem; padding:1.25rem; border-radius:var(--radius-lg); background:linear-gradient(135deg, rgba(239, 68, 68, 0.04), rgba(245, 158, 11, 0.08)); border:1.5px solid var(--primary-light, #fca5a5);">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
-          <div>
-            <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:0.4rem; margin:0 0 0.2rem 0;">
-              <span>🎯</span> <span>Luyện tập Ngữ pháp Bài ${this.currentLesson.id}</span>
-            </h3>
-            <p style="font-size:0.8rem; color:var(--text-muted); margin:0;">Áp dụng ngay cấu trúc ngữ pháp vừa học vào bài tập tương tác</p>
-          </div>
-          <span style="background:var(--primary); color:white; font-size:0.72rem; padding:0.2rem 0.6rem; border-radius:999px; font-weight:700;">+15 XP / câu</span>
-        </div>
-
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:0.75rem; margin-top:0.75rem;">
-          <!-- 1. Sắp xếp câu -->
-          <div onclick="LessonBrowser.grammarPracticeMode('reorder')" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-            <div>
-              <div style="font-size:1.4rem; margin-bottom:0.35rem;">🧩</div>
-              <div style="font-weight:800; font-size:0.92rem; color:var(--text-main); margin-bottom:0.25rem;">Sắp xếp câu (连词成句)</div>
-              <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;">Chạm các mảnh từ để xếp thành câu đúng vị trí ngữ pháp.</div>
-            </div>
-            <button class="btn btn-primary btn-sm" style="margin-top:0.85rem; width:100%;">
-              Luyện ghép câu &rarr;
-            </button>
-          </div>
-
-          <!-- 2. Dịch Việt -> Trung -->
-          <div onclick="LessonBrowser.grammarPracticeMode('vi_to_zh')" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-            <div>
-              <div style="font-size:1.4rem; margin-bottom:0.35rem;">🇨🇳</div>
-              <div style="font-weight:800; font-size:0.92rem; color:var(--text-main); margin-bottom:0.25rem;">Dịch Việt ➔ Trung</div>
-              <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;">Đọc câu tiếng Việt và chọn câu chữ Hán chuẩn ngữ pháp.</div>
-            </div>
-            <button class="btn btn-outline btn-sm" style="margin-top:0.85rem; width:100%; border-color:var(--primary); color:var(--primary);">
-              Luyện dịch Vi ➔ Zh &rarr;
-            </button>
-          </div>
-
-          <!-- 3. Dịch Trung -> Việt -->
-          <div onclick="LessonBrowser.grammarPracticeMode('zh_to_vi')" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-            <div>
-              <div style="font-size:1.4rem; margin-bottom:0.35rem;">🇻🇳</div>
-              <div style="font-weight:800; font-size:0.92rem; color:var(--text-main); margin-bottom:0.25rem;">Dịch Trung ➔ Việt</div>
-              <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;">Phân tích ngữ cảnh chữ Hán và chọn nghĩa tiếng Việt chuẩn xác.</div>
-            </div>
-            <button class="btn btn-outline btn-sm" style="margin-top:0.85rem; width:100%; border-color:var(--secondary); color:var(--secondary);">
-              Luyện dịch Zh ➔ Vi &rarr;
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-
     container.innerHTML = `
-      <div style="margin-bottom:0.5rem;">
-        <h4 style="font-size:0.95rem; font-weight:800; color:var(--secondary); margin-bottom:0.5rem; display:flex; align-items:center; gap:0.35rem;">
-          <span>📖</span> <span>Kiến thức trọng tâm</span>
-        </h4>
-        ${theoryHtml}
-      </div>
-      ${practiceCardHtml}
+      <p class="step-intro">Đọc kỹ từng điểm ngữ pháp. Bước tiếp theo sẽ luyện ngay các mẫu câu này.</p>
+      <div class="grammar-points">${theoryHtml}</div>
     `;
   },
 
   toggleBookmark(wordId, btn) {
     const isNow = StorageManager.toggleBookmark(wordId);
-    btn.innerText = isNow ? '★' : '☆';
+    if (btn) {
+      btn.innerHTML = typeof Icon !== 'undefined' ? Icon.svg(isNow ? 'starFill' : 'star') : (isNow ? '★' : '☆');
+      btn.classList.toggle('on', isNow);
+      if (btn.setAttribute) btn.setAttribute('aria-pressed', isNow ? 'true' : 'false');
+    }
+    if (typeof App !== 'undefined') App.toast(isNow ? 'Đã lưu vào Sổ tay' : 'Đã bỏ khỏi Sổ tay', 'info', 1600);
   },
-
-  // ==========================================
-  // IN-LESSON CLOSED-LOOP PRACTICE SYSTEM
-  // ==========================================
-  practiceType: null,      // 'grammar' | 'quiz' | 'flashcard'
-  practiceMode: null,      // 'reorder' | 'vi_to_zh' | 'zh_to_vi'
-  practiceQuestions: [],
-  practiceIndex: 0,
-  practiceScore: 0,
-  practiceIsAnswered: false,
-  practiceSelectedTokens: [],
-  practiceAvailableTokens: [],
-  practiceFcIndex: 0,
-  practiceFcIsFlipped: false,
 
   studyCurrentLessonFlashcards() {
     this.startLessonPractice('flashcard');
@@ -574,94 +531,26 @@ const LessonBrowser = {
   renderPracticeTab() {
     const container = document.getElementById('lesson-practice-tab-content');
     if (!container || !this.currentLesson) return;
-
-    const wordCount = this.currentLesson.words ? this.currentLesson.words.length : 0;
+    const l = this.currentLesson;
+    const wordCount = l.words ? l.words.length : 0;
+    const done = StorageManager.isLessonCompleted(l.id);
+    const ico = (n) => (typeof Icon !== 'undefined' ? Icon.svg(n) : '');
+    const item = (onclick, icon, tone, title, desc, tag) => `
+      <button class="practice-row" onclick="${onclick}">
+        <span class="pt-icon ${tone}">${ico(icon)}</span>
+        <span class="pr-text"><b>${title}</b><span>${desc}</span></span>
+        <span class="pr-tag">${tag}</span>
+      </button>`;
 
     container.innerHTML = `
-      <div style="margin-bottom:1.25rem;">
-        <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-bottom:0.25rem; display:flex; align-items:center; gap:0.4rem;">
-          <span>🎯</span> <span>Vòng luyện tập khép kín Bài ${this.currentLesson.id}</span>
-        </h3>
-        <p style="font-size:0.82rem; color:var(--text-muted); margin:0;">
-          Tất cả bài tập đều nằm trọn vẹn trong phạm vi từ vựng và ngữ pháp của Bài ${this.currentLesson.id}:
-        </p>
-      </div>
-
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:0.85rem;">
-        <!-- 1. Sắp xếp câu ngữ pháp -->
-        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.15rem; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-              <div style="width:38px; height:38px; border-radius:10px; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">🧩</div>
-              <span style="font-size:0.7rem; font-weight:800; background:#fef3c7; color:#d97706; padding:0.15rem 0.55rem; border-radius:999px;">Ngữ pháp</span>
-            </div>
-            <h4 style="font-size:0.95rem; font-weight:800; color:var(--text-main); margin:0 0 0.25rem 0;">Sắp xếp ghép câu (连词成句)</h4>
-            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4; margin:0;">Chạm các mảnh từ để ghép thành câu hoàn chỉnh theo đúng cấu trúc ngữ pháp bài này.</p>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="LessonBrowser.startLessonPractice('grammar', 'reorder')" style="margin-top:1rem; font-weight:700;">
-            Luyện ghép câu ▶
-          </button>
-        </div>
-
-        <!-- 2. Dịch câu Việt -> Trung -->
-        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.15rem; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-              <div style="width:38px; height:38px; border-radius:10px; background:#fff1f0; color:#d93829; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">🇨🇳</div>
-              <span style="font-size:0.7rem; font-weight:800; background:#fff1f0; color:#d93829; padding:0.15rem 0.55rem; border-radius:999px;">Dịch câu</span>
-            </div>
-            <h4 style="font-size:0.95rem; font-weight:800; color:var(--text-main); margin:0 0 0.25rem 0;">Luyện dịch Việt ➔ Trung</h4>
-            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4; margin:0;">Đọc câu dịch tiếng Việt và phản xạ chọn câu chữ Hán chuẩn ngữ pháp.</p>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="LessonBrowser.startLessonPractice('grammar', 'vi_to_zh')" style="margin-top:1rem; font-weight:700; border-color:var(--primary); color:var(--primary);">
-            Luyện dịch Vi ➔ Zh ▶
-          </button>
-        </div>
-
-        <!-- 3. Dịch câu Trung -> Việt -->
-        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.15rem; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-              <div style="width:38px; height:38px; border-radius:10px; background:#f0f9ff; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">🇻🇳</div>
-              <span style="font-size:0.7rem; font-weight:800; background:#f0f9ff; color:#0284c7; padding:0.15rem 0.55rem; border-radius:999px;">Dịch câu</span>
-            </div>
-            <h4 style="font-size:0.95rem; font-weight:800; color:var(--text-main); margin:0 0 0.25rem 0;">Luyện dịch Trung ➔ Việt</h4>
-            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4; margin:0;">Đọc câu chữ Hán và chọn nghĩa tiếng Việt chuẩn ngữ cảnh bài học.</p>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="LessonBrowser.startLessonPractice('grammar', 'zh_to_vi')" style="margin-top:1rem; font-weight:700; border-color:#0284c7; color:#0284c7;">
-            Luyện dịch Zh ➔ Vi ▶
-          </button>
-        </div>
-
-        <!-- 4. Thi trắc nghiệm từ vựng -->
-        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.15rem; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-              <div style="width:38px; height:38px; border-radius:10px; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">📝</div>
-              <span style="font-size:0.7rem; font-weight:800; background:#eff6ff; color:#2563eb; padding:0.15rem 0.55rem; border-radius:999px;">${wordCount} từ</span>
-            </div>
-            <h4 style="font-size:0.95rem; font-weight:800; color:var(--text-main); margin:0 0 0.25rem 0;">Trắc nghiệm từ vựng bài này</h4>
-            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4; margin:0;">Kiểm tra phản xạ nghĩa của toàn bộ từ mới xuất hiện trong Bài ${this.currentLesson.id}.</p>
-          </div>
-          <button class="btn btn-secondary btn-sm" onclick="LessonBrowser.startLessonPractice('quiz')" style="margin-top:1rem; font-weight:700;">
-            Thi trắc nghiệm từ vựng ▶
-          </button>
-        </div>
-
-        <!-- 4. Flashcard 3D bài này -->
-        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.15rem; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-              <div style="width:38px; height:38px; border-radius:10px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">🎴</div>
-              <span style="font-size:0.7rem; font-weight:800; background:#ecfdf5; color:#059669; padding:0.15rem 0.55rem; border-radius:999px;">Flashcard 3D</span>
-            </div>
-            <h4 style="font-size:0.95rem; font-weight:800; color:var(--text-main); margin:0 0 0.25rem 0;">Thẻ ghi nhớ Flashcard bài này</h4>
-            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4; margin:0;">Lật thẻ 3 chiều, nghe phát âm giọng đọc Bắc Kinh chuẩn từng từ.</p>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="LessonBrowser.startLessonPractice('flashcard')" style="margin-top:1rem; font-weight:700; border-color:var(--accent-jade); color:var(--accent-jade);">
-            Ôn Flashcard 3D ▶
-          </button>
-        </div>
+      ${done ? `<div class="done-banner">${ico('trophy')}<div><b>Bạn đã hoàn thành Bài ${l.id}</b><span>Luyện lại bất cứ lúc nào. Từ của bài đã vào hàng đợi ôn tập.</span></div></div>`
+             : `<p class="step-intro">Làm ít nhất một bài luyện rồi bấm <b>Hoàn thành bài</b>. Mọi câu hỏi chỉ dùng từ và ngữ pháp của Bài ${l.id}.</p>`}
+      <div class="practice-list">
+        ${item("LessonBrowser.startLessonPractice('quiz')", 'quiz', 'pt-blue', 'Trắc nghiệm từ vựng', `Kiểm tra nghĩa của ${wordCount} từ mới`, `${wordCount} câu`)}
+        ${item("LessonBrowser.startLessonPractice('grammar', 'reorder')", 'puzzle', 'pt-amber', 'Sắp xếp câu (连词成句)', 'Chạm các mảnh từ để ghép câu đúng ngữ pháp', 'Ngữ pháp')}
+        ${item("LessonBrowser.startLessonPractice('grammar', 'vi_to_zh')", 'grammar', 'pt-red', 'Dịch Việt → Trung', 'Chọn câu chữ Hán đúng với câu tiếng Việt', 'Dịch')}
+        ${item("LessonBrowser.startLessonPractice('grammar', 'zh_to_vi')", 'book', 'pt-navy', 'Dịch Trung → Việt', 'Đọc câu chữ Hán, chọn nghĩa đúng', 'Dịch')}
+        ${item("LessonBrowser.startLessonPractice('flashcard')", 'cards', 'pt-jade', 'Flashcard bài này', 'Lật thẻ, nghe phát âm từng từ', `${wordCount} thẻ`)}
       </div>
     `;
   },
@@ -907,8 +796,9 @@ const LessonBrowser = {
       AudioEngine.playVictorySound();
     }
     if (typeof StorageManager !== 'undefined' && StorageManager.addXP) {
-      StorageManager.addXP(20);
+      StorageManager.addXP(20, 'Luyện tập bài học');
     }
+    const firstCompletion = this.currentLesson && StorageManager.isLessonCompleted && !StorageManager.isLessonCompleted(this.currentLesson.id);
     if (typeof App !== 'undefined' && App.updateDashboardStats) {
       App.updateDashboardStats();
     }
@@ -919,7 +809,7 @@ const LessonBrowser = {
 
     container.innerHTML = `
       <div style="max-width:540px; margin:1rem auto; background:var(--bg-card); border:1.5px solid var(--border); border-radius:var(--radius-xl); padding:2rem 1.5rem; text-align:center; box-shadow:var(--shadow-lg);">
-        <div style="font-size:3.5rem; margin-bottom:0.5rem;">🏆</div>
+        <div class="summary-trophy">${typeof Icon !== "undefined" ? Icon.svg("trophy") : ""}</div>
         <h2 style="font-size:1.4rem; font-weight:800; color:var(--text-main); margin-bottom:0.25rem;">
           Xuất sắc! Hoàn thành bài tập
         </h2>
@@ -941,14 +831,18 @@ const LessonBrowser = {
 
         <div style="display:flex; flex-direction:column; gap:0.6rem;">
           <button class="btn btn-primary" onclick="LessonBrowser.startLessonPractice('${this.practiceType}', '${this.practiceMode}')" style="padding:0.8rem; font-weight:800;">
-            🔄 Luyện tập lại bài này
+            Luyện lại
           </button>
+          ${firstCompletion ? `
+          <button class="btn btn-gold" onclick="LessonBrowser.exitLessonPractice(); LessonBrowser.completeCurrentLesson();" style="padding:0.8rem; font-weight:800;">
+            Hoàn thành Bài ${this.currentLesson.id}
+          </button>` : ''}
           <button class="btn btn-outline" onclick="LessonBrowser.exitLessonPractice()" style="padding:0.8rem; font-weight:700;">
-            📖 Trở về xem bài học Bài ${this.currentLesson.id}
+            Trở về Bài ${this.currentLesson.id}
           </button>
           ${this.currentLesson.id < 30 ? `
             <button class="btn btn-outline" onclick="LessonBrowser.exitLessonPractice(); LessonBrowser.nextLesson();" style="padding:0.8rem; font-weight:700; border-color:var(--secondary); color:var(--secondary);">
-              Bài tiếp theo (Bài ${this.currentLesson.id + 1}) ➡️
+              Bài tiếp theo (Bài ${this.currentLesson.id + 1})
             </button>
           ` : ''}
         </div>

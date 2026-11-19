@@ -65,30 +65,32 @@ const DictionaryController = {
     }
 
     container.innerHTML = `
-      <div class="vocab-cards-list">
+      <div class="vocab-cards-list vocab-v2">
         ${this.currentResults.slice(0, 100).map(w => {
           const isFav = StorageManager.isBookmarked(w.id);
+          const arg = typeof jsArg === 'function' ? jsArg(w.hanzi) : w.hanzi;
+          const esc = (v) => UI.esc(v);
           return `
             <div class="vocab-item-card">
-              <div class="vocab-item-left">
-                <button class="btn-speaker" onclick="AudioEngine.speak('${w.hanzi}')">🔊</button>
-                <div class="vocab-item-info">
-                  <div style="display:flex; align-items:baseline; gap:0.4rem;">
-                    <span class="vocab-item-hanzi">${w.hanzi}</span>
-                    <span class="vocab-item-py">${w.pinyin}</span>
-                    ${w.isCustom ? '<span style="font-size:0.65rem; background:#fef3c7; color:#b45309; padding:0.1rem 0.3rem; border-radius:3px;">Tự thêm</span>' : ''}
-                  </div>
-                  <div class="vocab-item-mean">${w.meaning}</div>
-                  ${w.example ? `<div style="font-size:0.78rem; color:var(--text-muted); font-style:italic; margin-top:0.25rem;">💡 ${typeof escapeHtml === 'function' ? escapeHtml(w.example) : w.example}</div>` : ''}
-                  <div class="vocab-item-meta">${w.pos ? `<span class="flashcard-pos" style="margin:0.15rem 0.35rem 0 0;">${w.pos}</span>` : ''}${w.hanviet ? `Hán Việt: ${w.hanviet}` : ''}</div>
+              <button class="vocab-play" onclick="AudioEngine.speak('${arg}')" aria-label="Nghe ${esc(w.hanzi)}">${Icon.svg('sound')}</button>
+              <div class="vocab-item-info">
+                <div class="vocab-line">
+                  <span class="vocab-item-hanzi hanzi">${w.hanzi}</span>
+                  <span class="vocab-item-py py">${Tone.html(w.pinyin)}</span>
                 </div>
+                <div class="vocab-item-mean">${esc(w.meaning)}</div>
+                <div class="vocab-item-meta">
+                  ${w.hanviet ? `<span class="hv-badge">${esc(w.hanviet)}</span>` : ''}
+                  ${w.pos ? `<span class="pos-badge">${esc(w.pos)}</span>` : ''}
+                  ${typeof w.lesson === 'number' ? `<span class="pos-badge">Bài ${w.lesson}</span>` : ''}
+                  ${w.isCustom ? '<span class="hv-badge">Tự thêm</span>' : ''}
+                </div>
+                ${w.example ? `<div class="vocab-example">${esc(w.example)}</div>` : ''}
               </div>
-              <div style="display:flex; gap:0.3rem; flex-shrink:0;">
-                <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${w.hanzi}');" title="Tập viết">✍️</button>
-                <button class="btn btn-outline btn-sm" onclick="DictionaryController.toggleBookmark('${w.id}', this)" title="Lưu">
-                  ${isFav ? '★' : '☆'}
-                </button>
-                ${w.isCustom ? `<button class="btn btn-outline btn-sm" onclick="DictionaryController.deleteCustom('${w.id}')" title="Xóa" style="color:#ef4444;">🗑️</button>` : ''}
+              <div class="vocab-actions">
+                <button class="icon-btn" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${arg}');" aria-label="Tập viết ${esc(w.hanzi)}" title="Tập viết">${Icon.svg('pen')}</button>
+                <button class="icon-btn ${isFav ? 'on' : ''}" onclick="DictionaryController.toggleBookmark('${w.id}', this)" aria-label="Lưu ${esc(w.hanzi)}" aria-pressed="${isFav}" title="Lưu vào Sổ tay">${Icon.svg(isFav ? 'starFill' : 'star')}</button>
+                ${w.isCustom ? `<button class="icon-btn" onclick="DictionaryController.deleteCustom('${w.id}')" aria-label="Xóa từ ${esc(w.hanzi)}" title="Xóa">${Icon.svg('x')}</button>` : ''}
               </div>
             </div>
           `;
@@ -100,11 +102,14 @@ const DictionaryController = {
 
   toggleBookmark(wordId, btn) {
     const isNow = StorageManager.toggleBookmark(wordId);
-    btn.innerText = isNow ? '★' : '☆';
+    btn.innerHTML = Icon.svg(isNow ? 'starFill' : 'star');
+    btn.classList.toggle('on', isNow);
+    btn.setAttribute('aria-pressed', isNow ? 'true' : 'false');
   },
 
-  deleteCustom(wordId) {
-    if (confirm('Bạn có chắc muốn xóa từ vựng này khỏi sổ tay?')) {
+  async deleteCustom(wordId) {
+    const ok = await UI.confirm({ title: 'Xóa từ này khỏi Sổ tay?', body: 'Từ tự thêm sẽ bị xóa và không khôi phục được.', ok: 'Xóa', danger: true });
+    if (ok) {
       StorageManager.deleteCustomWord(wordId);
       this.search(document.getElementById('dict-search-input').value);
       App.updateDashboardStats();
@@ -134,7 +139,7 @@ const DictionaryController = {
     const pos = document.getElementById('custom-pos').value;
 
     if (!hanzi || !meaning) {
-      alert('Vui lòng nhập Chữ Hán và Nghĩa!');
+      App.toast('Vui lòng nhập Chữ Hán và Nghĩa.', 'warning');
       return;
     }
 

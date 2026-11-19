@@ -98,7 +98,7 @@ const MatchGame = {
             if (typeof App !== 'undefined' && App.toast) {
               App.toast(`🎉 Chúc mừng! Bạn đã ghép đúng tất cả trong ${this.secondsElapsed} giây!`, 'success', 5000);
             } else {
-              alert(`🎉 Chúc mừng! Bạn đã hoàn thành trong ${this.secondsElapsed} giây!`);
+              UI.alert('Hoàn thành!', `Bạn đã ghép xong trong ${this.secondsElapsed} giây.`);
             }
           }
         }, 150);

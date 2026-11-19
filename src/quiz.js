@@ -16,6 +16,17 @@ const QuizController = {
     this.allWords = allWords || [];
   },
 
+  /** One-tap presets: 'recent' = 10 meaning questions from the current lesson and the ones before it. */
+  quickStart(kind) {
+    const user = StorageManager.getCurrentUser();
+    const last = (user && user.lastActiveLesson) || 1;
+    if (kind === 'listen') {
+      this.startQuiz({ scope: 'lesson_' + last, count: 10, mode: 'listen_to_hanzi', maxLesson: last });
+    } else {
+      this.startQuiz({ scope: 'upto_' + last, count: 10, mode: 'hanzi_to_vi' });
+    }
+  },
+
   startQuiz(options = {}) {
     const scope = options.scope || 'all'; // 'all', 'hsk1', 'hsk2', 'lesson_X', 'bookmarks'
     const count = parseInt(options.count || 10, 10);
@@ -27,6 +38,9 @@ const QuizController = {
       pool = pool.filter(w => w.hsk === 1);
     } else if (scope === 'hsk2') {
       pool = pool.filter(w => w.hsk === 2);
+    } else if (scope.startsWith('upto_')) {
+      const maxL = parseInt(scope.replace('upto_', ''), 10);
+      pool = pool.filter(w => typeof w.lesson === 'number' && w.lesson <= maxL);
     } else if (scope.startsWith('lesson_')) {
       const lNum = parseInt(scope.replace('lesson_', ''), 10);
       pool = pool.filter(w => w.lesson === lNum);
@@ -35,7 +49,7 @@ const QuizController = {
     }
 
     if (pool.length === 0) {
-      alert('Không tìm thấy từ vựng nào trong phạm vi đã chọn. Hãy chọn phạm vi khác!');
+      App.toast('Không có từ nào trong phạm vi này. Hãy chọn phạm vi khác.', 'warning');
       return;
     }
 
