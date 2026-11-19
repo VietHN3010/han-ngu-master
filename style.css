@@ -2960,3 +2960,5 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
 .fc-mnemonic .ico { color: var(--amber); flex: none; margin-top: 0.15rem; }
 
 .note-text { flex: 1; min-width: 0; }
+.lesson-head { grid-template-columns: minmax(0, 1fr); }
+.lesson-head-row { min-width: 0; }

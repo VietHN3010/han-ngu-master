@@ -3893,15 +3893,15 @@ const GrammarController = {
     const count = parseInt(options.count || 10, 10);
 
     let pool = [...this.sentences];
-    if (scope === 'hsk1') {
-      pool = pool.filter(s => s.hsk === 1);
-    } else if (scope === 'hsk2') {
-      pool = pool.filter(s => s.hsk === 2);
+    if (/^hsk\d$/.test(scope)) {
+      pool = pool.filter(s => s.hsk === +scope.slice(3));
     } else if (scope.startsWith('lesson_')) {
       const lNum = parseInt(scope.replace('lesson_', ''), 10);
       pool = pool.filter(s => s.lesson === lNum);
       if (!pool.length) {
-        pool = this.sentences.filter(s => s.hsk === (lNum <= 15 ? 1 : 2));
+        const lessonObj = (window.CHINESE_DATA && window.CHINESE_DATA.lessons || []).find(l => l.id === lNum);
+        const level = lessonObj ? lessonObj.hsk : (lNum <= 15 ? 1 : 2);
+        pool = this.sentences.filter(s => s.hsk === level);
       }
     }
 

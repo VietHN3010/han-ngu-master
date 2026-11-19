@@ -31,21 +31,22 @@ Dự án này được phát triển song song giữa **Claude** và **Antigravi
    - Ép nhả khi cần: `node scripts/agent-sync.js release <agent> --all`.
 
 <!-- AUTO-SYNC-STATE:START -->
-- **Build Tag:** `v13-e84ee613`
+- **Build Tag:** `v13-79cdab6f`
 - **Trạng thái nguồn:** Thay đổi đang thực hiện trong working tree (chưa commit)
-- **Các file nguồn liên quan:** `index.html`, `src/data.js`, `src/dictionary.js`, `src/flashcard.js`, `src/guide.js`, `src/lessons.js`, `src/notes.js`, `src/review.js`, `src/ui.js`, `style.css`
+- **Các file nguồn liên quan:** `index.html`, `src/app.js`, `src/data-hsk3.js`, `src/grammar-hsk3.js`, `src/grammar.js`, `src/guide.js`, `src/lessons.js`, `src/match.js`, `src/notes.js`, `src/quiz.js`, `style.css`
 ```text
-index.html        | 33 +++++++++++++++++++++---
- src/data.js       | 20 +++++++--------
- src/dictionary.js |  1 +
- src/flashcard.js  |  1 +
- src/guide.js      | 41 +++++++++++++++++++++++++++--
- src/lessons.js    |  4 +++
- src/notes.js      |  7 +++++
- src/review.js     |  1 +
- src/ui.js         | 77 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- style.css         | 27 +++++++++++++++++++
- 10 files changed, 197 insertions(+), 15 deletions(-)
+index.html          | 46 ++++++++++++++++++++++++++--------------------
+ src/app.js          | 14 ++++++++------
+ src/data-hsk3.js    | 13 +++++++++++++
+ src/grammar-hsk3.js |  5 +++++
+ src/grammar.js      | 10 +++++-----
+ src/guide.js        | 19 +++++++++++++++----
+ src/lessons.js      | 23 ++++++++++++++---------
+ src/match.js        |  3 +--
+ src/notes.js        |  2 +-
+ src/quiz.js         |  6 ++----
+ style.css           |  2 ++
+ 11 files changed, 92 insertions(+), 51 deletions(-)
 ```
 <!-- AUTO-SYNC-STATE:END -->
 
@@ -89,7 +90,8 @@ Các file nguồn trong `src/`:
 14. `src/tones.js`: `ToneDrill` (luyện nghe phân biệt thanh: một âm tiết / cặp thanh, bỏ qua từ có 一, 不 và 3+3; thống kê độ chính xác từng cặp thanh trong `localStorage` `hnm_tone_stats_v1`). View `#tones`.
 15. `src/guide.js`: `Guide` (trang Kiến thức `#guide`: thanh điệu & biến điệu, bảng 20 cặp thanh, 44 bộ thủ, 16 lượng từ, số/giờ/ngày/tiền, kỳ thi HSK 2.0 vs 3.0). Ví dụ lấy tự động từ `all_words`.
 16. `src/notes.js` (**tự sinh, không sửa tay**): `window.LESSON_NOTES` = kiến thức từ slide bài giảng HSK (chiết tự, cách dùng, câu ví dụ, từ mở rộng, ngữ pháp, ngữ âm, văn hóa). `words[wordId]` gắn vào từng từ, `lessons[id]` gắn vào bài (`lessons[0]` = slide nhập môn, hiện ở Kiến thức > Ngữ âm / Chữ Hán). Sinh lại bằng `node scripts/build-notes.js ../slide-audit` từ `slide-audit/clean_*.json` (thư mục ngoài repo). Đóng gói chung vào `data.bundle.js`. Hiển thị qua `Notes` trong `src/ui.js`.
-17. `src/app.js`: `App` (Điều hướng **4 tab** `learn · review · dict · me` qua `TAB_GROUP`; các view: `home` (Hôm nay), `lessons`, `review`, `flashcard`, `quiz`, `grammar`, `writer`, `match`, `dict`, `me`; hash routing `#lesson-X`; màn Hôm nay, trang Tôi, chế độ khách).
+17. `src/data-hsk3.js` + `src/grammar-hsk3.js` (**tự sinh, không sửa tay**): 10 bài HSK 3 (Bài 31–40) và 50 bài tập ngữ pháp, nối thêm vào `CHINESE_DATA.lessons` / `GRAMMAR_DATA`. Sinh lại bằng `node scripts/build-hsk3.js ../slide-audit` từ `slide-audit/hsk3/lesson_*.json` (lệnh này cũng ghi `slide-audit/clean_H.json` cho ghi chú; sau đó chạy `node scripts/build-notes.js ../slide-audit`). Không còn cố định 30 bài/744 từ: dùng `CHINESE_DATA.lessons.length`, `LessonBrowser.lastLessonId()`, bộ lọc `hskN`.
+18. `src/app.js`: `App` (Điều hướng **4 tab** `learn · review · dict · me` qua `TAB_GROUP`; các view: `home` (Hôm nay), `lessons`, `review`, `flashcard`, `quiz`, `grammar`, `writer`, `match`, `dict`, `me`; hash routing `#lesson-X`; màn Hôm nay, trang Tôi, chế độ khách).
 
 **Chế độ khách (v14):** không còn bắt đăng nhập. `StorageManager.ensureGuest()` tạo học viên trên máy (`isGuest: true`, không đồng bộ). Khi đăng nhập/đăng ký, `_mergeGuestInto()` gộp tiến độ khách vào tài khoản. Lời mời tạo tài khoản hiện sau khi hoàn thành bài.
 
@@ -127,7 +129,7 @@ npm test
 2. **Đồng bộ CSS hai chiều (`style.css` <-> `index.html`):**
    - Nếu `style.css` được sửa mới hơn, CSS sẽ tự động được nạp vào `<style>` của `index.html`.
    - Nếu `<style>` trong `index.html` mới hơn (hoặc `style.css` cũ hơn), CSS sẽ được trích xuất sang `style.css`.
-3. **Đóng gói & Kiểm tra cú pháp (`vm.Script`):** Ghép `src/data.js` + `src/notes.js` -> `data.bundle.js` và các `src/*.js` còn lại -> `app.bundle.js`, kiểm tra cú pháp từng file nguồn, hai bundle và `api/tts.js`. Thêm file mới vào `SRC_FILES` trong `scripts/build.js`.
+3. **Đóng gói & Kiểm tra cú pháp (`vm.Script`):** Ghép `src/data.js` + `src/data-hsk3.js` + `src/notes.js` -> `data.bundle.js` và các `src/*.js` còn lại -> `app.bundle.js`, kiểm tra cú pháp từng file nguồn, hai bundle và `api/tts.js`. Thêm file mới vào `SRC_FILES` trong `scripts/build.js`.
 4. **Content-Hash Cache Busting tự động:** Tự động băm SHA-256 của `app.bundle.js` + `style.css` (`v13-<8charhash>`) và cập nhật đồng thời vào `index.html` (`?v=v13-...`) và `sw.js` (`CACHE_NAME`), không cần cập nhật số phiên bản thủ công.
 5. **Đồng bộ `AGENTS.md`:** Giữ `AGENTS.md` luôn là file thường giống hệt `CLAUDE.md`.
 

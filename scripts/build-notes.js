@@ -25,6 +25,7 @@ const CATS = ['chiet_tu', 'cach_dung', 'cau_vi_du', 'tu_mo_rong', 'ngu_phap', 'n
 const sandbox = { window: {} };
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'src', 'data.js'), 'utf8'), sandbox);
+if (fs.existsSync(path.join(ROOT, 'src', 'data-hsk3.js'))) vm.runInContext(fs.readFileSync(path.join(ROOT, 'src', 'data-hsk3.js'), 'utf8'), sandbox);
 const lessons = sandbox.window.CHINESE_DATA.lessons;
 
 const files = fs.readdirSync(AUDIT).filter((f) => /^clean_[A-Z]\.json$/.test(f)).sort();

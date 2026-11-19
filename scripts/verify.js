@@ -135,9 +135,16 @@ function run() {
   const App = sandbox.window.App;
 
   // 1. Lessons & 744 Vocabulary completeness
-  assert.strictEqual(data.lessons.length, 30, 'Expected 30 lessons');
-  assert.strictEqual(data.all_words.length, 744, 'Expected 744 words in all_words');
-  assert.strictEqual(data.total_words, 744, 'Expected total_words === 744');
+  // HSK 1–2 core stays fixed; later levels are appended by src/data-hsk3.js
+  const core = data.lessons.filter((l) => l.hsk <= 2);
+  assert.strictEqual(core.length, 30, 'Expected 30 HSK 1-2 lessons');
+  assert.strictEqual(core.reduce((a, l) => a + l.words.length, 0), 744, 'Expected 744 HSK 1-2 words');
+  const ids = data.lessons.map((l) => l.id);
+  ids.forEach((id, i) => assert.strictEqual(id, i + 1, `Lesson ids must be consecutive (got ${id} at #${i + 1})`));
+  assert.strictEqual(data.total_words, data.all_words.length, 'total_words must equal all_words.length');
+  assert.strictEqual(data.total_lessons, data.lessons.length, 'total_lessons must equal lessons.length');
+  const wordIdSet = new Set();
+  data.all_words.forEach((w) => { assert(!wordIdSet.has(w.id), `Duplicate word id ${w.id}`); wordIdSet.add(w.id); });
   for (const w of data.all_words) {
     assert(w.hanzi && w.hanzi.trim(), `Missing hanzi on ${w.id}`);
     assert(w.pinyin && w.pinyin.trim(), `Missing pinyin on ${w.id}`);
@@ -192,7 +199,7 @@ function run() {
     arr.forEach((n) => assert(n.c && n.x && n.x.trim(), `Empty note on ${id}`));
   }
   for (const [lid, arr] of Object.entries(notes.lessons)) {
-    assert(+lid >= 0 && +lid <= 30, `Notes for unknown lesson ${lid}`);
+    assert(+lid === 0 || data.lessons.some((l) => l.id === +lid), `Notes for unknown lesson ${lid}`);
     arr.forEach((n) => assert(n.c && n.x && n.x.trim(), `Empty lesson note in ${lid}`));
   }
 
@@ -298,7 +305,7 @@ function run() {
   const gSel = makeEl('grammar-scope-select', 'select');
   GrammarController.populateSelects(data.lessons);
   GrammarController.populateSelects(data.lessons);
-  assert.strictEqual(gSel.children.filter((c) => !c._removed).length, 30, 'Grammar scope must not duplicate lessons');
+  assert.strictEqual(gSel.children.filter((c) => !c._removed).length, data.lessons.length, 'Grammar scope must not duplicate lessons');
 
   // 7. Pipeline config files
   const vercelJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
@@ -312,7 +319,7 @@ function run() {
     'AGENTS.md must stay synced with CLAUDE.md'
   );
 
-  console.log('VERIFICATION SUITE PASSED: 30 lessons, 744 words, 120 grammar exercises, dialogues, Pinyin, and controllers OK.');
+  console.log(`VERIFICATION SUITE PASSED: ${data.lessons.length} lessons, ${data.all_words.length} words, ${grammar.length} grammar exercises, dialogues, Pinyin, and controllers OK.`);
 }
 
 run();

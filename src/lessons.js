@@ -1,5 +1,5 @@
 /**
- * Lesson Browser & Detail Viewer (HSK1 & HSK2, Lessons 1-30)
+ * Lesson Browser & Detail Viewer (all HSK levels in CHINESE_DATA.lessons)
  */
 const LessonBrowser = {
   lessons: [],
@@ -23,8 +23,8 @@ const LessonBrowser = {
     document.querySelectorAll('.seg-btn[data-filter]').forEach((b) => b.classList.toggle('active', b.dataset.filter === this.activeFilter));
 
     let filtered = this.lessons;
-    if (this.activeFilter === 'hsk1') filtered = filtered.filter(l => l.hsk === 1);
-    else if (this.activeFilter === 'hsk2') filtered = filtered.filter(l => l.hsk === 2);
+    const lvl = /^hsk(\d)$/.exec(this.activeFilter);
+    if (lvl) filtered = filtered.filter(l => l.hsk === +lvl[1]);
 
     const user = StorageManager.getCurrentUser();
     const current = (user && user.lastActiveLesson) || 1;
@@ -109,8 +109,13 @@ const LessonBrowser = {
     }
   },
 
+  /** Highest lesson id in the curriculum (30 for HSK 1–2, grows as levels are added). */
+  lastLessonId() {
+    return this.lessons.length ? Math.max(...this.lessons.map(l => l.id)) : 30;
+  },
+
   nextLesson() {
-    if (this.currentLesson && this.currentLesson.id < 30) {
+    if (this.currentLesson && this.currentLesson.id < this.lastLessonId()) {
       this.openLesson(this.currentLesson.id + 1);
     }
   },
@@ -124,7 +129,7 @@ const LessonBrowser = {
       prevBtn.innerHTML = `⬅️ Bài ${this.currentLesson.id - 1}`;
     }
     if (nextBtn) {
-      nextBtn.style.visibility = this.currentLesson.id < 30 ? 'visible' : 'hidden';
+      nextBtn.style.visibility = this.currentLesson.id < this.lastLessonId() ? 'visible' : 'hidden';
       nextBtn.innerHTML = `Bài ${this.currentLesson.id + 1} ➡️`;
     }
   },
@@ -191,7 +196,7 @@ const LessonBrowser = {
     if (next) {
       const isLast = idx === this.STEPS.length - 1;
       const label = isLast
-        ? (done ? (lessonId < 30 ? `Sang Bài ${lessonId + 1}` : 'Về lộ trình') : 'Hoàn thành bài')
+        ? (done ? (lessonId < this.lastLessonId() ? `Sang Bài ${lessonId + 1}` : 'Về lộ trình') : 'Hoàn thành bài')
         : `Tiếp: ${this.STEP_LABELS[this.STEPS[idx + 1]]}`;
       next.innerHTML = `<span>${label}</span>${typeof Icon !== 'undefined' ? Icon.svg(isLast && !done ? 'check' : 'arrowRight') : ''}`;
     }
@@ -229,7 +234,7 @@ const LessonBrowser = {
       this.completeCurrentLesson();
       return;
     }
-    if (id < 30) this.openLesson(id + 1);
+    if (id < this.lastLessonId()) this.openLesson(id + 1);
     else this.closeLesson();
   },
 
@@ -239,7 +244,7 @@ const LessonBrowser = {
     const id = this.currentLesson.id;
     const newly = StorageManager.markLessonCompleted ? StorageManager.markLessonCompleted(id) : false;
     if (newly && typeof AudioEngine !== 'undefined') AudioEngine.playVictorySound();
-    if (id < 30) StorageManager.setLastActiveLesson(id + 1);
+    if (id < this.lastLessonId()) StorageManager.setLastActiveLesson(id + 1);
     this.switchLessonTab('practice');
     if (typeof App !== 'undefined' && App.updateDashboardStats) App.updateDashboardStats();
     const user = StorageManager.getCurrentUser();
@@ -844,7 +849,7 @@ const LessonBrowser = {
           <button class="btn btn-outline" onclick="LessonBrowser.exitLessonPractice()" style="padding:0.8rem; font-weight:700;">
             Trở về Bài ${this.currentLesson.id}
           </button>
-          ${this.currentLesson.id < 30 ? `
+          ${this.currentLesson.id < this.lastLessonId() ? `
             <button class="btn btn-outline" onclick="LessonBrowser.exitLessonPractice(); LessonBrowser.nextLesson();" style="padding:0.8rem; font-weight:700; border-color:var(--secondary); color:var(--secondary);">
               Bài tiếp theo (Bài ${this.currentLesson.id + 1})
             </button>

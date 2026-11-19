@@ -34,10 +34,8 @@ const QuizController = {
 
     // Filter words according to scope
     let pool = [...this.allWords];
-    if (scope === 'hsk1') {
-      pool = pool.filter(w => w.hsk === 1);
-    } else if (scope === 'hsk2') {
-      pool = pool.filter(w => w.hsk === 2);
+    if (/^hsk\d$/.test(scope)) {
+      pool = pool.filter(w => w.hsk === +scope.slice(3));
     } else if (scope.startsWith('upto_')) {
       const maxL = parseInt(scope.replace('upto_', ''), 10);
       pool = pool.filter(w => typeof w.lesson === 'number' && w.lesson <= maxL);

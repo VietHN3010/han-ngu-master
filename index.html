@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Hán Ngữ Master - Học Tiếng Trung HSK 1 & 2</title>
-  <meta name="description" content="Học tiếng Trung HSK 1 và HSK 2 miễn phí cho người Việt: 30 bài học, 744 từ vựng kèm Hán Việt, ôn tập ngắt quãng, luyện viết chữ Hán và ngữ pháp.">
+  <title>Hán Ngữ Master - Học Tiếng Trung HSK 1, 2, 3</title>
+  <meta name="description" content="Học tiếng Trung HSK 1, 2, 3 miễn phí cho người Việt: 40 bài học, từ vựng kèm Hán Việt và chiết tự, ôn tập ngắt quãng, luyện viết chữ Hán và ngữ pháp.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Hán Ngữ Master">
-  <meta property="og:title" content="Hán Ngữ Master - Học tiếng Trung HSK 1 & 2">
-  <meta property="og:description" content="30 bài học, 744 từ vựng kèm Hán Việt, ôn tập ngắt quãng và luyện viết chữ Hán. Học thử ngay, không cần tài khoản.">
+  <meta property="og:title" content="Hán Ngữ Master - Học tiếng Trung HSK 1, 2, 3">
+  <meta property="og:description" content="40 bài học HSK 1–3, từ vựng kèm Hán Việt và chiết tự, ôn tập ngắt quãng và luyện viết chữ Hán. Học thử ngay, không cần tài khoản.">
   <meta property="og:url" content="https://han-ngu-master.vercel.app/">
   <meta property="og:image" content="https://han-ngu-master.vercel.app/icon-512.png">
   <meta name="twitter:card" content="summary">
@@ -2991,6 +2991,8 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
 .fc-mnemonic .ico { color: var(--amber); flex: none; margin-top: 0.15rem; }
 
 .note-text { flex: 1; min-width: 0; }
+.lesson-head { grid-template-columns: minmax(0, 1fr); }
+.lesson-head-row { min-width: 0; }
   </style>
   
   <!-- Supabase Client CDN -->
@@ -3124,7 +3126,7 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
         <div class="brand-logo">汉</div>
         <div class="brand-text">
           <h1>Hán Ngữ Master</h1>
-          <p>HSK 1 &amp; 2 · 30 bài học</p>
+          <p id="brand-sub">HSK 1–3 · 40 bài học</p>
         </div>
       </a>
 
@@ -3212,9 +3214,9 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
               <h3>Lộ trình HSK</h3>
               <span class="muted-sm" id="course-progress-badge">0%</span>
             </div>
-            <p class="muted-sm" id="course-progress-text">Đã hoàn thành 0/30 bài</p>
+            <p class="muted-sm" id="course-progress-text">Đã hoàn thành 0 bài</p>
             <div class="meter" aria-hidden="true"><i id="course-progress-fill" style="width:0%"></i></div>
-            <button class="btn btn-ghost btn-block" onclick="App.navigateTo('lessons')">Xem 30 bài học <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+            <button class="btn btn-ghost btn-block" onclick="App.navigateTo('lessons')">Xem tất cả bài học <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
           </article>
 
           <article class="today-card today-tools">
@@ -3231,19 +3233,20 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
       </div>
     </section>
 
-    <!-- 2. VIEW: LESSONS (1-30) -->
+    <!-- 2. VIEW: LESSONS (all levels) -->
     <section id="view-lessons" class="view-section">
       <div id="lesson-list-view">
         <button class="back-link" onclick="App.navigateTo('home')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Hôm nay</span></button>
         <div class="page-head">
           <div>
-            <h2>Lộ trình 30 bài</h2>
+            <h2 id="lessons-heading">Lộ trình học</h2>
             <p>Mỗi bài gồm 4 bước: Từ vựng, Bài khóa, Ngữ pháp và Luyện tập</p>
           </div>
           <div class="seg-filter" role="group" aria-label="Lọc theo cấp độ">
             <button class="seg-btn active" data-filter="all" onclick="LessonBrowser.setFilter('all')">Tất cả</button>
             <button class="seg-btn" data-filter="hsk1" onclick="LessonBrowser.setFilter('hsk1')">HSK 1</button>
             <button class="seg-btn" data-filter="hsk2" onclick="LessonBrowser.setFilter('hsk2')">HSK 2</button>
+            <button class="seg-btn" data-filter="hsk3" onclick="LessonBrowser.setFilter('hsk3')">HSK 3</button>
           </div>
         </div>
 
@@ -3370,7 +3373,7 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
           <div class="stat"><b id="stat-streak">1</b><span>ngày liên tiếp</span></div>
           <div class="stat"><b id="stat-mastered">0</b><span>từ đã thuộc</span></div>
           <div class="stat"><b id="stat-learning">0</b><span>từ đang học</span></div>
-          <div class="stat"><b id="stat-total">744</b><span>từ trong giáo trình</span></div>
+          <div class="stat"><b id="stat-total">–</b><span>từ trong giáo trình</span></div>
         </div>
 
         <article class="today-card">
@@ -3438,7 +3441,7 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
         <div class="page-head">
           <div>
             <h2>Kiến thức</h2>
-            <p>Những điều nền tảng nên nắm khi học HSK 1–2. Chạm vào chữ Hán để nghe phát âm.</p>
+            <p>Những điều nền tảng nên nắm khi học HSK sơ cấp. Chạm vào chữ Hán để nghe phát âm.</p>
           </div>
         </div>
         <div class="guide-nav seg-filter" id="guide-nav" role="tablist" aria-label="Chủ đề"></div>
@@ -3458,9 +3461,10 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
           
           <select id="fc-scope-select" class="btn btn-outline btn-sm" style="max-width:180px;">
             <option value="due">Đến hạn hôm nay</option>
-            <option value="all">Tất cả từ (744 từ)</option>
+            <option value="all">Tất cả từ</option>
             <option value="hsk1">HSK 1 (Bài 1 - 15)</option>
             <option value="hsk2">HSK 2 (Bài 16 - 30)</option>
+            <option value="hsk3">HSK 3 (Bài 31 - 40)</option>
             <option value="bookmarks">⭐ Đã lưu sao</option>
           </select>
         </div>
@@ -3476,7 +3480,7 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
             &larr; Thẻ trước
           </button>
           <span id="flashcard-counter" style="font-weight:700; color:var(--text-muted); font-size:0.85rem;">
-            1 / 744
+            0 / 0
           </span>
           <button class="btn btn-outline btn-sm" onclick="FlashcardController.next()">
             Thẻ sau &rarr;
@@ -3531,9 +3535,10 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
             <div>
               <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.82rem;">Phạm vi:</label>
               <select id="quiz-scope-select" class="btn btn-outline" style="width:100%; text-align:left; font-size:0.85rem;">
-                <option value="all">Toàn bộ 30 bài HSK 1 & 2</option>
+                <option value="all">Toàn bộ các bài</option>
                 <option value="hsk1">Toàn bộ HSK 1 (Bài 1 - 15)</option>
                 <option value="hsk2">Toàn bộ HSK 2 (Bài 16 - 30)</option>
+                <option value="hsk3">Toàn bộ HSK 3 (Bài 31 - 40)</option>
                 <option value="bookmarks">⭐ Từ đã lưu sao</option>
               </select>
             </div>
@@ -3653,9 +3658,10 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
           <div style="margin-bottom:1rem;">
             <label style="display:block; font-weight:700; font-size:0.82rem; margin-bottom:0.35rem;">Phạm vi bài học:</label>
             <select id="grammar-scope-select" class="btn btn-outline" style="width:100%; text-align:left;">
-              <option value="all">Toàn bộ 30 bài HSK 1 & 2</option>
+              <option value="all">Toàn bộ các bài</option>
               <option value="hsk1">Khối HSK 1 (Bài 1 - 15)</option>
               <option value="hsk2">Khối HSK 2 (Bài 16 - 30)</option>
+              <option value="hsk3">Khối HSK 3 (Bài 31 - 40)</option>
             </select>
           </div>
 
@@ -3830,7 +3836,7 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
         <div>
           <h2 style="font-size:1.35rem; font-weight:800;">Sổ tay</h2>
-          <p style="color:var(--text-muted); font-size:0.8rem;">Tra 744 từ theo chữ Hán, Pinyin, Hán Việt hoặc nghĩa</p>
+          <p style="color:var(--text-muted); font-size:0.8rem;">Tra từ theo chữ Hán, Pinyin, Hán Việt hoặc nghĩa</p>
         </div>
         <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
           <button class="btn btn-primary btn-sm" onclick="DictionaryController.openAddModal()">
@@ -3852,7 +3858,7 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
       </div>
 
       <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem;">
-        Kết quả: <strong id="dict-result-count" style="color:var(--text-main);">744 từ</strong>
+        Kết quả: <strong id="dict-result-count" style="color:var(--text-main);">–</strong>
       </div>
 
       <div id="dict-container"></div>
@@ -3999,8 +4005,8 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
     </div>
   </div>
 
-  <!-- Application Bundle (Cache busted v13-e84ee613) -->
-  <script defer src="data.bundle.js?v=v13-e84ee613"></script>
-  <script defer src="app.bundle.js?v=v13-e84ee613"></script>
+  <!-- Application Bundle (Cache busted v13-79cdab6f) -->
+  <script defer src="data.bundle.js?v=v13-79cdab6f"></script>
+  <script defer src="app.bundle.js?v=v13-79cdab6f"></script>
 </body>
 </html>

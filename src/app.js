@@ -246,6 +246,10 @@ const App = {
     if (xpFill) xpFill.style.width = `${lvl.progressPct}%`;
     setText('user-xp-tip', lvl.nextXP >= 99999 ? 'Bạn đã đạt cấp độ tối đa!' : `Còn ${lvl.nextXP - lvl.currentXP} XP để lên Cấp ${lvl.level + 1}`);
 
+    // Brand subtitle reflects the curriculum size
+    const levels = [...new Set(this.data.lessons.map((l) => l.hsk))];
+    setText('brand-sub', `HSK 1–${Math.max(...levels)} · ${this.data.lessons.length} bài học`);
+
     // Today: date line
     const dateEl = document.getElementById('today-date');
     if (dateEl) {
@@ -273,8 +277,8 @@ const App = {
 
     // Today: course progress
     const completedCount = stats.completedLessonsCount || 0;
-    const completedPct = Math.round((completedCount / 30) * 100);
-    setText('course-progress-text', `Đã hoàn thành ${completedCount}/30 bài`);
+    const completedPct = Math.round((completedCount / this.data.lessons.length) * 100);
+    setText('course-progress-text', `Đã hoàn thành ${completedCount}/${this.data.lessons.length} bài`);
     setText('course-progress-badge', `${completedPct}%`);
     const progFill = document.getElementById('course-progress-fill');
     if (progFill) progFill.style.width = `${completedPct}%`;
@@ -593,10 +597,8 @@ const App = {
           FlashcardController.setScope('due');
         } else if (val === 'all') {
           FlashcardController.setWords(this.data.all_words);
-        } else if (val === 'hsk1') {
-          FlashcardController.setWords(this.data.all_words.filter(w => w.hsk === 1));
-        } else if (val === 'hsk2') {
-          FlashcardController.setWords(this.data.all_words.filter(w => w.hsk === 2));
+        } else if (/^hsk\d$/.test(val)) {
+          FlashcardController.setWords(this.data.all_words.filter(w => w.hsk === +val.slice(3)));
         } else if (val === 'bookmarks') {
           FlashcardController.setWords(this.data.all_words.filter(w => StorageManager.isBookmarked(w.id)));
         } else if (val.startsWith('lesson_')) {

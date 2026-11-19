@@ -1,7 +1,7 @@
 /**
  * Guide: "Kiến thức" reference pages for Vietnamese learners.
  * Sections: tones & tone sandhi, radicals (bộ thủ), measure words, numbers / time / dates, HSK exam.
- * Examples are pulled from the app's own 744-word curriculum so every example links to a word
+ * Examples are pulled from the app's own curriculum so every example links to a word
  * the learner will meet in the lessons.
  */
 const Guide = {
@@ -227,7 +227,7 @@ const Guide = {
     return `
       <article class="guide-card">
         <h3>Vì sao nên học bộ thủ</h3>
-        <p class="guide-lead">Phần lớn chữ Hán ghép từ một bộ chỉ nghĩa và một phần gợi âm. Ví dụ 妈 = 女 (phụ nữ, gợi nghĩa) + 马 (mã, gợi âm "ma"). Nhận ra bộ thủ giúp đoán nghĩa chữ mới và nhớ lâu hơn. Dưới đây là ${this.RADICALS.length} bộ thủ gặp nhiều nhất ở HSK 1–2.</p>
+        <p class="guide-lead">Phần lớn chữ Hán ghép từ một bộ chỉ nghĩa và một phần gợi âm. Ví dụ 妈 = 女 (phụ nữ, gợi nghĩa) + 马 (mã, gợi âm "ma"). Nhận ra bộ thủ giúp đoán nghĩa chữ mới và nhớ lâu hơn. Dưới đây là ${this.RADICALS.length} bộ thủ gặp nhiều nhất ở trình độ sơ cấp.</p>
       </article>
       <div class="radical-grid">
         ${this.RADICALS.map(([r, name, mean, chars]) => {
@@ -302,11 +302,22 @@ const Guide = {
       </article>`;
   },
 
+  /** "40 bài … HSK 1 (Bài 1–15), HSK 2 (Bài 16–30), HSK 3 (Bài 31–40) … N từ" computed from the data. */
+  courseSummary() {
+    const lessons = (window.CHINESE_DATA && window.CHINESE_DATA.lessons) || [];
+    const levels = [...new Set(lessons.map((l) => l.hsk))].sort();
+    const parts = levels.map((h) => {
+      const ids = lessons.filter((l) => l.hsk === h).map((l) => l.id);
+      return `HSK ${h} (Bài ${Math.min(...ids)}–${Math.max(...ids)})`;
+    });
+    return `${lessons.length} bài của Hán Ngữ Master gồm ${parts.join(', ')}, tổng cộng ${this.words().length} từ, kèm Hán Việt và chiết tự cho người Việt.`;
+  },
+
   renderHsk() {
     return `
       <article class="guide-card">
         <h3>Giáo trình này tương ứng với gì</h3>
-        <p class="guide-lead">30 bài của Hán Ngữ Master đi theo hai cấp sơ cấp HSK 1 (Bài 1–15) và HSK 2 (Bài 16–30), gồm 744 từ, kèm Hán Việt cho người Việt.</p>
+        <p class="guide-lead">${this.courseSummary()}</p>
       </article>
       <article class="guide-card">
         <h3>HSK 3.0: kỳ thi đang đổi định dạng</h3>
@@ -324,7 +335,7 @@ const Guide = {
         <ul class="guide-points">
           <li>Kỳ thi đầu tiên theo định dạng mới được nhiều nguồn nhắc tới vào <b>tháng 12/2026</b>; các kỳ thi trước đó vẫn dùng HSK 2.0.</li>
           <li>Các nguồn chưa thống nhất về số từ và ngày áp dụng. <b>Hãy kiểm tra trên trang chính thức chinesetest.cn</b> trước khi đăng ký thi.</li>
-          <li>Từ vựng trong 30 bài vẫn là nền tảng chung cho cả hai định dạng: luyện vững 744 từ này là chuẩn bị tốt cho cấp 1–2.</li>
+          <li>Từ vựng trong giáo trình vẫn là nền tảng chung cho cả hai định dạng: luyện vững ${this.words().length} từ này là chuẩn bị tốt cho các cấp sơ cấp.</li>
         </ul>
       </article>
       ${this.introNotes('hsk').length ? `<h3 class="section-label">Từ bài giảng nhập môn</h3>${this.notesCards(this.introNotes('hsk'), '')}` : ''}`;
