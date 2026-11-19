@@ -9,6 +9,8 @@ const Guide = {
 
   SECTIONS: [
     { id: 'tones', label: 'Thanh điệu' },
+    { id: 'phonetics', label: 'Ngữ âm' },
+    { id: 'hanzi', label: 'Chữ Hán' },
     { id: 'radicals', label: 'Bộ thủ' },
     { id: 'measure', label: 'Lượng từ' },
     { id: 'numbers', label: 'Số, giờ, ngày' },
@@ -128,7 +130,7 @@ const Guide = {
     const body = document.getElementById('guide-body');
     if (!nav || !body) return;
     nav.innerHTML = this.SECTIONS.map((s) => `<button class="seg-btn ${s.id === this.section ? 'active' : ''}" onclick="Guide.open('${s.id}')">${s.label}</button>`).join('');
-    const fn = { tones: 'renderTones', radicals: 'renderRadicals', measure: 'renderMeasures', numbers: 'renderNumbers', hsk: 'renderHsk' }[this.section] || 'renderTones';
+    const fn = { tones: 'renderTones', phonetics: 'renderPhonetics', hanzi: 'renderHanzi', radicals: 'renderRadicals', measure: 'renderMeasures', numbers: 'renderNumbers', hsk: 'renderHsk' }[this.section] || 'renderTones';
     body.innerHTML = this[fn]();
   },
 
@@ -185,6 +187,40 @@ const Guide = {
           </table>
         </div>
       </article>`;
+  },
+
+  /** Intro-deck notes (lesson 0) split by topic. */
+  introNotes(kind) {
+    if (typeof Notes === 'undefined') return [];
+    const all = Notes.forLesson(0);
+    const isHsk = (n) => /HSK/i.test(n.t + n.x.slice(0, 40));
+    if (kind === 'phonetics') return all.filter((n) => n.c === 'ngu_am');
+    if (kind === 'hsk') return all.filter((n) => n.c !== 'ngu_am' && isHsk(n));
+    return all.filter((n) => n.c !== 'ngu_am' && !isHsk(n));
+  },
+
+  notesCards(notes, empty) {
+    if (!notes.length) return `<p class="muted-sm">${empty}</p>`;
+    return notes.map((n) => `<article class="guide-card note-card">${Notes.item(n, false)}</article>`).join('');
+  },
+
+  renderPhonetics() {
+    return `
+      <article class="guide-card">
+        <h3>Phát âm cho người Việt</h3>
+        <p class="guide-lead">Tổng hợp từ bài giảng phần phiên âm: so sánh âm tiếng Trung với âm tiếng Việt, các quy tắc viết pinyin và những điểm dễ đọc sai. Bảng đầy đủ 23 thanh mẫu và 36 vận mẫu có ở mục Bảng Pinyin.</p>
+        <button class="btn btn-outline" onclick="PinyinController.openModal()">${Icon.svg('music')}<span>Mở Bảng Pinyin</span></button>
+      </article>
+      ${this.notesCards(this.introNotes('phonetics'), 'Chưa có ghi chú ngữ âm.')}`;
+  },
+
+  renderHanzi() {
+    return `
+      <article class="guide-card">
+        <h3>Chữ Hán: cấu tạo và cách viết</h3>
+        <p class="guide-lead">Từ bài giảng nhập môn: chữ Hán được tạo ra thế nào, chữ giản thể và phồn thể, các nét cơ bản và quy tắc thứ tự nét. Mỗi từ trong bài học còn có phần <b>Chiết tự</b> (bấm "Chiết tự" dưới thẻ từ) để nhớ chữ theo bộ thành phần.</p>
+      </article>
+      ${this.notesCards(this.introNotes('hanzi'), 'Chưa có ghi chú về chữ Hán.')}`;
   },
 
   renderRadicals() {
@@ -290,7 +326,8 @@ const Guide = {
           <li>Các nguồn chưa thống nhất về số từ và ngày áp dụng. <b>Hãy kiểm tra trên trang chính thức chinesetest.cn</b> trước khi đăng ký thi.</li>
           <li>Từ vựng trong 30 bài vẫn là nền tảng chung cho cả hai định dạng: luyện vững 744 từ này là chuẩn bị tốt cho cấp 1–2.</li>
         </ul>
-      </article>`;
+      </article>
+      ${this.introNotes('hsk').length ? `<h3 class="section-label">Từ bài giảng nhập môn</h3>${this.notesCards(this.introNotes('hsk'), '')}` : ''}`;
   }
 };
 

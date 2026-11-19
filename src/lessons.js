@@ -282,6 +282,7 @@ const LessonBrowser = {
                   ${w.pos ? `<span class="pos-badge">${esc(w.pos)}</span>` : ''}
                 </div>
                 ${w.example ? `<div class="vocab-example">${esc(w.example)}</div>` : ''}
+                ${typeof Notes !== 'undefined' ? Notes.wordBlock(w.id) : ''}
               </div>
               <div class="vocab-actions">
                 <button class="icon-btn" onclick="AudioEngine.recognizeSpeech('${arg(w.hanzi)}')" aria-label="Luyện phát âm ${esc(w.hanzi)}" title="Luyện phát âm">${ico('mic')}</button>
@@ -292,6 +293,7 @@ const LessonBrowser = {
           `;
         }).join('')}
       </div>
+      ${typeof Notes !== 'undefined' ? Notes.lessonSection(this.currentLesson.id, ['tu_mo_rong'], 'Từ mở rộng từ bài giảng', 'Các từ thầy cô giới thiệu thêm trong bài, ngoài danh sách từ mới.') : ''}
     `;
   },
 
@@ -433,6 +435,8 @@ const LessonBrowser = {
     container.innerHTML = `
       <p class="step-intro">Đọc kỹ từng điểm ngữ pháp. Bước tiếp theo sẽ luyện ngay các mẫu câu này.</p>
       <div class="grammar-points">${theoryHtml}</div>
+      ${typeof Notes !== 'undefined' ? Notes.lessonSection(this.currentLesson.id, ['ngu_phap', 'cach_dung', 'cau_vi_du'], 'Giảng thêm từ bài giảng', 'Cách dùng, phân biệt và lưu ý ngữ pháp trích từ slide bài giảng.') : ''}
+      ${typeof Notes !== 'undefined' ? Notes.lessonSection(this.currentLesson.id, ['ngu_am', 'van_hoa', 'khac', 'chiet_tu'], 'Phát âm, văn hóa và ghi chú khác') : ''}
     `;
   },
 

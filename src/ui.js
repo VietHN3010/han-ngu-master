@@ -243,7 +243,84 @@ const UI = {
   }
 };
 
+/**
+ * Notes: renders knowledge from the teacher's slides (window.LESSON_NOTES, built by scripts/build-notes.js).
+ * Lines containing Chinese become tappable so learners can hear the example.
+ */
+const Notes = {
+  LABELS: {
+    chiet_tu: 'Chiết tự', cach_dung: 'Cách dùng', cau_vi_du: 'Ví dụ', tu_mo_rong: 'Từ mở rộng',
+    ngu_phap: 'Ngữ pháp', ngu_am: 'Ngữ âm', van_hoa: 'Văn hóa', khac: 'Ghi chú'
+  },
+
+  data() {
+    return (typeof window !== 'undefined' && window.LESSON_NOTES) || { words: {}, lessons: {} };
+  },
+
+  forWord(id) {
+    return this.data().words[id] || [];
+  },
+
+  forLesson(id, cats) {
+    const all = this.data().lessons[id] || [];
+    return cats ? all.filter((n) => cats.includes(n.c)) : all;
+  },
+
+  /** First chiết tự note of a word, shortened for compact cards (flashcard back, review intro). */
+  mnemonic(id) {
+    const n = this.forWord(id).find((x) => x.c === 'chiet_tu');
+    if (!n) return '';
+    return n.x.split('\n').filter((l) => !/^Hán Việt/i.test(l)).join(' ').slice(0, 220);
+  },
+
+  /** One line of note text: escapes, highlights hanzi, and makes Chinese tappable to hear it. */
+  line(text) {
+    const esc = UI.esc(text);
+    const han = text.match(/[㐀-鿿][㐀-鿿，。？！、；：“”‘’（）()…—\s]*[㐀-鿿。？！]?/);
+    const marked = esc.replace(/([㐀-鿿]+)/g, '<span class="hanzi">$1</span>');
+    if (han && han[0].replace(/[^㐀-鿿]/g, '').length >= 2) {
+      const zh = han[0].trim();
+      return `<button class="note-line note-say" onclick="AudioEngine.speak('${typeof jsArg === 'function' ? jsArg(zh) : zh}')"><span class="note-text">${marked}</span>${Icon.svg('sound')}</button>`;
+    }
+    return `<p class="note-line">${marked}</p>`;
+  },
+
+  item(n, showTag = true) {
+    const lines = n.x.split('\n').map((l) => l.trim()).filter(Boolean);
+    return `
+      <div class="note-item note-${n.c}">
+        <div class="note-head">${showTag ? `<span class="note-tag">${this.LABELS[n.c] || ''}</span>` : ''}${n.t ? `<b>${UI.esc(n.t)}</b>` : ''}</div>
+        ${lines.map((l) => this.line(l)).join('')}
+      </div>`;
+  },
+
+  /** Collapsible block under a vocabulary card. */
+  wordBlock(id) {
+    const notes = this.forWord(id);
+    if (!notes.length) return '';
+    const cats = [...new Set(notes.map((n) => this.LABELS[n.c]))].join(' · ');
+    return `
+      <details class="word-notes">
+        <summary>${Icon.svg('bulb')}<span>${cats}</span><span class="wn-count">${notes.length}</span></summary>
+        <div class="word-notes-body">${notes.map((n) => this.item(n)).join('')}</div>
+      </details>`;
+  },
+
+  /** Section listing lesson-level notes of the given categories. */
+  lessonSection(id, cats, title, intro = '') {
+    const notes = this.forLesson(id, cats);
+    if (!notes.length) return '';
+    return `
+      <section class="lesson-notes">
+        <h3 class="section-label">${title}</h3>
+        ${intro ? `<p class="step-intro">${intro}</p>` : ''}
+        <div class="note-list">${notes.map((n) => this.item(n)).join('')}</div>
+      </section>`;
+  }
+};
+
 if (typeof window !== 'undefined') {
+  window.Notes = Notes;
   window.Icon = Icon;
   window.Tone = Tone;
   window.Prefs = Prefs;

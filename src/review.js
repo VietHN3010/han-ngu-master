@@ -149,6 +149,7 @@ const Review = {
           <div class="rv-py py">${Tone.html(w.pinyin)}</div>
           <div class="rv-mean">${esc(w.meaning)}</div>
           ${w.hanviet ? `<span class="hv-badge hv-lg">${esc(w.hanviet)}</span>` : ''}
+          ${Notes.mnemonic(w.id) ? `<div class="fc-mnemonic">${Icon.svg('bulb')}<span>${esc(Notes.mnemonic(w.id))}</span></div>` : ''}
           <button class="icon-btn icon-btn-primary rv-sound" onclick="AudioEngine.speak('${jsArg(w.hanzi)}')" aria-label="Nghe lại">${Icon.svg('sound')}</button>
         </div>`;
       footer = `<button class="btn btn-primary btn-block" onclick="Review.introDone()">Đã ghi nhớ, tiếp tục</button>`;

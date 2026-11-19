@@ -86,6 +86,7 @@ const DictionaryController = {
                   ${w.isCustom ? '<span class="hv-badge">Tự thêm</span>' : ''}
                 </div>
                 ${w.example ? `<div class="vocab-example">${esc(w.example)}</div>` : ''}
+                ${typeof Notes !== 'undefined' ? Notes.wordBlock(w.id) : ''}
               </div>
               <div class="vocab-actions">
                 <button class="icon-btn" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${arg}');" aria-label="Tập viết ${esc(w.hanzi)}" title="Tập viết">${Icon.svg('pen')}</button>

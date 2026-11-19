@@ -183,6 +183,19 @@ function run() {
     });
   }
 
+  // Slide notes (src/notes.js): every word note must point at a real word, every note has text
+  const notes = sandbox.window.LESSON_NOTES;
+  assert(notes && notes.words && notes.lessons, 'LESSON_NOTES missing');
+  const wordIds = new Set(data.all_words.map((w) => w.id));
+  for (const [id, arr] of Object.entries(notes.words)) {
+    assert(wordIds.has(id), `Note attached to unknown word id ${id}`);
+    arr.forEach((n) => assert(n.c && n.x && n.x.trim(), `Empty note on ${id}`));
+  }
+  for (const [lid, arr] of Object.entries(notes.lessons)) {
+    assert(+lid >= 0 && +lid <= 30, `Notes for unknown lesson ${lid}`);
+    arr.forEach((n) => assert(n.c && n.x && n.x.trim(), `Empty lesson note in ${lid}`));
+  }
+
   // Grammar items sanity check
   assert(Array.isArray(grammar) && grammar.length >= 120, 'Expected >= 120 grammar exercises');
   for (const g of grammar) {

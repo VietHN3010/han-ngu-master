@@ -2964,6 +2964,33 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
 
 
 .radical-glyph.hanzi { font-size: 1.9rem !important; line-height: 1; }
+
+/* v16: Notes from the teacher's slides */
+.word-notes { grid-column: 1 / -1; margin-top: 0.35rem; border-top: 1px dashed var(--line); padding-top: 0.4rem; }
+.word-notes > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 800; color: var(--amber); padding: 0.15rem 0; }
+.word-notes > summary::-webkit-details-marker { display: none; }
+.word-notes > summary .ico { width: 1em; height: 1em; }
+.wn-count { background: var(--amber-soft); color: var(--amber); border-radius: 99px; padding: 0 0.4rem; font-size: 0.7rem; }
+.word-notes[open] > summary { margin-bottom: 0.4rem; }
+.word-notes-body, .note-list { display: grid; gap: 0.5rem; }
+.note-item { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 0.6rem 0.75rem; display: grid; gap: 0.25rem; }
+.note-card .note-item { background: transparent; border: none; padding: 0; }
+.note-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-size: 0.86rem; }
+.note-tag { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.1rem 0.45rem; border-radius: 6px; background: var(--blue-soft); color: var(--blue); }
+.note-chiet_tu .note-tag { background: var(--amber-soft); color: var(--amber); }
+.note-cau_vi_du .note-tag { background: var(--jade-soft); color: var(--jade); }
+.note-tu_mo_rong .note-tag { background: var(--plum-soft); color: var(--plum); }
+.note-line { font-size: 0.85rem; line-height: 1.55; color: var(--ink); margin: 0; }
+.note-line .hanzi { font-weight: 700; }
+.note-say { all: unset; box-sizing: border-box; cursor: pointer; display: flex; gap: 0.4rem; align-items: flex-start; justify-content: space-between; font-size: 0.85rem; line-height: 1.55; border-radius: 8px; padding: 0.1rem 0.25rem; margin: 0 -0.25rem; }
+.note-say:hover { background: var(--red-soft); }
+.note-say:focus-visible { outline: 2px solid var(--primary); }
+.note-say .ico { color: var(--primary); flex: none; margin-top: 0.2rem; width: 0.95em; height: 0.95em; }
+.lesson-notes { margin-top: 1.25rem; }
+.fc-mnemonic { display: flex; gap: 0.4rem; align-items: flex-start; text-align: left; font-size: 0.8rem; line-height: 1.45; color: var(--ink-soft); background: var(--amber-soft); border-radius: 10px; padding: 0.45rem 0.6rem; margin-top: 0.5rem; max-width: 34ch; }
+.fc-mnemonic .ico { color: var(--amber); flex: none; margin-top: 0.15rem; }
+
+.note-text { flex: 1; min-width: 0; }
   </style>
   
   <!-- Supabase Client CDN -->
@@ -3972,8 +3999,8 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
     </div>
   </div>
 
-  <!-- Application Bundle (Cache busted v13-eda3c823) -->
-  <script defer src="data.bundle.js?v=v13-eda3c823"></script>
-  <script defer src="app.bundle.js?v=v13-eda3c823"></script>
+  <!-- Application Bundle (Cache busted v13-e84ee613) -->
+  <script defer src="data.bundle.js?v=v13-e84ee613"></script>
+  <script defer src="app.bundle.js?v=v13-e84ee613"></script>
 </body>
 </html>

@@ -2667,7 +2667,7 @@ window.CHINESE_DATA = {
           "hanzi": "教授",
           "pinyin": "jiàoshòu",
           "pos": "Danh từ",
-          "hanviet": "giáo thọ",
+          "hanviet": "giáo thụ",
           "meaning": "giáo sư"
         },
         {
@@ -3925,7 +3925,7 @@ window.CHINESE_DATA = {
           "hanzi": "做",
           "pinyin": "zuò",
           "pos": "Động từ",
-          "hanviet": "tác",
+          "hanviet": "tố",
           "meaning": "làm"
         },
         {
@@ -5493,7 +5493,7 @@ window.CHINESE_DATA = {
           "hsk": 2,
           "lesson": 20,
           "hanzi": "正好",
-          "pinyin": "zhēnghǎo",
+          "pinyin": "zhènghǎo",
           "pos": "Phó / Tính từ",
           "hanviet": "chính hảo",
           "meaning": "Vừa đúng lúc Tình cờ / trùng hợp Vừa đủ / vừa vặn",
@@ -5529,7 +5529,7 @@ window.CHINESE_DATA = {
           "pos": "Động từ",
           "hanviet": "quá",
           "meaning": "qua, đón",
-          "example": "我去过北京了吗？"
+          "example": "你去过北京吗？"
         },
         {
           "id": "w_20_15",
@@ -5682,7 +5682,7 @@ window.CHINESE_DATA = {
           "hsk": 2,
           "lesson": 20,
           "hanzi": "健康",
-          "pinyin": "jiānkàng",
+          "pinyin": "jiànkāng",
           "pos": "Danh từ",
           "hanviet": "kiến khang",
           "meaning": "sức khỏe, khỏe mạnh"
@@ -6023,7 +6023,7 @@ window.CHINESE_DATA = {
           "pos": "Động từ",
           "hanviet": "tập hợp",
           "meaning": "tập hợp",
-          "example": "明天上午半点半在教室前集合吧。"
+          "example": "明天上午八点半在教室前集合吧。"
         },
         {
           "id": "w_21_18",
@@ -7514,7 +7514,7 @@ window.CHINESE_DATA = {
           "pos": "Liên từ",
           "hanviet": "nhân vị",
           "meaning": "bởi vì, vì",
-          "example": "因为它一直很努力和认真，所以老师很喜欢她。"
+          "example": "因为她一直很努力和认真，所以老师很喜欢她。"
         }
       ],
       "dialogue": [
@@ -7727,7 +7727,7 @@ window.CHINESE_DATA = {
           "pos": "Động từ",
           "hanviet": "vong",
           "meaning": "quên",
-          "example": "下午了！我忘带伞"
+          "example": "下雨了！我忘带伞"
         },
         {
           "id": "w_26_15",
@@ -7770,7 +7770,7 @@ window.CHINESE_DATA = {
           "pos": "Động từ",
           "hanviet": "dịch",
           "meaning": "đá ( bóng )",
-          "example": "我的爱好是踢足球。我们天都去学校的足球场跟我朋友踢足球"
+          "example": "我的爱好是踢足球。我每天都去学校的足球场跟我朋友踢足球"
         },
         {
           "id": "w_26_19",
@@ -8642,7 +8642,7 @@ window.CHINESE_DATA = {
           "hsk": 2,
           "lesson": 28,
           "hanzi": "公共汽车",
-          "pinyin": "gònggòng qìchē",
+          "pinyin": "gōnggòng qìchē",
           "pos": "Danh từ",
           "hanviet": "công cộng khí xa",
           "meaning": "xe bus",

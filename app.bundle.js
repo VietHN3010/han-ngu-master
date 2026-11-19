@@ -1443,7 +1443,84 @@ const UI = {
   }
 };
 
+/**
+ * Notes: renders knowledge from the teacher's slides (window.LESSON_NOTES, built by scripts/build-notes.js).
+ * Lines containing Chinese become tappable so learners can hear the example.
+ */
+const Notes = {
+  LABELS: {
+    chiet_tu: 'Chiết tự', cach_dung: 'Cách dùng', cau_vi_du: 'Ví dụ', tu_mo_rong: 'Từ mở rộng',
+    ngu_phap: 'Ngữ pháp', ngu_am: 'Ngữ âm', van_hoa: 'Văn hóa', khac: 'Ghi chú'
+  },
+
+  data() {
+    return (typeof window !== 'undefined' && window.LESSON_NOTES) || { words: {}, lessons: {} };
+  },
+
+  forWord(id) {
+    return this.data().words[id] || [];
+  },
+
+  forLesson(id, cats) {
+    const all = this.data().lessons[id] || [];
+    return cats ? all.filter((n) => cats.includes(n.c)) : all;
+  },
+
+  /** First chiết tự note of a word, shortened for compact cards (flashcard back, review intro). */
+  mnemonic(id) {
+    const n = this.forWord(id).find((x) => x.c === 'chiet_tu');
+    if (!n) return '';
+    return n.x.split('\n').filter((l) => !/^Hán Việt/i.test(l)).join(' ').slice(0, 220);
+  },
+
+  /** One line of note text: escapes, highlights hanzi, and makes Chinese tappable to hear it. */
+  line(text) {
+    const esc = UI.esc(text);
+    const han = text.match(/[㐀-鿿][㐀-鿿，。？！、；：“”‘’（）()…—\s]*[㐀-鿿。？！]?/);
+    const marked = esc.replace(/([㐀-鿿]+)/g, '<span class="hanzi">$1</span>');
+    if (han && han[0].replace(/[^㐀-鿿]/g, '').length >= 2) {
+      const zh = han[0].trim();
+      return `<button class="note-line note-say" onclick="AudioEngine.speak('${typeof jsArg === 'function' ? jsArg(zh) : zh}')"><span class="note-text">${marked}</span>${Icon.svg('sound')}</button>`;
+    }
+    return `<p class="note-line">${marked}</p>`;
+  },
+
+  item(n, showTag = true) {
+    const lines = n.x.split('\n').map((l) => l.trim()).filter(Boolean);
+    return `
+      <div class="note-item note-${n.c}">
+        <div class="note-head">${showTag ? `<span class="note-tag">${this.LABELS[n.c] || ''}</span>` : ''}${n.t ? `<b>${UI.esc(n.t)}</b>` : ''}</div>
+        ${lines.map((l) => this.line(l)).join('')}
+      </div>`;
+  },
+
+  /** Collapsible block under a vocabulary card. */
+  wordBlock(id) {
+    const notes = this.forWord(id);
+    if (!notes.length) return '';
+    const cats = [...new Set(notes.map((n) => this.LABELS[n.c]))].join(' · ');
+    return `
+      <details class="word-notes">
+        <summary>${Icon.svg('bulb')}<span>${cats}</span><span class="wn-count">${notes.length}</span></summary>
+        <div class="word-notes-body">${notes.map((n) => this.item(n)).join('')}</div>
+      </details>`;
+  },
+
+  /** Section listing lesson-level notes of the given categories. */
+  lessonSection(id, cats, title, intro = '') {
+    const notes = this.forLesson(id, cats);
+    if (!notes.length) return '';
+    return `
+      <section class="lesson-notes">
+        <h3 class="section-label">${title}</h3>
+        ${intro ? `<p class="step-intro">${intro}</p>` : ''}
+        <div class="note-list">${notes.map((n) => this.item(n)).join('')}</div>
+      </section>`;
+  }
+};
+
 if (typeof window !== 'undefined') {
+  window.Notes = Notes;
   window.Icon = Icon;
   window.Tone = Tone;
   window.Prefs = Prefs;
@@ -1854,6 +1931,7 @@ const FlashcardController = {
           ${w.hanviet ? `<span class="hv-badge hv-lg">${UI.esc(w.hanviet)}</span>` : ''}
           ${w.pos ? `<span class="flashcard-pos">${w.pos}</span>` : ''}
           <div class="flashcard-meaning">${w.meaning}</div>
+          ${typeof Notes !== 'undefined' && Notes.mnemonic(w.id) ? `<div class="fc-mnemonic">${Icon.svg('bulb')}<span>${UI.esc(Notes.mnemonic(w.id))}</span></div>` : ''}
           ${w.example ? `<div class="flashcard-example" style="margin-top:0.65rem; font-size:0.85rem; color:var(--text-muted); font-style:italic; border-top:1px dashed var(--border); padding-top:0.45rem;">${typeof escapeHtml === 'function' ? escapeHtml(w.example) : w.example}</div>` : ''}
 
           <div style="display:flex; gap:0.5rem; margin-top:1rem;">
@@ -6905,6 +6983,7 @@ const LessonBrowser = {
                   ${w.pos ? `<span class="pos-badge">${esc(w.pos)}</span>` : ''}
                 </div>
                 ${w.example ? `<div class="vocab-example">${esc(w.example)}</div>` : ''}
+                ${typeof Notes !== 'undefined' ? Notes.wordBlock(w.id) : ''}
               </div>
               <div class="vocab-actions">
                 <button class="icon-btn" onclick="AudioEngine.recognizeSpeech('${arg(w.hanzi)}')" aria-label="Luyện phát âm ${esc(w.hanzi)}" title="Luyện phát âm">${ico('mic')}</button>
@@ -6915,6 +6994,7 @@ const LessonBrowser = {
           `;
         }).join('')}
       </div>
+      ${typeof Notes !== 'undefined' ? Notes.lessonSection(this.currentLesson.id, ['tu_mo_rong'], 'Từ mở rộng từ bài giảng', 'Các từ thầy cô giới thiệu thêm trong bài, ngoài danh sách từ mới.') : ''}
     `;
   },
 
@@ -7056,6 +7136,8 @@ const LessonBrowser = {
     container.innerHTML = `
       <p class="step-intro">Đọc kỹ từng điểm ngữ pháp. Bước tiếp theo sẽ luyện ngay các mẫu câu này.</p>
       <div class="grammar-points">${theoryHtml}</div>
+      ${typeof Notes !== 'undefined' ? Notes.lessonSection(this.currentLesson.id, ['ngu_phap', 'cach_dung', 'cau_vi_du'], 'Giảng thêm từ bài giảng', 'Cách dùng, phân biệt và lưu ý ngữ pháp trích từ slide bài giảng.') : ''}
+      ${typeof Notes !== 'undefined' ? Notes.lessonSection(this.currentLesson.id, ['ngu_am', 'van_hoa', 'khac', 'chiet_tu'], 'Phát âm, văn hóa và ghi chú khác') : ''}
     `;
   },
 
@@ -7868,6 +7950,7 @@ const DictionaryController = {
                   ${w.isCustom ? '<span class="hv-badge">Tự thêm</span>' : ''}
                 </div>
                 ${w.example ? `<div class="vocab-example">${esc(w.example)}</div>` : ''}
+                ${typeof Notes !== 'undefined' ? Notes.wordBlock(w.id) : ''}
               </div>
               <div class="vocab-actions">
                 <button class="icon-btn" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${arg}');" aria-label="Tập viết ${esc(w.hanzi)}" title="Tập viết">${Icon.svg('pen')}</button>
@@ -8241,6 +8324,7 @@ const Review = {
           <div class="rv-py py">${Tone.html(w.pinyin)}</div>
           <div class="rv-mean">${esc(w.meaning)}</div>
           ${w.hanviet ? `<span class="hv-badge hv-lg">${esc(w.hanviet)}</span>` : ''}
+          ${Notes.mnemonic(w.id) ? `<div class="fc-mnemonic">${Icon.svg('bulb')}<span>${esc(Notes.mnemonic(w.id))}</span></div>` : ''}
           <button class="icon-btn icon-btn-primary rv-sound" onclick="AudioEngine.speak('${jsArg(w.hanzi)}')" aria-label="Nghe lại">${Icon.svg('sound')}</button>
         </div>`;
       footer = `<button class="btn btn-primary btn-block" onclick="Review.introDone()">Đã ghi nhớ, tiếp tục</button>`;
@@ -8746,6 +8830,8 @@ const Guide = {
 
   SECTIONS: [
     { id: 'tones', label: 'Thanh điệu' },
+    { id: 'phonetics', label: 'Ngữ âm' },
+    { id: 'hanzi', label: 'Chữ Hán' },
     { id: 'radicals', label: 'Bộ thủ' },
     { id: 'measure', label: 'Lượng từ' },
     { id: 'numbers', label: 'Số, giờ, ngày' },
@@ -8865,7 +8951,7 @@ const Guide = {
     const body = document.getElementById('guide-body');
     if (!nav || !body) return;
     nav.innerHTML = this.SECTIONS.map((s) => `<button class="seg-btn ${s.id === this.section ? 'active' : ''}" onclick="Guide.open('${s.id}')">${s.label}</button>`).join('');
-    const fn = { tones: 'renderTones', radicals: 'renderRadicals', measure: 'renderMeasures', numbers: 'renderNumbers', hsk: 'renderHsk' }[this.section] || 'renderTones';
+    const fn = { tones: 'renderTones', phonetics: 'renderPhonetics', hanzi: 'renderHanzi', radicals: 'renderRadicals', measure: 'renderMeasures', numbers: 'renderNumbers', hsk: 'renderHsk' }[this.section] || 'renderTones';
     body.innerHTML = this[fn]();
   },
 
@@ -8922,6 +9008,40 @@ const Guide = {
           </table>
         </div>
       </article>`;
+  },
+
+  /** Intro-deck notes (lesson 0) split by topic. */
+  introNotes(kind) {
+    if (typeof Notes === 'undefined') return [];
+    const all = Notes.forLesson(0);
+    const isHsk = (n) => /HSK/i.test(n.t + n.x.slice(0, 40));
+    if (kind === 'phonetics') return all.filter((n) => n.c === 'ngu_am');
+    if (kind === 'hsk') return all.filter((n) => n.c !== 'ngu_am' && isHsk(n));
+    return all.filter((n) => n.c !== 'ngu_am' && !isHsk(n));
+  },
+
+  notesCards(notes, empty) {
+    if (!notes.length) return `<p class="muted-sm">${empty}</p>`;
+    return notes.map((n) => `<article class="guide-card note-card">${Notes.item(n, false)}</article>`).join('');
+  },
+
+  renderPhonetics() {
+    return `
+      <article class="guide-card">
+        <h3>Phát âm cho người Việt</h3>
+        <p class="guide-lead">Tổng hợp từ bài giảng phần phiên âm: so sánh âm tiếng Trung với âm tiếng Việt, các quy tắc viết pinyin và những điểm dễ đọc sai. Bảng đầy đủ 23 thanh mẫu và 36 vận mẫu có ở mục Bảng Pinyin.</p>
+        <button class="btn btn-outline" onclick="PinyinController.openModal()">${Icon.svg('music')}<span>Mở Bảng Pinyin</span></button>
+      </article>
+      ${this.notesCards(this.introNotes('phonetics'), 'Chưa có ghi chú ngữ âm.')}`;
+  },
+
+  renderHanzi() {
+    return `
+      <article class="guide-card">
+        <h3>Chữ Hán: cấu tạo và cách viết</h3>
+        <p class="guide-lead">Từ bài giảng nhập môn: chữ Hán được tạo ra thế nào, chữ giản thể và phồn thể, các nét cơ bản và quy tắc thứ tự nét. Mỗi từ trong bài học còn có phần <b>Chiết tự</b> (bấm "Chiết tự" dưới thẻ từ) để nhớ chữ theo bộ thành phần.</p>
+      </article>
+      ${this.notesCards(this.introNotes('hanzi'), 'Chưa có ghi chú về chữ Hán.')}`;
   },
 
   renderRadicals() {
@@ -9027,7 +9147,8 @@ const Guide = {
           <li>Các nguồn chưa thống nhất về số từ và ngày áp dụng. <b>Hãy kiểm tra trên trang chính thức chinesetest.cn</b> trước khi đăng ký thi.</li>
           <li>Từ vựng trong 30 bài vẫn là nền tảng chung cho cả hai định dạng: luyện vững 744 từ này là chuẩn bị tốt cho cấp 1–2.</li>
         </ul>
-      </article>`;
+      </article>
+      ${this.introNotes('hsk').length ? `<h3 class="section-label">Từ bài giảng nhập môn</h3>${this.notesCards(this.introNotes('hsk'), '')}` : ''}`;
   }
 };
 

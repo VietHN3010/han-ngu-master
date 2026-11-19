@@ -34,7 +34,7 @@ function log(msg) {
 
 // Curriculum data ships as its own bundle: it rarely changes, so browsers keep it cached
 // while app code updates.
-const DATA_FILES = ['src/data.js'];
+const DATA_FILES = ['src/data.js', 'src/notes.js'];
 const SRC_FILES = [
   'src/storage.js',
   'src/audio.js',
