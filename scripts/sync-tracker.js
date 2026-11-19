@@ -47,6 +47,14 @@ function listTrackedFiles() {
   return out.sort();
 }
 
+function isTracked(rel) {
+  if (TRACKED_FILES.includes(rel)) return true;
+  const parts = rel.split('/');
+  return parts.length > 1 && TRACKED_DIRS.includes(parts[0]) &&
+    !parts.some((p) => p.startsWith('.') || p === '__pycache__' || p === 'node_modules') &&
+    !IGNORED_EXT.test(rel);
+}
+
 function normalize(rel, content) {
   if (rel === 'index.html') {
     return content
@@ -140,6 +148,7 @@ function markFilesSeen(agent, relPaths) {
     set.add('index.html');
   }
   for (const rel of set) {
+    if (!isTracked(rel)) continue; // e.g. CLAUDE.md, .claude/skills — not part of the snapshot
     const h = hashFile(rel);
     if (h) prev[rel] = h;
     else delete prev[rel];
@@ -166,6 +175,9 @@ function formatDiff(diff) {
 
 module.exports = {
   APP_ROOT,
+  stateDir,
+  loadSnapshot,
+  hashFile,
   takeSnapshot,
   diffSinceLastSeen,
   markAllSeen,

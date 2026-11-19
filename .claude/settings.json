@@ -33,6 +33,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/nguyenhoangviet/Downloads/汉语/chinese-app/scripts/claude-hook.js",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

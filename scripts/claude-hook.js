@@ -16,6 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync, execSync } = require('child_process');
 const tracker = require('./sync-tracker');
+const sync = require('./agent-sync');
 
 const AGENT = 'claude';
 const APP_ROOT = tracker.APP_ROOT;
@@ -61,6 +62,18 @@ function othersChangedText(diff) {
   );
 }
 
+function notesText() {
+  const fresh = sync.unseenNotes(AGENT);
+  return fresh.length ? '[Auto-Sync] Ghi chú bàn giao mới từ Antigravity:\n' + sync.formatNotes(fresh) : '';
+}
+
+function otherClaimsText() {
+  const held = sync.conflicts(AGENT, Object.keys(tracker.takeSnapshot()).concat(['CLAUDE.md']));
+  if (!held.length) return '';
+  return '[Auto-Sync] Antigravity đang giữ (đang sửa) các file sau — KHÔNG sửa chúng, hãy chia việc sang file khác hoặc hỏi người dùng:\n' +
+    held.map((c) => `  ${c.file}${c.note ? ` · ${c.note}` : ''}`).join('\n');
+}
+
 function onSessionStart() {
   const buildErr = runBuild();
   const diff = tracker.diffSinceLastSeen(AGENT);
@@ -73,6 +86,11 @@ function onSessionStart() {
   if (commits) sections.push('3 commit gần nhất:\n' + commits);
   const others = othersChangedText(diff);
   if (others) sections.push(others);
+  const claims = otherClaimsText();
+  if (claims) sections.push(claims);
+  const notes = notesText();
+  if (notes) sections.push(notes);
+  sections.push('Lệnh điều phối: `node scripts/agent-sync.js status|claim|release|note|handoff claude ...` (skill /sync và /handoff).');
   if (buildErr) sections.push('⚠️ build.js đang lỗi:\n' + buildErr);
   process.stdout.write(sections.join('\n\n') + '\n');
 }
@@ -80,15 +98,34 @@ function onSessionStart() {
 function onUserPromptSubmit() {
   const diff = tracker.diffSinceLastSeen(AGENT);
   tracker.markAllSeen(AGENT);
-  const text = othersChangedText(diff);
-  if (text) process.stdout.write(text + '\n');
+  const parts = [othersChangedText(diff), otherClaimsText(), notesText()].filter(Boolean);
+  if (parts.length) process.stdout.write(parts.join('\n\n') + '\n');
+}
+
+function onPreToolUse(payload) {
+  const input = payload.tool_input || {};
+  const rel = tracker.toRelPath(input.file_path || input.notebook_path);
+  if (!rel) return;
+  const held = sync.conflicts(AGENT, [rel]);
+  if (held.length) {
+    const c = held[0];
+    process.stderr.write(
+      `[Auto-Sync] CHẶN: ${rel} đang được Antigravity giữ/sửa${c.note ? ` (${c.note})` : ''}. ` +
+      'Không ghi đè. Hãy làm file khác, hoặc hỏi người dùng; khi Antigravity xong, nó sẽ nhả file ' +
+      '(người dùng có thể ép nhả bằng `node scripts/agent-sync.js release antigravity ' + rel + '`).\n'
+    );
+    process.exit(2);
+  }
 }
 
 function onPostToolUse(payload) {
   const input = payload.tool_input || {};
   const rel = tracker.toRelPath(input.file_path || input.notebook_path);
   const buildErr = runBuild();
-  if (rel) tracker.markFilesSeen(AGENT, [rel]);
+  if (rel) {
+    tracker.markFilesSeen(AGENT, [rel]);
+    sync.claim(AGENT, [rel], '', true);
+  }
   if (buildErr) {
     process.stderr.write(`[Auto-Sync] scripts/build.js thất bại sau khi sửa ${rel || 'file'}:\n${buildErr}\n`);
     process.exit(2);
@@ -102,6 +139,9 @@ switch (payload.hook_event_name) {
     break;
   case 'UserPromptSubmit':
     onUserPromptSubmit();
+    break;
+  case 'PreToolUse':
+    onPreToolUse(payload);
     break;
   case 'PostToolUse':
     onPostToolUse(payload);

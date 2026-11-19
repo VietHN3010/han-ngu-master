@@ -23,6 +23,12 @@ Dự án này được phát triển song song giữa **Claude** và **Antigravi
    - Hook `PostToolUse` của Claude trả exit code 2 nếu `build.js` lỗi (vd. lỗi cú pháp) để Claude thấy và sửa ngay.
 4. **Chống xung đột khi build đồng thời:** `build.js` dùng khóa liên tiến trình (`.git/han-ngu-master-build.lock`) và ghi file nguyên tử (temp + rename), nên hai agent có thể lưu cùng lúc mà không làm hỏng `app.bundle.js`/`index.html`.
 5. **Quy tắc làm việc song song:** tránh để Claude và Antigravity cùng sửa **một file** trong cùng thời điểm (đặc biệt `src/data.js`, `src/grammar.js`, `index.html`). Nên chia việc theo file/module.
+6. **Giữ file & bàn giao (`scripts/agent-sync.js`, dữ liệu ở `.git/agent-sync/`):**
+   - Lệnh: `node scripts/agent-sync.js <status|claim|check|release|note|handoff> <claude|antigravity> ...` (hoặc `npm run sync -- ...`).
+   - **Bắt đầu lượt:** Claude dùng skill `/sync`, Antigravity dùng workflow `/sync` (`.agents/workflows/sync.md`) → xem thay đổi + ghi chú của bên kia, rồi `claim` file sắp sửa.
+   - **Kết thúc lượt:** `/handoff` → build + verify, ghi chú bàn giao, nhả mọi file đang giữ.
+   - Tự động: mỗi file một agent vừa sửa được tự giữ 30 phút (giữ thủ công: 3 giờ). Hook `PreToolUse` của Claude **chặn** sửa file Antigravity đang giữ; Antigravity phải chạy `check antigravity <file>` trước khi ghi. Ghi chú bàn giao mới tự hiện ở lượt kế tiếp của bên kia.
+   - Ép nhả khi cần: `node scripts/agent-sync.js release <agent> --all`.
 
 <!-- AUTO-SYNC-STATE:START -->
 - **Build Tag:** `v13-cbae7045`

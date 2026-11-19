@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node scripts/build.js",
     "test": "node scripts/build.js --check && node scripts/verify.js",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "sync": "node scripts/agent-sync.js"
   },
   "keywords": [
     "chinese",

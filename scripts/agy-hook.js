@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync, execSync } = require('child_process');
 const tracker = require('./sync-tracker');
+const sync = require('./agent-sync');
 
 const AGENT = 'antigravity';
 const APP_ROOT = path.resolve(__dirname, '..');
@@ -32,6 +33,18 @@ function readStdinSync() {
   } catch (e) {
     return '';
   }
+}
+
+function coordinationText() {
+  const parts = [];
+  const held = sync.conflicts(AGENT, Object.keys(tracker.takeSnapshot()).concat(['CLAUDE.md']));
+  if (held.length) {
+    parts.push('[Auto-Sync] Claude đang giữ (đang sửa) các file sau — KHÔNG sửa chúng, hãy làm file khác hoặc hỏi người dùng:\n' +
+      held.map((c) => `  ${c.file}${c.note ? ` · ${c.note}` : ''}`).join('\n'));
+  }
+  const fresh = sync.unseenNotes(AGENT);
+  if (fresh.length) parts.push('[Auto-Sync] Ghi chú bàn giao mới từ Claude:\n' + sync.formatNotes(fresh));
+  return parts.join('\n\n');
 }
 
 function main() {
@@ -79,6 +92,9 @@ function main() {
       sections.push('Các file đã bị Claude (hoặc người dùng) thay đổi kể từ phiên Antigravity trước:\n' + others);
     }
 
+    const coord = coordinationText();
+    if (coord) sections.push(coord);
+    sections.push('Trước khi sửa file: `node scripts/agent-sync.js check antigravity <file>`; xong việc: `node scripts/agent-sync.js handoff antigravity "tóm tắt"` (workflow /sync, /handoff).');
     sections.push('Hãy tự động đọc các file vừa thay đổi nếu liên quan đến yêu cầu của người dùng.');
 
     process.stdout.write(JSON.stringify({
@@ -97,16 +113,19 @@ function main() {
     const diff = tracker.diffSinceLastSeen(AGENT);
     const others = tracker.formatDiff(diff);
     tracker.markAllSeen(AGENT);
+    const coord = coordinationText();
 
-    if (others) {
+    if (others || coord) {
       process.stdout.write(JSON.stringify({
         injectSteps: [
           {
             systemMessage: {
               systemMessage:
-                '[Auto-Sync] Các file sau vừa được Claude (hoặc người dùng) chỉnh sửa kể từ lượt trước:\n' +
-                others +
-                '\nHãy đọc lại các file này trước khi chỉnh sửa.'
+                [
+                  others ? '[Auto-Sync] Các file sau vừa được Claude (hoặc người dùng) chỉnh sửa kể từ lượt trước:\n' +
+                    others + '\nHãy đọc lại các file này trước khi chỉnh sửa.' : '',
+                  coord
+                ].filter(Boolean).join('\n\n')
             }
           }
         ]
@@ -135,8 +154,19 @@ function main() {
     ]
       .map((p) => tracker.toRelPath(typeof p === 'string' ? p : null))
       .filter(Boolean);
-    if (candidates.length) {
-      tracker.markFilesSeen(AGENT, candidates);
+    let edited = candidates;
+    if (!edited.length) {
+      // Payload without a path: files Antigravity hasn't seen AND Claude hasn't seen were edited by Antigravity.
+      const agyDiff = tracker.diffSinceLastSeen(AGENT);
+      const claudeDiff = tracker.diffSinceLastSeen('claude');
+      if (agyDiff && claudeDiff) {
+        const byClaudeUnseen = new Set([...claudeDiff.changed, ...claudeDiff.added]);
+        edited = [...agyDiff.changed, ...agyDiff.added].filter((f) => byClaudeUnseen.has(f));
+      }
+    }
+    if (edited.length) {
+      tracker.markFilesSeen(AGENT, edited);
+      sync.claim(AGENT, edited, '', true);
     }
   }
 

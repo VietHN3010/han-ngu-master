@@ -1,3 +1,4 @@
 {
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "buildCommand": "npm test && rm -rf scripts .claude .agents .githooks CLAUDE.md AGENTS.md README.md"
 }
