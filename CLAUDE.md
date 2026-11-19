@@ -6,6 +6,32 @@ File này cung cấp thông tin kiến trúc, quy chuẩn mã nguồn và quy tr
 
 ---
 
+## 0. Giao thức Tự động Đồng bộ 2 Chiều (Claude ↔ Antigravity Auto-Sync)
+
+Dự án này được phát triển song song giữa **Claude** và **Antigravity** trên cùng thư mục `/Users/nguyenhoangviet/Downloads/汉语/chinese-app`. Cả hai bên **BẮT BUỘC** tuân thủ giao thức bàn giao tự động sau để người dùng không cần giải thích lại bối cảnh:
+
+1. **Khi bắt đầu mỗi yêu cầu / phiên làm việc mới:**
+   - Đọc ngay khối `AUTO-SYNC-STATE` bên dưới để biết ngay những file nguồn nào vừa được chỉnh sửa (bởi Claude hoặc Antigravity).
+   - Tự động mở/đọc các file nằm trong danh sách vừa thay đổi (hoặc chạy `git diff HEAD` nếu đang có thay đổi chưa commit, `git log -n 2 -p -- src/ style.css index.html api/` nếu vừa commit) **trước khi phản hồi hoặc chỉnh sửa** để hiểu chính xác kiến trúc, biến, giao diện và logic mới nhất của đối phương.
+2. **Sau mỗi lần sửa file:**
+   - Hook `PostToolUse` (`.claude/settings.json` và `.agents/hooks.json`) tự động chạy `node scripts/build.js --quiet` để cập nhật `app.bundle.js`, đồng bộ `style.css` ↔ `index.html`, băm SHA-256 cache-busting, cập nhật khối `AUTO-SYNC-STATE` bên dưới và đồng bộ `CLAUDE.md` ↔ `AGENTS.md` (ở cả `chinese-app/` và thư mục cha).
+   - Không cần hỏi người dùng chuyện gì vừa thay đổi — hãy chủ động đọc từ khối trạng thái và git diff.
+
+<!-- AUTO-SYNC-STATE:START -->
+- **Build Tag:** `v13-cbae7045`
+- **Trạng thái nguồn:** Commit gần nhất: fix(curriculum,practice): fix question 2+ freeze in lesson practice, enrich 31 grammar notes, fix dialogues and add verify suite
+- **Các file nguồn liên quan:** `index.html`, `src/data.js`, `src/lessons.js`, `src/match.js`
+```text
+index.html     |   4 +-
+ src/data.js    | 168 ++++++++++++++++++++++++++++++++++++++-------------------
+ src/lessons.js |  53 +++++++++++++++---
+ src/match.js   |   9 +++-
+ 4 files changed, 170 insertions(+), 64 deletions(-)
+```
+<!-- AUTO-SYNC-STATE:END -->
+
+---
+
 ## 1. Tổng quan dự án & Tech Stack
 
 - **Mục tiêu:** Ứng dụng web PWA học tiếng Trung 30 bài học (HSK 1 & HSK 2) với Flashcard 3D, Trắc nghiệm phản xạ, Luyện viết chữ Hán nét thuận, Ghép câu ngữ pháp, và Bảng ngữ âm Pinyin.

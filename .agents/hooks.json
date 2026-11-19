@@ -1,0 +1,23 @@
+{
+  "auto-sync-claude-agy": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "if [ -f ./scripts/agy-hook.js ]; then node ./scripts/agy-hook.js; elif [ -f ../scripts/agy-hook.js ]; then node ../scripts/agy-hook.js; fi",
+        "timeout": 15
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f ./scripts/agy-hook.js ]; then node ./scripts/agy-hook.js; elif [ -f ../scripts/agy-hook.js ]; then node ../scripts/agy-hook.js; fi",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

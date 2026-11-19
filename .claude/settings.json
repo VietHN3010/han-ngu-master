@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node scripts/build.js"
+            "command": "node /Users/nguyenhoangviet/Downloads/汉语/chinese-app/scripts/build.js --quiet"
           }
         ]
       }

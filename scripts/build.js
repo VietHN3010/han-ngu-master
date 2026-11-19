@@ -10,6 +10,7 @@
  *
  * Usage:
  *   node scripts/build.js          # Build & sync all artifacts
+ *   node scripts/build.js --quiet  # Suppress informational output (for hooks)
  *   node scripts/build.js --force  # Override direct-edit guard on app.bundle.js
  *   node scripts/build.js --check  # Verify syntax & sync state without writing files
  */
@@ -21,9 +22,15 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
+const PARENT_ROOT = path.resolve(ROOT, '..');
 const args = process.argv.slice(2);
 const isCheck = args.includes('--check');
 const isForce = args.includes('--force');
+const isQuiet = args.includes('--quiet');
+
+function log(msg) {
+  if (!isQuiet) console.log(msg);
+}
 
 const SRC_FILES = [
   'src/data.js',
@@ -69,20 +76,25 @@ function validateSyntax(code, filename) {
   }
 }
 
-function getGitChangedFiles() {
+function runGit(cmd) {
   try {
-    const status = execSync('git status --porcelain', {
+    return execSync(cmd, {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore']
-    });
-    return status
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((line) => line.slice(3).trim().replace(/^.* -> /, ''));
+    }).trim();
   } catch (e) {
-    return [];
+    return '';
   }
+}
+
+function getGitChangedFiles() {
+  const status = runGit('git status --porcelain');
+  if (!status) return [];
+  return status
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => line.slice(3).trim().replace(/^.* -> /, ''));
 }
 
 function checkDirectBundleEditGuard() {
@@ -161,30 +173,121 @@ function syncCss(indexContent) {
   }
 }
 
+function updateAutoSyncState(versionTag) {
+  const claudePath = path.join(ROOT, CLAUDE_FILE);
+  if (!fs.existsSync(claudePath)) return false;
+
+  const claudeContent = fs.readFileSync(claudePath, 'utf8');
+  const startMarker = '<!-- AUTO-SYNC-STATE:START -->';
+  const endMarker = '<!-- AUTO-SYNC-STATE:END -->';
+  const startIdx = claudeContent.indexOf(startMarker);
+  const endIdx = claudeContent.indexOf(endMarker);
+  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return false;
+
+  const targetPaths = '-- src/ style.css index.html api/';
+  const dirtyStat = runGit(`git diff HEAD --stat ${targetPaths}`);
+  const dirtyNames = runGit(`git diff HEAD --name-only ${targetPaths}`);
+  const untrackedNames = runGit('git ls-files --others --exclude-standard -- src/ api/');
+
+  let sourceSummary = '';
+  let fileList = [];
+  let statLines = [];
+
+  if (dirtyStat || dirtyNames || untrackedNames) {
+    sourceSummary = 'Thay đổi đang thực hiện trong working tree (chưa commit)';
+    const combined = [
+      ...dirtyNames.split(/\r?\n/),
+      ...untrackedNames.split(/\r?\n/)
+    ].map((s) => s.trim()).filter(Boolean);
+    fileList = Array.from(new Set(combined)).sort();
+    statLines = dirtyStat ? dirtyStat.split(/\r?\n/).filter(Boolean) : [];
+  } else {
+    const commitSubject = runGit(`git log -1 --format="%s" ${targetPaths}`) || 'Khởi tạo dự án';
+    const commitNames = runGit(`git log -1 --name-only --format="" ${targetPaths}`);
+    const commitStat = runGit(`git log -1 --stat --format="" ${targetPaths}`);
+    sourceSummary = `Commit gần nhất: ${commitSubject}`;
+    fileList = Array.from(new Set(commitNames.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)));
+    statLines = commitStat ? commitStat.split(/\r?\n/).filter(Boolean) : [];
+  }
+
+  if (statLines.length > 20) {
+    statLines = [...statLines.slice(0, 20), '... (truncated)'];
+  }
+
+  const filesText = fileList.length ? fileList.map((f) => `\`${f}\``).join(', ') : '_Không có thay đổi nguồn_';
+  const blockLines = [
+    startMarker,
+    `- **Build Tag:** \`${versionTag}\``,
+    `- **Trạng thái nguồn:** ${sourceSummary}`,
+    `- **Các file nguồn liên quan:** ${filesText}`
+  ];
+  if (statLines.length) {
+    blockLines.push('```text');
+    blockLines.push(...statLines);
+    blockLines.push('```');
+  }
+  blockLines.push(endMarker);
+
+  const before = claudeContent.slice(0, startIdx);
+  const after = claudeContent.slice(endIdx + endMarker.length);
+  const nextClaude = before + blockLines.join('\n') + after;
+
+  if (nextClaude === claudeContent) return false;
+  fs.writeFileSync(claudePath, nextClaude, 'utf8');
+  return true;
+}
+
+function mirrorToParentWorkspace(claudeContent) {
+  try {
+    if (PARENT_ROOT === ROOT || !fs.existsSync(PARENT_ROOT)) return;
+    fs.accessSync(PARENT_ROOT, fs.constants.W_OK);
+    for (const filename of [CLAUDE_FILE, AGENTS_FILE]) {
+      const target = path.join(PARENT_ROOT, filename);
+      const existing = fs.existsSync(target) && !fs.lstatSync(target).isSymbolicLink()
+        ? fs.readFileSync(target, 'utf8')
+        : null;
+      if (existing !== claudeContent) {
+        fs.writeFileSync(target, claudeContent, 'utf8');
+      }
+    }
+  } catch (e) {
+    // Parent directory not writable (e.g., isolated CI container); skip safely
+  }
+}
+
 function syncAgentsFile() {
   const claudePath = path.join(ROOT, CLAUDE_FILE);
   const agentsPath = path.join(ROOT, AGENTS_FILE);
   if (!fs.existsSync(claudePath)) return false;
 
   const claudeContent = fs.readFileSync(claudePath, 'utf8');
+  let changed = false;
+
   if (fs.existsSync(agentsPath)) {
     const stat = fs.lstatSync(agentsPath);
     if (stat.isSymbolicLink()) {
       if (isCheck) return true; // mismatch in --check mode
       fs.unlinkSync(agentsPath);
+      changed = true;
     } else {
       const agentsContent = fs.readFileSync(agentsPath, 'utf8');
-      if (agentsContent === claudeContent) return false;
-      if (isCheck) return true;
+      if (agentsContent !== claudeContent) {
+        if (isCheck) return true;
+        changed = true;
+      }
     }
-  } else if (isCheck) {
-    return true;
+  } else {
+    if (isCheck) return true;
+    changed = true;
   }
 
   if (!isCheck) {
-    fs.writeFileSync(agentsPath, claudeContent, 'utf8');
+    if (changed) {
+      fs.writeFileSync(agentsPath, claudeContent, 'utf8');
+    }
+    mirrorToParentWorkspace(claudeContent);
   }
-  return true;
+  return changed;
 }
 
 function run() {
@@ -239,8 +342,12 @@ function run() {
     if (!swContent.includes(`'han-ngu-master-${versionTag}'`)) {
       errors.push(`sw.js CACHE_NAME is not 'han-ngu-master-${versionTag}'.`);
     }
+    const claudeContent = fs.existsSync(path.join(ROOT, CLAUDE_FILE)) ? readUtf8(CLAUDE_FILE) : '';
+    if (!claudeContent.includes('<!-- AUTO-SYNC-STATE:START -->') || !claudeContent.includes(`\`${versionTag}\``)) {
+      errors.push(`CLAUDE.md AUTO-SYNC-STATE is missing or does not match ${versionTag}.`);
+    }
     const agentsPath = path.join(ROOT, AGENTS_FILE);
-    if (!fs.existsSync(agentsPath) || fs.lstatSync(agentsPath).isSymbolicLink() || readUtf8(AGENTS_FILE) !== readUtf8(CLAUDE_FILE)) {
+    if (!fs.existsSync(agentsPath) || fs.lstatSync(agentsPath).isSymbolicLink() || readUtf8(AGENTS_FILE) !== claudeContent) {
       errors.push('AGENTS.md must be a regular file synced with CLAUDE.md.');
     }
 
@@ -248,7 +355,7 @@ function run() {
       console.error('Check failed:\n - ' + errors.join('\n - '));
       process.exit(1);
     }
-    console.log(`OK: All syntax, bundle, CSS, cache tag (${versionTag}), and docs checks passed.`);
+    log(`OK: All syntax, bundle, CSS, cache tag (${versionTag}), and docs checks passed.`);
     return;
   }
 
@@ -278,15 +385,17 @@ function run() {
   );
   const swUpdated = writeIfChanged(SW_FILE, swContent);
 
-  // Sync AGENTS.md from CLAUDE.md
+  // Update AUTO-SYNC-STATE in CLAUDE.md, sync AGENTS.md and mirror to parent root
+  const claudeUpdated = updateAutoSyncState(versionTag);
   const agentsUpdated = syncAgentsFile();
 
-  console.log(`Build complete (${versionTag}):`);
-  console.log(` - ${BUNDLE_FILE}: ${bundleUpdated ? 'updated' : 'unchanged'}`);
-  console.log(` - ${STYLE_FILE}/${INDEX_FILE} CSS: ${cssSync.synced ? cssSync.direction : 'already in sync'}`);
-  console.log(` - ${INDEX_FILE}: ${indexUpdated ? 'updated' : 'unchanged'}`);
-  console.log(` - ${SW_FILE}: ${swUpdated ? 'updated' : 'unchanged'}`);
-  console.log(` - ${AGENTS_FILE}: ${agentsUpdated ? 'synced from CLAUDE.md' : 'unchanged'}`);
+  log(`Build complete (${versionTag}):`);
+  log(` - ${BUNDLE_FILE}: ${bundleUpdated ? 'updated' : 'unchanged'}`);
+  log(` - ${STYLE_FILE}/${INDEX_FILE} CSS: ${cssSync.synced ? cssSync.direction : 'already in sync'}`);
+  log(` - ${INDEX_FILE}: ${indexUpdated ? 'updated' : 'unchanged'}`);
+  log(` - ${SW_FILE}: ${swUpdated ? 'updated' : 'unchanged'}`);
+  log(` - ${CLAUDE_FILE} AUTO-SYNC-STATE: ${claudeUpdated ? 'updated' : 'unchanged'}`);
+  log(` - ${AGENTS_FILE}: ${agentsUpdated ? 'synced from CLAUDE.md' : 'unchanged'}`);
 }
 
 run();
