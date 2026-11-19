@@ -3966,7 +3966,7 @@ const GrammarController = {
     if (this.mode === 'reorder') {
       if (reorderArea) reorderArea.style.display = 'block';
       if (choiceArea) choiceArea.style.display = 'none';
-      if (promptVi) promptVi.innerHTML = `<span>🇻🇳 Dịch nghĩa:</span> <strong>"${q.vi}"</strong>`;
+      if (promptVi) promptVi.innerHTML = `<span class="quiz-prompt-label">Ghép thành câu có nghĩa</span><strong class="quiz-prompt-mean">${UI.esc(q.vi)}</strong>`;
       if (promptZh) promptZh.style.display = 'none';
 
       // Setup tokens
@@ -3981,24 +3981,20 @@ const GrammarController = {
     } else if (this.mode === 'vi_to_zh') {
       if (reorderArea) reorderArea.style.display = 'none';
       if (choiceArea) choiceArea.style.display = 'block';
-      if (promptVi) promptVi.innerHTML = `<span>🇻🇳 Hãy chọn câu tiếng Trung đúng ngữ pháp cho:</span><br><strong style="font-size:1.15rem; color:var(--text-main); margin-top:0.35rem; display:block;">"${q.vi}"</strong>`;
+      if (promptVi) promptVi.innerHTML = `<span class="quiz-prompt-label">Chọn câu tiếng Trung đúng cho</span><strong class="quiz-prompt-mean">${UI.esc(q.vi)}</strong>`;
       if (promptZh) promptZh.style.display = 'none';
 
       this.renderTranslationChoices(q, 'zh');
     } else if (this.mode === 'zh_to_vi') {
       if (reorderArea) reorderArea.style.display = 'none';
       if (choiceArea) choiceArea.style.display = 'block';
-      if (promptVi) promptVi.innerHTML = `<span>🇨🇳 Chọn nghĩa tiếng Việt chính xác của câu:</span>`;
+      if (promptVi) promptVi.innerHTML = `<span class="quiz-prompt-label">Chọn nghĩa tiếng Việt của câu</span>`;
       if (promptZh) {
         promptZh.style.display = 'block';
         promptZh.innerHTML = `
-          <div style="font-size:1.45rem; font-weight:700; color:var(--text-main); font-family:var(--font-hanzi); margin:0.4rem 0;">
-            ${q.zh}
-          </div>
-          <div style="color:var(--primary); font-size:0.95rem; font-weight:600; margin-bottom:0.4rem;">${q.py}</div>
-          <button class="btn btn-outline btn-sm" onclick="AudioEngine.speak('${q.zh}')" style="margin-bottom:0.5rem;">
-            🔊 Nghe câu
-          </button>
+          <div class="grammar-zh hanzi">${q.zh}</div>
+          <div class="py grammar-py">${Tone.html(q.py || q.pinyin || '')}</div>
+          <button class="btn btn-outline btn-sm" onclick="AudioEngine.speak('${jsArg(q.zh)}')">${Icon.svg('sound')}<span>Nghe câu</span></button>
         `;
       }
 
@@ -4197,21 +4193,16 @@ const GrammarController = {
       nextBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
+    // Hear the correct sentence right away (we are inside the learner's tap)
+    if (typeof AudioEngine !== 'undefined' && q && q.zh) AudioEngine.speak(q.zh);
+
     if (feedbackBox) {
       feedbackBox.style.display = 'block';
       feedbackBox.className = `grammar-feedback ${isCorrect ? 'feedback-correct' : 'feedback-wrong'}`;
       feedbackBox.innerHTML = `
-        <div style="font-weight:800; font-size:1.05rem; margin-bottom:0.35rem; display:flex; align-items:center; gap:0.4rem;">
-          <span>${isCorrect ? '🎉 Chính xác!' : '⚠️ Chưa chính xác!'}</span>
-        </div>
-        <div style="font-size:1.15rem; font-weight:700; color:var(--text-main); font-family:var(--font-hanzi); margin:0.3rem 0;">
-          ${q.zh}
-        </div>
-        <div style="color:var(--primary); font-size:0.88rem; font-weight:600;">${q.py}</div>
-        <div style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">🇻🇳 ${q.vi}</div>
-        <div class="grammar-tip-badge" style="margin-top:0.6rem; padding:0.55rem 0.75rem; background:rgba(0,0,0,0.04); border-radius:var(--radius-sm); font-size:0.82rem; line-height:1.45; border-left:3px solid var(--primary);">
-          💡 <strong>Ngữ pháp:</strong> ${q.grammarNote || 'Chú ý trật tự từ trong tiếng Trung: Trạng ngữ thời gian và nơi chốn luôn đứng trước vị ngữ.'}
-        </div>
+        <div class="rv-fb-head">${Icon.svg(isCorrect ? 'check' : 'x')}<b>${isCorrect ? 'Chính xác' : 'Chưa đúng. Câu đúng là:'}</b></div>
+        <button class="say-line" onclick="AudioEngine.speak('${jsArg(q.zh)}')"><span class="hanzi">${q.zh}</span><span class="py">${Tone.html(q.py || q.pinyin || '')}</span><span class="say-vi">${UI.esc(q.vi)}</span>${Icon.svg('sound')}</button>
+        <div class="grammar-tip-badge">${Icon.svg('bulb')}<span><b>Ngữ pháp:</b> ${UI.esc(q.grammarNote || q.point || 'Chú ý trật tự từ: thời gian và nơi chốn đứng trước động từ.')}</span></div>
       `;
     }
   },
@@ -4247,9 +4238,9 @@ const GrammarController = {
     if (resPct) resPct.innerText = `${pct}%`;
 
     let badge = 'Cần luyện tập thêm nhé!';
-    if (pct === 100) badge = '👑 Tuyệt đối! Bậc thầy Ngữ pháp HSK!';
-    else if (pct >= 80) badge = '🌟 Rất xuất sắc! Nắm vững cấu trúc câu!';
-    else if (pct >= 60) badge = '👍 Khá tốt! Cần chú ý thêm vị trí phó từ!';
+    if (pct === 100) badge = 'Tuyệt đối! Bạn nắm chắc cấu trúc câu.';
+    else if (pct >= 80) badge = 'Rất tốt! Chỉ còn vài lỗi nhỏ.';
+    else if (pct >= 60) badge = 'Khá tốt. Xem lại các câu sai bên dưới.';
     const badgeEl = document.getElementById('grammar-res-badge');
     if (badgeEl) badgeEl.innerText = badge;
 
@@ -4259,12 +4250,10 @@ const GrammarController = {
     if (this.missedQuestions.length > 0 && missedArea && missedList) {
       missedArea.style.display = 'block';
       missedList.innerHTML = this.missedQuestions.map(m => `
-        <div style="padding:0.75rem; border-bottom:1px solid var(--border);">
-          <div style="font-size:1.15rem; font-weight:700; color:var(--text-main); font-family:var(--font-hanzi);">${m.zh}</div>
-          <div style="color:var(--primary); font-size:0.85rem; font-weight:600;">${m.py}</div>
-          <div style="color:var(--text-muted); font-size:0.85rem;">${m.vi}</div>
-          <div style="font-size:0.78rem; color:var(--secondary); margin-top:0.25rem;">💡 ${m.grammarNote}</div>
-        </div>
+        <button class="say-line say-block" onclick="AudioEngine.speak('${jsArg(m.zh)}')">
+          <span class="hanzi">${m.zh}</span><span class="py">${Tone.html(m.py || '')}</span><span class="say-vi">${UI.esc(m.vi)}</span>${Icon.svg('sound')}
+          <span class="say-note">${UI.esc(m.grammarNote || '')}</span>
+        </button>
       `).join('');
     } else if (missedArea) {
       missedArea.style.display = 'none';

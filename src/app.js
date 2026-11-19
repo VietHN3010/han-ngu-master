@@ -9,9 +9,10 @@ const App = {
   TAB_GROUP: {
     home: 'learn', lessons: 'learn',
     review: 'review', flashcard: 'review', quiz: 'review', grammar: 'review', writer: 'review', match: 'review',
+    tones: 'review', guide: 'learn',
     dict: 'dict', me: 'me'
   },
-  VALID_VIEWS: ['home', 'lessons', 'review', 'flashcard', 'quiz', 'grammar', 'writer', 'match', 'dict', 'me'],
+  VALID_VIEWS: ['home', 'lessons', 'review', 'flashcard', 'quiz', 'grammar', 'writer', 'match', 'tones', 'guide', 'dict', 'me'],
   STEP_NAMES: ['Từ vựng', 'Bài khóa', 'Ngữ pháp', 'Luyện tập'],
 
   async init() {
@@ -194,6 +195,11 @@ const App = {
       if (typeof GrammarController !== 'undefined') GrammarController.resetToSetup();
     } else if (tabId === 'flashcard') {
       if (FlashcardController.refreshDue) FlashcardController.refreshDue();
+    } else if (tabId === 'guide') {
+      if (typeof Guide !== 'undefined') Guide.render();
+    } else if (tabId === 'tones') {
+      const sess = document.getElementById('tones-session');
+      if (typeof ToneDrill !== 'undefined' && (!sess || sess.hidden)) ToneDrill.renderHub();
     }
 
     window.scrollTo({ top: 0, behavior: 'auto' });

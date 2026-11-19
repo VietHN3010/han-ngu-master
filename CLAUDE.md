@@ -31,23 +31,18 @@ Dự án này được phát triển song song giữa **Claude** và **Antigravi
    - Ép nhả khi cần: `node scripts/agent-sync.js release <agent> --all`.
 
 <!-- AUTO-SYNC-STATE:START -->
-- **Build Tag:** `v13-27d0f920`
+- **Build Tag:** `v13-eda3c823`
 - **Trạng thái nguồn:** Thay đổi đang thực hiện trong working tree (chưa commit)
-- **Các file nguồn liên quan:** `index.html`, `src/app.js`, `src/dictionary.js`, `src/flashcard.js`, `src/lessons.js`, `src/match.js`, `src/quiz.js`, `src/review.js`, `src/storage.js`, `src/ui.js`, `src/writer.js`, `style.css`
+- **Các file nguồn liên quan:** `index.html`, `src/app.js`, `src/grammar.js`, `src/guide.js`, `src/quiz.js`, `src/tones.js`, `style.css`
 ```text
-index.html        | 1041 ++++++++++++++++++++++++++++++++++-------------------
- src/app.js        |  498 +++++++++++++------------
- src/dictionary.js |   49 +--
- src/flashcard.js  |   90 +++--
- src/lessons.js    |  470 ++++++++++--------------
- src/match.js      |    2 +-
- src/quiz.js       |   16 +-
- src/review.js     |  402 +++++++++++++++++++++
- src/storage.js    |  159 +++++++-
- src/ui.js         |  251 +++++++++++++
- src/writer.js     |   11 +-
- style.css         |  400 +++++++++++++++++++-
- 12 files changed, 2403 insertions(+), 986 deletions(-)
+index.html     | 175 +++++++++++++++++++++++++++++++--
+ src/app.js     |   8 +-
+ src/grammar.js |  49 ++++------
+ src/guide.js   | 299 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/quiz.js    |  67 ++++++-------
+ src/tones.js   | 243 ++++++++++++++++++++++++++++++++++++++++++++++
+ style.css      | 118 +++++++++++++++++++++++
+ 7 files changed, 884 insertions(+), 75 deletions(-)
 ```
 <!-- AUTO-SYNC-STATE:END -->
 
@@ -88,7 +83,9 @@ Các file nguồn trong `src/`:
 11. `src/pinyin.js`: `PinyinController` (Bảng 23 thanh mẫu, 36 vận mẫu và 5 thanh điệu Pinyin kèm chữ Hán đại diện chuẩn âm Bắc Kinh `sound`).
 12. `src/ui.js`: `Icon` (bộ biểu tượng SVG dùng chung, thay emoji), `Tone` (tách âm tiết pinyin + tô màu thanh điệu `.t1`–`.t5`), `Prefs` (bật/tắt Pinyin, Hán Việt, màu thanh điệu, số từ mới/ngày), `UI` (`toast`, `confirm`, `alert`, `loadScript`). **Không dùng `window.alert/confirm`** — dùng `UI.confirm/UI.alert`.
 13. `src/review.js`: `Review` (hàng đợi ôn tập hôm nay theo lịch ôn ngắt quãng, trộn dạng bài: intro / flip / meaning / reverse / listen / write; luyện nghe). HanziWriter được tải lười qua `HANZI_WRITER_URL`.
-14. `src/app.js`: `App` (Điều hướng **4 tab** `learn · review · dict · me` qua `TAB_GROUP`; các view: `home` (Hôm nay), `lessons`, `review`, `flashcard`, `quiz`, `grammar`, `writer`, `match`, `dict`, `me`; hash routing `#lesson-X`; màn Hôm nay, trang Tôi, chế độ khách).
+14. `src/tones.js`: `ToneDrill` (luyện nghe phân biệt thanh: một âm tiết / cặp thanh, bỏ qua từ có 一, 不 và 3+3; thống kê độ chính xác từng cặp thanh trong `localStorage` `hnm_tone_stats_v1`). View `#tones`.
+15. `src/guide.js`: `Guide` (trang Kiến thức `#guide`: thanh điệu & biến điệu, bảng 20 cặp thanh, 44 bộ thủ, 16 lượng từ, số/giờ/ngày/tiền, kỳ thi HSK 2.0 vs 3.0). Ví dụ lấy tự động từ `all_words`.
+16. `src/app.js`: `App` (Điều hướng **4 tab** `learn · review · dict · me` qua `TAB_GROUP`; các view: `home` (Hôm nay), `lessons`, `review`, `flashcard`, `quiz`, `grammar`, `writer`, `match`, `dict`, `me`; hash routing `#lesson-X`; màn Hôm nay, trang Tôi, chế độ khách).
 
 **Chế độ khách (v14):** không còn bắt đăng nhập. `StorageManager.ensureGuest()` tạo học viên trên máy (`isGuest: true`, không đồng bộ). Khi đăng nhập/đăng ký, `_mergeGuestInto()` gộp tiến độ khách vào tài khoản. Lời mời tạo tài khoản hiện sau khi hoàn thành bài.
 

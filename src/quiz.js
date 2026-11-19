@@ -127,36 +127,31 @@ const QuizController = {
 
     if (this.mode === 'hanzi_to_vi') {
       promptCard.innerHTML = `
-        <div class="quiz-prompt-label">Hãy chọn nghĩa tiếng Việt chính xác của chữ Hán sau:</div>
-        <div class="quiz-prompt-hanzi">${cleanHanzi}</div>
-        <div style="font-size:1.15rem; color:var(--primary); font-weight:700; margin-bottom:0.35rem;">${cleanPinyin}</div>
-        <div>
-          <button class="btn-speaker-circle" onclick="AudioEngine.speak('${cleanHanzi}')" title="Nghe phát âm">🔊</button>
-        </div>
+        <div class="quiz-prompt-label">Chọn nghĩa tiếng Việt của từ</div>
+        <div class="quiz-prompt-hanzi hanzi">${cleanHanzi}</div>
+        <div class="quiz-prompt-py py">${Tone.html(cleanPinyin)}</div>
+        <button class="icon-btn icon-btn-primary" onclick="AudioEngine.speak('${jsArg(cleanHanzi)}')" aria-label="Nghe phát âm">${Icon.svg('sound')}</button>
       `;
     } else if (this.mode === 'hanzi_to_pinyin') {
       promptCard.innerHTML = `
-        <div class="quiz-prompt-label">Hãy chọn Phiên âm (Pinyin) đúng của chữ Hán:</div>
-        <div class="quiz-prompt-hanzi">${cleanHanzi}</div>
-        <div style="font-size:0.95rem; color:var(--text-muted);">${cleanMeaning}</div>
+        <div class="quiz-prompt-label">Chọn cách đọc (Pinyin) đúng</div>
+        <div class="quiz-prompt-hanzi hanzi">${cleanHanzi}</div>
+        <div class="quiz-prompt-sub">${UI.esc(cleanMeaning)}</div>
       `;
     } else if (this.mode === 'listen_to_hanzi') {
       promptCard.innerHTML = `
-        <div class="quiz-prompt-label">Nghe phát âm và chọn Chữ Hán tương ứng:</div>
-        <div style="margin: 0.85rem 0;">
-          <button class="btn btn-primary" onclick="AudioEngine.speak('${cleanHanzi}')" style="font-size:1rem; padding: 0.65rem 1.4rem;">
-            🔊 Nghe lại phát âm
-          </button>
-        </div>
-        <div class="quiz-prompt-label" style="font-size:0.82rem;">Gợi ý: ${cleanMeaning}</div>
+        <div class="quiz-prompt-label">Nghe rồi chọn chữ Hán đúng</div>
+        <button class="rv-listen" onclick="AudioEngine.speak('${jsArg(cleanHanzi)}')" aria-label="Nghe lại">${Icon.svg('sound')}</button>
+        <details class="quiz-hint"><summary>Xem gợi ý nghĩa</summary>${UI.esc(cleanMeaning)}</details>
       `;
-      // Auto-play audio on question load
-      setTimeout(() => AudioEngine.speak(cleanHanzi), 300);
+      // Speak synchronously: render() always runs inside the learner's tap (start / next),
+      // a delayed call would be blocked by mobile autoplay rules.
+      AudioEngine.speak(cleanHanzi);
     } else if (this.mode === 'vi_to_hanzi') {
       promptCard.innerHTML = `
-        <div class="quiz-prompt-label">Chọn Chữ Hán có nghĩa là:</div>
-        <div style="font-size:1.6rem; font-weight:700; color:var(--secondary); margin: 0.35rem 0;">"${cleanMeaning}"</div>
-        <div style="font-size:0.95rem; color:var(--text-muted);">Hán Việt: ${cleanHanviet}</div>
+        <div class="quiz-prompt-label">Chọn chữ Hán có nghĩa</div>
+        <div class="quiz-prompt-mean">${UI.esc(cleanMeaning)}</div>
+        <span class="hv-badge">${UI.esc(cleanHanviet)}</span>
       `;
     }
 
@@ -169,14 +164,11 @@ const QuizController = {
       const choiceMeaning = (choice.meaning || (choice.hanviet ? `Hán Việt: ${choice.hanviet}` : choice.pinyin)).replace(/\s+,/g, ',');
       let text = '';
       if (this.mode === 'hanzi_to_vi') {
-        text = `<span><strong>${String.fromCharCode(65 + idx)}.</strong> ${choiceMeaning}</span>`;
+        text = `<span>${UI.esc(choiceMeaning)}</span>`;
       } else if (this.mode === 'hanzi_to_pinyin') {
-        text = `<span><strong>${String.fromCharCode(65 + idx)}.</strong> ${choice.pinyin}</span>`;
+        text = `<span class="py">${Tone.html(choice.pinyin)}</span>`;
       } else if (this.mode === 'listen_to_hanzi' || this.mode === 'vi_to_hanzi') {
-        text = `
-          <span><strong>${String.fromCharCode(65 + idx)}.</strong> <span class="hanzi" style="font-size:1.35rem; margin-left:0.35rem;">${choice.hanzi}</span></span>
-          <span style="font-size:0.85rem; color:var(--text-muted);">${choice.pinyin}</span>
-        `;
+        text = `<span class="hanzi quiz-opt-hanzi">${choice.hanzi}</span>`;
       }
 
       btn.innerHTML = text;
@@ -201,6 +193,10 @@ const QuizController = {
         btn.classList.add('wrong');
       }
     });
+
+    // Results feed the spaced-repetition schedule
+    if (q.word && q.word.id && !q.word.isCustom) StorageManager.updateWordSrs(q.word.id, isCorrect ? 'good' : 'again');
+    if (this.mode !== 'hanzi_to_vi') AudioEngine.speak(q.word.hanzi);
 
     if (isCorrect) {
       this.score++;
@@ -261,18 +257,15 @@ const QuizController = {
     if (this.missedQuestions.length > 0 && missedContainer && missedArea) {
       missedArea.style.display = 'block';
       missedContainer.innerHTML = this.missedQuestions.map(m => `
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem; border-bottom:1px solid var(--border);">
-          <div>
-            <span class="hanzi" style="font-size:1.4rem; font-weight:600; color:var(--text-main); margin-right:0.5rem;">${m.word.hanzi}</span>
-            <span style="color:var(--primary); font-weight:500;">${m.word.pinyin}</span>
-            <span style="color:var(--text-muted); margin-left:0.5rem;">(${m.word.hanviet || '—'})</span>
-            <div style="color:var(--text-main); font-size:0.9rem;">${m.word.meaning}</div>
+        <div class="missed-row">
+          <button class="icon-btn" onclick="AudioEngine.speak('${jsArg(m.word.hanzi)}')" aria-label="Nghe">${Icon.svg('sound')}</button>
+          <div class="missed-main">
+            <span class="hanzi">${m.word.hanzi}</span> <span class="py">${Tone.html(m.word.pinyin)}</span>
+            ${m.word.hanviet ? `<span class="hv-badge">${UI.esc(m.word.hanviet)}</span>` : ''}
+            <div class="missed-mean">${UI.esc(m.word.meaning)}</div>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${m.word.hanzi}');">
-            ✍️ Luyện viết
-          </button>
         </div>
-      `).join('');
+      `).join('') + `<button class="btn btn-primary btn-block" style="margin-top:0.6rem" onclick="Review.begin(QuizController.missedQuestions.map(m => m.word), 'today')">Ôn ngay ${this.missedQuestions.length} từ sai</button>`;
     } else if (missedArea) {
       missedArea.style.display = 'none';
     }

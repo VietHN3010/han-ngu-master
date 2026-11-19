@@ -48,6 +48,8 @@ const SRC_FILES = [
   'src/dictionary.js',
   'src/pinyin.js',
   'src/review.js',
+  'src/tones.js',
+  'src/guide.js',
   'src/app.js'
 ];
 

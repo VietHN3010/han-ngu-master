@@ -2815,3 +2815,121 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
 @media (max-width: 380px) { .quick-start-grid { grid-template-columns: minmax(0, 1fr); } }
 .quiz-custom { border-top: 1px solid var(--line); padding-top: 0.75rem; }
 .quiz-custom summary { cursor: pointer; font-weight: 700; font-size: 0.88rem; color: var(--ink-soft); margin-bottom: 0.75rem; }
+
+/* ==========================================================================
+   v15: Tone trainer, Knowledge guide, refreshed Quiz / Grammar sessions
+   ========================================================================== */
+.tone-contour { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.tone-contour.t5 path { fill: currentColor; stroke: none; }
+.tone-contour.lg { width: 40px; height: 40px; }
+.tones-hub, .guide { max-width: 760px; margin: 0 auto; display: grid; gap: 1rem; }
+.tones-session { max-width: 560px; margin: 0 auto; display: grid; gap: 1rem; }
+.tone-card { min-height: 200px; }
+.tone-reveal { display: grid; gap: 0.35rem; justify-items: center; }
+.tone-contours { display: flex; gap: 0.5rem; }
+.tone-rows { display: grid; gap: 0.75rem; }
+.tone-row { display: grid; gap: 0.35rem; }
+.tone-row-label { font-size: 0.74rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+.tone-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 0.45rem; }
+.tone-btn { background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 0.55rem 0.25rem 0.45rem; display: grid; justify-items: center; gap: 0.15rem; cursor: pointer; font: inherit; font-size: 0.74rem; font-weight: 700; color: var(--ink); transition: border-color .15s, background .15s; }
+.tone-btn:hover:not(:disabled) { border-color: var(--primary-border); }
+.tone-btn.sel { border-color: var(--ink); background: var(--bg-subtle); }
+.tone-btn.correct { border-color: var(--jade); background: var(--jade-soft); }
+.tone-btn.wrong { border-color: #c62828; background: var(--red-soft); }
+.tone-btn:disabled { cursor: default; }
+.rv-footer-2 { grid-template-columns: auto minmax(0, 1fr); }
+.tp-grid { display: grid; grid-template-columns: 40px repeat(5, minmax(0, 1fr)); gap: 4px; font-variant-numeric: tabular-nums; }
+.tp-head { font-size: 0.74rem; font-weight: 800; color: var(--ink-soft); display: grid; place-items: center; padding: 0.25rem 0; }
+.tp-cell { border-radius: 8px; display: grid; place-items: center; font-size: 0.78rem; font-weight: 800; padding: 0.45rem 0; }
+.tp-none { background: var(--bg-subtle); color: var(--ink-soft); font-weight: 600; }
+.tp-good { background: var(--jade-soft); color: var(--jade); }
+.tp-mid { background: var(--amber-soft); color: var(--amber); }
+.tp-bad { background: var(--red-soft); color: var(--primary); }
+
+/* Guide */
+.guide-nav { display: flex; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.guide-nav .seg-btn { white-space: nowrap; flex: none; }
+.guide-body { display: grid; gap: 1rem; }
+.guide-card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 1.1rem 1.15rem; display: grid; gap: 0.75rem; }
+.guide-card h3 { font-size: 1.05rem; font-weight: 800; }
+.guide-lead { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.6; max-width: 65ch; }
+.guide-points { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.4rem; font-size: 0.88rem; line-height: 1.55; color: var(--ink); }
+.guide-foot { text-align: center; }
+.tone-list { display: grid; gap: 0.5rem; }
+.tone-item { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 0.75rem; align-items: center; text-align: left; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 0.6rem 0.8rem; cursor: pointer; font: inherit; color: var(--ink); }
+.tone-item-main { font-size: 1.1rem; white-space: nowrap; }
+.tone-item-main .hanzi { font-size: 1.25rem; }
+.tone-item-desc { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.45; }
+@media (max-width: 480px) { .tone-item { grid-template-columns: auto minmax(0, 1fr); } .tone-item-desc { grid-column: 1 / -1; } }
+.rule-list { display: grid; gap: 0.75rem; }
+.rule { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 0.75rem; align-items: start; }
+.rule > div { display: grid; gap: 0.35rem; min-width: 0; font-size: 0.9rem; }
+.rule p { font-size: 0.84rem; color: var(--ink-soft); }
+.rule-tag { font-family: var(--font-hanzi); background: var(--blue-soft); color: var(--blue); border-radius: 10px; font-weight: 800; font-size: 0.85rem; text-align: center; padding: 0.45rem 0.25rem; }
+.say-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.6rem; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 0.5rem 0.75rem; cursor: pointer; text-align: left; font: inherit; color: var(--ink); width: 100%; }
+.say-line .hanzi { font-size: 1.15rem; font-weight: 700; }
+.say-line .py { font-size: 0.88rem; font-weight: 700; }
+.say-vi { font-size: 0.82rem; color: var(--ink-soft); }
+.say-line .ico { margin-left: auto; color: var(--primary); align-self: center; }
+.say-block { margin-bottom: 0.4rem; }
+.say-note { flex-basis: 100%; font-size: 0.78rem; color: var(--blue); }
+.table-scroll { overflow-x: auto; }
+.pair-table { width: 100%; border-collapse: separate; border-spacing: 4px; font-size: 0.85rem; min-width: 460px; }
+.pair-table th { font-size: 0.78rem; color: var(--ink-soft); font-weight: 800; padding: 0.3rem; text-align: center; }
+.pair-table td { background: var(--paper); border-radius: 10px; text-align: center; padding: 0.35rem 0.25rem; vertical-align: middle; }
+.pair-word { all: unset; cursor: pointer; display: grid; gap: 0.05rem; justify-items: center; }
+.pair-word .hanzi { font-size: 1.1rem; font-weight: 700; color: var(--ink); }
+.pair-word .py { font-size: 0.74rem; font-weight: 700; }
+.pair-sandhi { color: var(--amber); font-size: 0.74rem; font-weight: 800; background: var(--amber-soft) !important; }
+.pair-empty { color: var(--ink-soft); }
+.hsk-table { min-width: 0; }
+.hsk-table td { text-align: left; padding: 0.55rem 0.7rem; }
+.radical-grid { display: grid; gap: 0.75rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .radical-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.radical-card, .measure-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 0.85rem 0.95rem; display: grid; gap: 0.6rem; align-content: start; }
+.radical-head { display: flex; align-items: center; gap: 0.75rem; }
+.radical-head > div { display: grid; gap: 0.05rem; }
+.radical-head b { font-size: 0.95rem; }
+.radical-head span { font-size: 0.8rem; color: var(--ink-soft); }
+.radical-glyph { width: 50px; height: 50px; border-radius: 14px; background: var(--red-soft); color: var(--primary); display: grid; place-items: center; font-size: 1.75rem; font-weight: 700; flex: none; }
+.radical-chars { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.radical-chars button { min-width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-size: 1.15rem; cursor: pointer; font-family: var(--font-hanzi); }
+.radical-chars button:hover { border-color: var(--primary-border); color: var(--primary); }
+.radical-ex { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.word-chip { display: inline-flex; align-items: baseline; gap: 0.35rem; border: 1px solid var(--line); background: var(--paper); border-radius: 10px; padding: 0.3rem 0.55rem; cursor: pointer; font: inherit; color: var(--ink); max-width: 100%; }
+.word-chip .hanzi { font-weight: 700; }
+.word-chip .py { font-size: 0.78rem; font-weight: 700; }
+.wc-mean { font-size: 0.76rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 14ch; }
+.measure-list { display: grid; gap: 0.75rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .measure-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.measure-head { all: unset; cursor: pointer; display: flex; gap: 0.75rem; align-items: center; }
+.measure-head > span:last-child { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.measure-use { flex-basis: 100%; font-size: 0.8rem; color: var(--ink-soft); }
+.num-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 0.4rem; }
+.num-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 0.45rem 0.25rem; display: grid; justify-items: center; gap: 0.05rem; cursor: pointer; font: inherit; color: var(--ink); }
+.num-n { font-size: 0.72rem; color: var(--ink-soft); font-weight: 800; }
+.num-cell .hanzi { font-size: 1.3rem; font-weight: 700; }
+.num-cell .py { font-size: 0.76rem; font-weight: 700; }
+
+/* Quiz & Grammar sessions */
+.quiz-prompt-card { display: grid !important; justify-items: center; gap: 0.45rem; text-align: center; }
+.quiz-prompt-label { display: block; font-size: 0.74rem !important; font-weight: 800 !important; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft) !important; }
+.quiz-prompt-py { font-size: 1.2rem; font-weight: 700; }
+.quiz-prompt-sub { font-size: 0.92rem; color: var(--ink-soft); }
+.quiz-prompt-mean { display: block; font-size: 1.3rem; font-weight: 800; color: var(--ink); margin-top: 0.3rem; }
+.quiz-hint { font-size: 0.85rem; color: var(--ink-soft); }
+.quiz-hint summary { cursor: pointer; font-weight: 700; }
+.quiz-option-btn .py { font-size: 1.05rem; font-weight: 700; }
+.quiz-opt-hanzi { font-size: 1.6rem; font-weight: 700; }
+.missed-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.6rem; align-items: center; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line); }
+.missed-main .hanzi { font-size: 1.3rem; font-weight: 700; }
+.missed-main .py { font-weight: 700; margin-right: 0.3rem; }
+.missed-mean { font-size: 0.85rem; color: var(--ink-soft); }
+.grammar-zh { font-size: 1.45rem; font-weight: 700; margin: 0.35rem 0 0.1rem; }
+.grammar-py { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+.grammar-feedback { display: grid; gap: 0.5rem; }
+.grammar-tip-badge { display: flex; gap: 0.5rem; align-items: flex-start; background: var(--blue-soft); color: var(--ink); border-radius: 12px; padding: 0.6rem 0.75rem; font-size: 0.84rem; line-height: 1.5; }
+.grammar-tip-badge .ico { color: var(--blue); margin-top: 0.15rem; }
+
+
+.radical-glyph.hanzi { font-size: 1.9rem !important; line-height: 1; }

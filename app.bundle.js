@@ -2068,36 +2068,31 @@ const QuizController = {
 
     if (this.mode === 'hanzi_to_vi') {
       promptCard.innerHTML = `
-        <div class="quiz-prompt-label">Hãy chọn nghĩa tiếng Việt chính xác của chữ Hán sau:</div>
-        <div class="quiz-prompt-hanzi">${cleanHanzi}</div>
-        <div style="font-size:1.15rem; color:var(--primary); font-weight:700; margin-bottom:0.35rem;">${cleanPinyin}</div>
-        <div>
-          <button class="btn-speaker-circle" onclick="AudioEngine.speak('${cleanHanzi}')" title="Nghe phát âm">🔊</button>
-        </div>
+        <div class="quiz-prompt-label">Chọn nghĩa tiếng Việt của từ</div>
+        <div class="quiz-prompt-hanzi hanzi">${cleanHanzi}</div>
+        <div class="quiz-prompt-py py">${Tone.html(cleanPinyin)}</div>
+        <button class="icon-btn icon-btn-primary" onclick="AudioEngine.speak('${jsArg(cleanHanzi)}')" aria-label="Nghe phát âm">${Icon.svg('sound')}</button>
       `;
     } else if (this.mode === 'hanzi_to_pinyin') {
       promptCard.innerHTML = `
-        <div class="quiz-prompt-label">Hãy chọn Phiên âm (Pinyin) đúng của chữ Hán:</div>
-        <div class="quiz-prompt-hanzi">${cleanHanzi}</div>
-        <div style="font-size:0.95rem; color:var(--text-muted);">${cleanMeaning}</div>
+        <div class="quiz-prompt-label">Chọn cách đọc (Pinyin) đúng</div>
+        <div class="quiz-prompt-hanzi hanzi">${cleanHanzi}</div>
+        <div class="quiz-prompt-sub">${UI.esc(cleanMeaning)}</div>
       `;
     } else if (this.mode === 'listen_to_hanzi') {
       promptCard.innerHTML = `
-        <div class="quiz-prompt-label">Nghe phát âm và chọn Chữ Hán tương ứng:</div>
-        <div style="margin: 0.85rem 0;">
-          <button class="btn btn-primary" onclick="AudioEngine.speak('${cleanHanzi}')" style="font-size:1rem; padding: 0.65rem 1.4rem;">
-            🔊 Nghe lại phát âm
-          </button>
-        </div>
-        <div class="quiz-prompt-label" style="font-size:0.82rem;">Gợi ý: ${cleanMeaning}</div>
+        <div class="quiz-prompt-label">Nghe rồi chọn chữ Hán đúng</div>
+        <button class="rv-listen" onclick="AudioEngine.speak('${jsArg(cleanHanzi)}')" aria-label="Nghe lại">${Icon.svg('sound')}</button>
+        <details class="quiz-hint"><summary>Xem gợi ý nghĩa</summary>${UI.esc(cleanMeaning)}</details>
       `;
-      // Auto-play audio on question load
-      setTimeout(() => AudioEngine.speak(cleanHanzi), 300);
+      // Speak synchronously: render() always runs inside the learner's tap (start / next),
+      // a delayed call would be blocked by mobile autoplay rules.
+      AudioEngine.speak(cleanHanzi);
     } else if (this.mode === 'vi_to_hanzi') {
       promptCard.innerHTML = `
-        <div class="quiz-prompt-label">Chọn Chữ Hán có nghĩa là:</div>
-        <div style="font-size:1.6rem; font-weight:700; color:var(--secondary); margin: 0.35rem 0;">"${cleanMeaning}"</div>
-        <div style="font-size:0.95rem; color:var(--text-muted);">Hán Việt: ${cleanHanviet}</div>
+        <div class="quiz-prompt-label">Chọn chữ Hán có nghĩa</div>
+        <div class="quiz-prompt-mean">${UI.esc(cleanMeaning)}</div>
+        <span class="hv-badge">${UI.esc(cleanHanviet)}</span>
       `;
     }
 
@@ -2110,14 +2105,11 @@ const QuizController = {
       const choiceMeaning = (choice.meaning || (choice.hanviet ? `Hán Việt: ${choice.hanviet}` : choice.pinyin)).replace(/\s+,/g, ',');
       let text = '';
       if (this.mode === 'hanzi_to_vi') {
-        text = `<span><strong>${String.fromCharCode(65 + idx)}.</strong> ${choiceMeaning}</span>`;
+        text = `<span>${UI.esc(choiceMeaning)}</span>`;
       } else if (this.mode === 'hanzi_to_pinyin') {
-        text = `<span><strong>${String.fromCharCode(65 + idx)}.</strong> ${choice.pinyin}</span>`;
+        text = `<span class="py">${Tone.html(choice.pinyin)}</span>`;
       } else if (this.mode === 'listen_to_hanzi' || this.mode === 'vi_to_hanzi') {
-        text = `
-          <span><strong>${String.fromCharCode(65 + idx)}.</strong> <span class="hanzi" style="font-size:1.35rem; margin-left:0.35rem;">${choice.hanzi}</span></span>
-          <span style="font-size:0.85rem; color:var(--text-muted);">${choice.pinyin}</span>
-        `;
+        text = `<span class="hanzi quiz-opt-hanzi">${choice.hanzi}</span>`;
       }
 
       btn.innerHTML = text;
@@ -2142,6 +2134,10 @@ const QuizController = {
         btn.classList.add('wrong');
       }
     });
+
+    // Results feed the spaced-repetition schedule
+    if (q.word && q.word.id && !q.word.isCustom) StorageManager.updateWordSrs(q.word.id, isCorrect ? 'good' : 'again');
+    if (this.mode !== 'hanzi_to_vi') AudioEngine.speak(q.word.hanzi);
 
     if (isCorrect) {
       this.score++;
@@ -2202,18 +2198,15 @@ const QuizController = {
     if (this.missedQuestions.length > 0 && missedContainer && missedArea) {
       missedArea.style.display = 'block';
       missedContainer.innerHTML = this.missedQuestions.map(m => `
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem; border-bottom:1px solid var(--border);">
-          <div>
-            <span class="hanzi" style="font-size:1.4rem; font-weight:600; color:var(--text-main); margin-right:0.5rem;">${m.word.hanzi}</span>
-            <span style="color:var(--primary); font-weight:500;">${m.word.pinyin}</span>
-            <span style="color:var(--text-muted); margin-left:0.5rem;">(${m.word.hanviet || '—'})</span>
-            <div style="color:var(--text-main); font-size:0.9rem;">${m.word.meaning}</div>
+        <div class="missed-row">
+          <button class="icon-btn" onclick="AudioEngine.speak('${jsArg(m.word.hanzi)}')" aria-label="Nghe">${Icon.svg('sound')}</button>
+          <div class="missed-main">
+            <span class="hanzi">${m.word.hanzi}</span> <span class="py">${Tone.html(m.word.pinyin)}</span>
+            ${m.word.hanviet ? `<span class="hv-badge">${UI.esc(m.word.hanviet)}</span>` : ''}
+            <div class="missed-mean">${UI.esc(m.word.meaning)}</div>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="App.navigateTo('writer'); HanziController.loadCharacter('${m.word.hanzi}');">
-            ✍️ Luyện viết
-          </button>
         </div>
-      `).join('');
+      `).join('') + `<button class="btn btn-primary btn-block" style="margin-top:0.6rem" onclick="Review.begin(QuizController.missedQuestions.map(m => m.word), 'today')">Ôn ngay ${this.missedQuestions.length} từ sai</button>`;
     } else if (missedArea) {
       missedArea.style.display = 'none';
     }
@@ -6191,7 +6184,7 @@ const GrammarController = {
     if (this.mode === 'reorder') {
       if (reorderArea) reorderArea.style.display = 'block';
       if (choiceArea) choiceArea.style.display = 'none';
-      if (promptVi) promptVi.innerHTML = `<span>🇻🇳 Dịch nghĩa:</span> <strong>"${q.vi}"</strong>`;
+      if (promptVi) promptVi.innerHTML = `<span class="quiz-prompt-label">Ghép thành câu có nghĩa</span><strong class="quiz-prompt-mean">${UI.esc(q.vi)}</strong>`;
       if (promptZh) promptZh.style.display = 'none';
 
       // Setup tokens
@@ -6206,24 +6199,20 @@ const GrammarController = {
     } else if (this.mode === 'vi_to_zh') {
       if (reorderArea) reorderArea.style.display = 'none';
       if (choiceArea) choiceArea.style.display = 'block';
-      if (promptVi) promptVi.innerHTML = `<span>🇻🇳 Hãy chọn câu tiếng Trung đúng ngữ pháp cho:</span><br><strong style="font-size:1.15rem; color:var(--text-main); margin-top:0.35rem; display:block;">"${q.vi}"</strong>`;
+      if (promptVi) promptVi.innerHTML = `<span class="quiz-prompt-label">Chọn câu tiếng Trung đúng cho</span><strong class="quiz-prompt-mean">${UI.esc(q.vi)}</strong>`;
       if (promptZh) promptZh.style.display = 'none';
 
       this.renderTranslationChoices(q, 'zh');
     } else if (this.mode === 'zh_to_vi') {
       if (reorderArea) reorderArea.style.display = 'none';
       if (choiceArea) choiceArea.style.display = 'block';
-      if (promptVi) promptVi.innerHTML = `<span>🇨🇳 Chọn nghĩa tiếng Việt chính xác của câu:</span>`;
+      if (promptVi) promptVi.innerHTML = `<span class="quiz-prompt-label">Chọn nghĩa tiếng Việt của câu</span>`;
       if (promptZh) {
         promptZh.style.display = 'block';
         promptZh.innerHTML = `
-          <div style="font-size:1.45rem; font-weight:700; color:var(--text-main); font-family:var(--font-hanzi); margin:0.4rem 0;">
-            ${q.zh}
-          </div>
-          <div style="color:var(--primary); font-size:0.95rem; font-weight:600; margin-bottom:0.4rem;">${q.py}</div>
-          <button class="btn btn-outline btn-sm" onclick="AudioEngine.speak('${q.zh}')" style="margin-bottom:0.5rem;">
-            🔊 Nghe câu
-          </button>
+          <div class="grammar-zh hanzi">${q.zh}</div>
+          <div class="py grammar-py">${Tone.html(q.py || q.pinyin || '')}</div>
+          <button class="btn btn-outline btn-sm" onclick="AudioEngine.speak('${jsArg(q.zh)}')">${Icon.svg('sound')}<span>Nghe câu</span></button>
         `;
       }
 
@@ -6422,21 +6411,16 @@ const GrammarController = {
       nextBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
+    // Hear the correct sentence right away (we are inside the learner's tap)
+    if (typeof AudioEngine !== 'undefined' && q && q.zh) AudioEngine.speak(q.zh);
+
     if (feedbackBox) {
       feedbackBox.style.display = 'block';
       feedbackBox.className = `grammar-feedback ${isCorrect ? 'feedback-correct' : 'feedback-wrong'}`;
       feedbackBox.innerHTML = `
-        <div style="font-weight:800; font-size:1.05rem; margin-bottom:0.35rem; display:flex; align-items:center; gap:0.4rem;">
-          <span>${isCorrect ? '🎉 Chính xác!' : '⚠️ Chưa chính xác!'}</span>
-        </div>
-        <div style="font-size:1.15rem; font-weight:700; color:var(--text-main); font-family:var(--font-hanzi); margin:0.3rem 0;">
-          ${q.zh}
-        </div>
-        <div style="color:var(--primary); font-size:0.88rem; font-weight:600;">${q.py}</div>
-        <div style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">🇻🇳 ${q.vi}</div>
-        <div class="grammar-tip-badge" style="margin-top:0.6rem; padding:0.55rem 0.75rem; background:rgba(0,0,0,0.04); border-radius:var(--radius-sm); font-size:0.82rem; line-height:1.45; border-left:3px solid var(--primary);">
-          💡 <strong>Ngữ pháp:</strong> ${q.grammarNote || 'Chú ý trật tự từ trong tiếng Trung: Trạng ngữ thời gian và nơi chốn luôn đứng trước vị ngữ.'}
-        </div>
+        <div class="rv-fb-head">${Icon.svg(isCorrect ? 'check' : 'x')}<b>${isCorrect ? 'Chính xác' : 'Chưa đúng. Câu đúng là:'}</b></div>
+        <button class="say-line" onclick="AudioEngine.speak('${jsArg(q.zh)}')"><span class="hanzi">${q.zh}</span><span class="py">${Tone.html(q.py || q.pinyin || '')}</span><span class="say-vi">${UI.esc(q.vi)}</span>${Icon.svg('sound')}</button>
+        <div class="grammar-tip-badge">${Icon.svg('bulb')}<span><b>Ngữ pháp:</b> ${UI.esc(q.grammarNote || q.point || 'Chú ý trật tự từ: thời gian và nơi chốn đứng trước động từ.')}</span></div>
       `;
     }
   },
@@ -6472,9 +6456,9 @@ const GrammarController = {
     if (resPct) resPct.innerText = `${pct}%`;
 
     let badge = 'Cần luyện tập thêm nhé!';
-    if (pct === 100) badge = '👑 Tuyệt đối! Bậc thầy Ngữ pháp HSK!';
-    else if (pct >= 80) badge = '🌟 Rất xuất sắc! Nắm vững cấu trúc câu!';
-    else if (pct >= 60) badge = '👍 Khá tốt! Cần chú ý thêm vị trí phó từ!';
+    if (pct === 100) badge = 'Tuyệt đối! Bạn nắm chắc cấu trúc câu.';
+    else if (pct >= 80) badge = 'Rất tốt! Chỉ còn vài lỗi nhỏ.';
+    else if (pct >= 60) badge = 'Khá tốt. Xem lại các câu sai bên dưới.';
     const badgeEl = document.getElementById('grammar-res-badge');
     if (badgeEl) badgeEl.innerText = badge;
 
@@ -6484,12 +6468,10 @@ const GrammarController = {
     if (this.missedQuestions.length > 0 && missedArea && missedList) {
       missedArea.style.display = 'block';
       missedList.innerHTML = this.missedQuestions.map(m => `
-        <div style="padding:0.75rem; border-bottom:1px solid var(--border);">
-          <div style="font-size:1.15rem; font-weight:700; color:var(--text-main); font-family:var(--font-hanzi);">${m.zh}</div>
-          <div style="color:var(--primary); font-size:0.85rem; font-weight:600;">${m.py}</div>
-          <div style="color:var(--text-muted); font-size:0.85rem;">${m.vi}</div>
-          <div style="font-size:0.78rem; color:var(--secondary); margin-top:0.25rem;">💡 ${m.grammarNote}</div>
-        </div>
+        <button class="say-line say-block" onclick="AudioEngine.speak('${jsArg(m.zh)}')">
+          <span class="hanzi">${m.zh}</span><span class="py">${Tone.html(m.py || '')}</span><span class="say-vi">${UI.esc(m.vi)}</span>${Icon.svg('sound')}
+          <span class="say-note">${UI.esc(m.grammarNote || '')}</span>
+        </button>
       `).join('');
     } else if (missedArea) {
       missedArea.style.display = 'none';
@@ -8511,6 +8493,548 @@ if (typeof window !== 'undefined') {
   window.Review = Review;
 }
 /**
+ * ToneDrill: tone perception training.
+ *
+ *   single  one-syllable words: hear it, pick tone 1-4
+ *   pair    two-syllable words: pick the tone of each syllable (2nd may be neutral)
+ *
+ * Practice in pairs is the approach most Mandarin teachers recommend, because most words are
+ * two syllables and each tone combination has its own contour. Words whose spoken tones differ
+ * from the written ones (3+3 sandhi, 一, 不) are left out so the answer always matches what the
+ * learner hears; those rules are explained in Kiến thức > Thanh điệu.
+ *
+ * Per-pair accuracy is kept on this device (localStorage) to surface the learner's weakest pairs.
+ */
+const ToneDrill = {
+  STATS_KEY: 'hnm_tone_stats_v1',
+  SESSION: 10,
+  mode: 'pair',
+  items: [],
+  index: 0,
+  score: 0,
+  picked: [],
+  answered: false,
+
+  /** SVG contour for a tone (1-5) drawn on the 5-level pitch scale. */
+  contour(t, cls = '') {
+    const paths = { 1: 'M4 6 H28', 2: 'M4 18 L28 6', 3: 'M4 14 Q14 30 28 8', 4: 'M4 6 L28 26', 5: 'M16 18 m-2.5 0 a2.5 2.5 0 1 0 5 0 a2.5 2.5 0 1 0 -5 0' };
+    return `<svg class="tone-contour t${t} ${cls}" viewBox="0 0 32 32" aria-hidden="true"><path d="${paths[t] || paths[5]}"/></svg>`;
+  },
+
+  NAMES: { 1: 'Thanh 1 · ngang', 2: 'Thanh 2 · sắc', 3: 'Thanh 3 · hỏi', 4: 'Thanh 4 · huyền nặng', 5: 'Thanh nhẹ' },
+  SHORT: { 1: 'Thanh 1', 2: 'Thanh 2', 3: 'Thanh 3', 4: 'Thanh 4', 5: 'Nhẹ' },
+
+  loadStats() {
+    try { return JSON.parse(localStorage.getItem(this.STATS_KEY)) || {}; } catch (e) { return {}; }
+  },
+
+  saveStat(key, ok) {
+    const s = this.loadStats();
+    s[key] = s[key] || { n: 0, ok: 0 };
+    s[key].n++;
+    if (ok) s[key].ok++;
+    try { localStorage.setItem(this.STATS_KEY, JSON.stringify(s)); } catch (e) { /* ignore */ }
+  },
+
+  /** Weakest tone pairs with at least 3 attempts, lowest accuracy first. */
+  weakest(limit = 3) {
+    return Object.entries(this.loadStats())
+      .filter(([k, v]) => k.includes('-') && v.n >= 3)
+      .map(([k, v]) => ({ key: k, acc: v.ok / v.n, n: v.n }))
+      .sort((a, b) => a.acc - b.acc)
+      .slice(0, limit);
+  },
+
+  /** Words usable for the drill, with their syllable tones. */
+  pool(mode) {
+    const words = (window.CHINESE_DATA && window.CHINESE_DATA.all_words) || [];
+    const out = [];
+    words.forEach((w) => {
+      const chars = [...w.hanzi].filter((c) => /[一-龥]/.test(c));
+      if (!w.pinyin || chars.some((c) => c === '一' || c === '不')) return;
+      const syl = Tone.splitWord(w.pinyin.replace(/\s+/g, ''));
+      if (!syl || syl.length !== chars.length) return;
+      const tones = syl.map((s) => s.tone);
+      if (mode === 'single' && chars.length === 1 && tones[0] <= 4) out.push({ word: w, tones });
+      if (mode === 'pair' && chars.length === 2 && tones[0] <= 4 && !(tones[0] === 3 && tones[1] === 3)) out.push({ word: w, tones });
+    });
+    return out;
+  },
+
+  start(mode = 'pair') {
+    this.mode = mode;
+    const user = StorageManager.getCurrentUser();
+    const maxLesson = Math.max(3, (user && user.lastActiveLesson) || 1, ...(((user && user.completedLessons) || [])));
+    let pool = this.pool(mode);
+    const reached = pool.filter((p) => typeof p.word.lesson === 'number' && p.word.lesson <= maxLesson);
+    if (reached.length >= this.SESSION) pool = reached;
+
+    // Bias towards the learner's weakest pairs
+    const weak = new Set(this.weakest(3).map((w) => w.key));
+    const shuffled = pool.sort(() => Math.random() - 0.5);
+    const favoured = shuffled.filter((p) => weak.has(p.tones.join('-')));
+    const rest = shuffled.filter((p) => !weak.has(p.tones.join('-')));
+    this.items = [...favoured.slice(0, 4), ...rest].slice(0, this.SESSION).sort(() => Math.random() - 0.5);
+    this.index = 0;
+    this.score = 0;
+    App.navigateTo('tones');
+    this.render();
+  },
+
+  render() {
+    const box = document.getElementById('tones-session');
+    const hub = document.getElementById('tones-hub');
+    if (!box) return;
+    if (hub) hub.hidden = true;
+    box.hidden = false;
+    const item = this.items[this.index];
+    if (!item) { this.renderSummary(); return; }
+    this.picked = item.tones.map(() => 0);
+    this.answered = false;
+    const n = item.tones.length;
+    const rows = item.tones.map((_, si) => `
+      <div class="tone-row">
+        ${n > 1 ? `<span class="tone-row-label">Âm tiết ${si + 1}</span>` : ''}
+        <div class="tone-btns">
+          ${[1, 2, 3, 4].concat(si > 0 ? [5] : []).map((t) => `
+            <button class="tone-btn" data-s="${si}" data-t="${t}" onclick="ToneDrill.pick(${si}, ${t})" aria-label="${this.NAMES[t]}">
+              ${this.contour(t)}<span>${this.SHORT[t]}</span>
+            </button>`).join('')}
+        </div>
+      </div>`).join('');
+
+    box.innerHTML = `
+      <div class="rv-top">
+        <button class="icon-btn" onclick="ToneDrill.exit()" aria-label="Thoát">${Icon.svg('x')}</button>
+        <div class="meter rv-meter" aria-hidden="true"><i style="width:${Math.round(this.index / this.items.length * 100)}%"></i></div>
+        <span class="rv-count">${this.index + 1}/${this.items.length}</span>
+      </div>
+      <div class="rv-card tone-card">
+        <span class="rv-tag">${n > 1 ? 'Cặp thanh' : 'Một âm tiết'}</span>
+        <button class="rv-listen" onclick="ToneDrill.play()" aria-label="Nghe lại">${Icon.svg('sound')}</button>
+        <p class="rv-hint" id="tone-hint">Nghe rồi chọn thanh${n > 1 ? ' cho từng âm tiết' : ''}. Chạm loa để nghe lại.</p>
+        <div class="tone-reveal" id="tone-reveal" hidden></div>
+      </div>
+      <div class="tone-rows">${rows}</div>
+      <div class="rv-feedback" id="tone-feedback" aria-live="polite"></div>
+      <div class="rv-footer" id="tone-footer"></div>
+    `;
+    this.play();
+  },
+
+  play() {
+    const item = this.items[this.index];
+    if (item) AudioEngine.speak(item.word.hanzi);
+  },
+
+  pick(si, t) {
+    if (this.answered) return;
+    this.picked[si] = t;
+    document.querySelectorAll(`.tone-btn[data-s="${si}"]`).forEach((b) => b.classList.toggle('sel', +b.dataset.t === t));
+    if (this.picked.every((p) => p > 0)) this.check();
+  },
+
+  check() {
+    const item = this.items[this.index];
+    this.answered = true;
+    const ok = item.tones.every((t, i) => t === this.picked[i]);
+    if (ok) { this.score++; AudioEngine.playCorrectSound(); } else { AudioEngine.playWrongSound(); }
+    this.saveStat(item.tones.join('-'), ok);
+    item.tones.forEach((t) => this.saveStat(String(t), ok));
+
+    document.querySelectorAll('.tone-btn').forEach((b) => {
+      b.disabled = true;
+      const s = +b.dataset.s;
+      const t = +b.dataset.t;
+      if (item.tones[s] === t) b.classList.add('correct');
+      else if (this.picked[s] === t) b.classList.add('wrong');
+    });
+    const w = item.word;
+    const reveal = document.getElementById('tone-reveal');
+    if (reveal) {
+      reveal.hidden = false;
+      reveal.innerHTML = `
+        <div class="rv-hanzi hanzi">${w.hanzi}</div>
+        <div class="rv-py py">${Tone.html(w.pinyin)}</div>
+        <div class="tone-contours">${item.tones.map((t) => this.contour(t, 'lg')).join('')}</div>
+        <div class="rv-mean">${UI.esc(w.meaning)}</div>`;
+    }
+    const hint = document.getElementById('tone-hint');
+    if (hint) hint.hidden = true;
+    const fb = document.getElementById('tone-feedback');
+    if (fb) {
+      fb.className = `rv-feedback ${ok ? 'ok' : 'bad'}`;
+      fb.innerHTML = `<div class="rv-fb-head">${Icon.svg(ok ? 'check' : 'x')}<b>${ok ? 'Chính xác' : `Đáp án: ${item.tones.map((t) => this.SHORT[t]).join(' + ')}`}</b></div>`;
+    }
+    const footer = document.getElementById('tone-footer');
+    if (footer) {
+      footer.innerHTML = `
+        <button class="btn btn-outline" onclick="ToneDrill.play()">${Icon.svg('sound')}<span>Nghe lại</span></button>
+        <button class="btn btn-primary" id="tone-next" onclick="ToneDrill.next()">Tiếp tục</button>`;
+      footer.classList.add('rv-footer-2');
+    }
+  },
+
+  next() {
+    this.index++;
+    this.render();
+  },
+
+  renderSummary() {
+    const box = document.getElementById('tones-session');
+    const pct = Math.round(this.score / Math.max(1, this.items.length) * 100);
+    AudioEngine.playVictorySound();
+    StorageManager.addXP(10, 'Luyện thanh điệu');
+    StorageManager.recordDailyAction('speech', 1);
+    const weak = this.weakest(3);
+    box.innerHTML = `
+      <div class="rv-summary">
+        <div class="summary-trophy">${Icon.svg('trophy')}</div>
+        <h2>${pct >= 80 ? 'Tai nghe rất tốt!' : 'Xong lượt luyện thanh'}</h2>
+        <div class="due-row">
+          <div><b>${this.score}/${this.items.length}</b><span>câu đúng</span></div>
+          <div><b>${pct}%</b><span>chính xác</span></div>
+          <div><b>+10</b><span>XP</span></div>
+        </div>
+        ${weak.length ? `<p class="muted-sm">Cặp thanh bạn hay nhầm: ${weak.map((w) => `<b>${w.key.replace('-', '+').replace('5', 'nhẹ')}</b> (${Math.round(w.acc * 100)}%)`).join(', ')}. Lượt sau sẽ ưu tiên các cặp này.</p>` : ''}
+        <div class="rv-summary-actions">
+          <button class="btn btn-primary btn-block" onclick="ToneDrill.start('${this.mode}')">Luyện thêm 10 câu</button>
+          <button class="btn btn-outline btn-block" onclick="ToneDrill.exit()">Về trang Luyện thanh điệu</button>
+        </div>
+      </div>`;
+  },
+
+  exit() {
+    const box = document.getElementById('tones-session');
+    const hub = document.getElementById('tones-hub');
+    if (box) { box.hidden = true; box.innerHTML = ''; }
+    if (hub) hub.hidden = false;
+    this.renderHub();
+  },
+
+  renderHub() {
+    const el = document.getElementById('tones-stats');
+    if (!el) return;
+    const s = this.loadStats();
+    const cell = (k) => {
+      const v = s[k];
+      if (!v) return '<span class="tp-cell tp-none">–</span>';
+      const acc = Math.round(v.ok / v.n * 100);
+      return `<span class="tp-cell ${acc >= 80 ? 'tp-good' : acc >= 50 ? 'tp-mid' : 'tp-bad'}" title="${v.ok}/${v.n} câu đúng">${acc}%</span>`;
+    };
+    el.innerHTML = `
+      <div class="tp-grid" role="table" aria-label="Độ chính xác theo cặp thanh">
+        <span class="tp-head" role="columnheader">1 \\ 2</span>
+        ${[1, 2, 3, 4, 5].map((b) => `<span class="tp-head" role="columnheader">${b === 5 ? 'nhẹ' : b}</span>`).join('')}
+        ${[1, 2, 3, 4].map((a) => `<span class="tp-head" role="rowheader">${a}</span>${[1, 2, 3, 4, 5].map((b) => (a === 3 && b === 3 ? '<span class="tp-cell tp-none" title="3+3 đọc thành 2+3">2+3</span>' : cell(`${a}-${b}`))).join('')}`).join('')}
+      </div>
+      <p class="muted-sm">Ô trống là cặp chưa luyện. Hàng là thanh của âm tiết đầu, cột là âm tiết sau.</p>`;
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.ToneDrill = ToneDrill;
+}
+/**
+ * Guide: "Kiến thức" reference pages for Vietnamese learners.
+ * Sections: tones & tone sandhi, radicals (bộ thủ), measure words, numbers / time / dates, HSK exam.
+ * Examples are pulled from the app's own 744-word curriculum so every example links to a word
+ * the learner will meet in the lessons.
+ */
+const Guide = {
+  section: 'tones',
+
+  SECTIONS: [
+    { id: 'tones', label: 'Thanh điệu' },
+    { id: 'radicals', label: 'Bộ thủ' },
+    { id: 'measure', label: 'Lượng từ' },
+    { id: 'numbers', label: 'Số, giờ, ngày' },
+    { id: 'hsk', label: 'Kỳ thi HSK' }
+  ],
+
+  // Common radicals for HSK 1-2: [radical, Hán Việt name, meaning, example characters containing it]
+  RADICALS: [
+    ['亻', 'Nhân đứng', 'người', '你他们住做休候'],
+    ['口', 'Khẩu', 'miệng, nói, ăn', '吃喝叫吗呢哪唱'],
+    ['女', 'Nữ', 'phụ nữ', '她妈姐妹好奶'],
+    ['子', 'Tử', 'con, trẻ nhỏ', '字学孩'],
+    ['氵', 'Thủy (ba chấm thủy)', 'nước, chất lỏng', '没汉洗游海酒'],
+    ['扌', 'Thủ (tài gảy)', 'tay, động tác bằng tay', '打找把换'],
+    ['忄', 'Tâm đứng', 'tim, tình cảm', '忙快怕'],
+    ['心', 'Tâm', 'tim, suy nghĩ', '想您意思息'],
+    ['日', 'Nhật', 'mặt trời, ngày, thời gian', '明时晚早昨是星'],
+    ['月', 'Nguyệt / Nhục', 'mặt trăng; thịt, bộ phận cơ thể', '朋有脑期服'],
+    ['木', 'Mộc', 'cây, gỗ', '机树椅桌校杯'],
+    ['讠', 'Ngôn', 'lời nói', '说话语请谢课认识读'],
+    ['宀', 'Miên', 'mái nhà', '家字安室客'],
+    ['艹', 'Thảo', 'cỏ, cây cối', '茶菜苹花'],
+    ['辶', 'Sước', 'bước đi, di chuyển', '这还进远近过道送'],
+    ['门', 'Môn', 'cửa', '们问间'],
+    ['钅', 'Kim', 'kim loại', '钱钟'],
+    ['纟', 'Mịch', 'sợi tơ', '红给经绍级'],
+    ['土', 'Thổ', 'đất', '地在坐场块'],
+    ['灬', 'Hỏa (bốn chấm hỏa)', 'lửa, nhiệt', '点热照'],
+    ['足', 'Túc', 'chân, đi lại', '跑跳路跟'],
+    ['目', 'Mục', 'mắt, nhìn', '看睡眼睛'],
+    ['贝', 'Bối', 'vỏ sò, tiền bạc', '贵费'],
+    ['马', 'Mã', 'ngựa (thường gợi âm "ma")', '妈吗骑'],
+    ['饣', 'Thực', 'ăn uống', '饭饿馆饺'],
+    ['衤', 'Y', 'quần áo', '衬裤'],
+    ['禾', 'Hòa', 'lúa, ngũ cốc', '和种秋'],
+    ['⺮', 'Trúc', 'tre, đồ làm bằng tre', '笔第等答篮'],
+    ['田', 'Điền', 'ruộng', '男'],
+    ['力', 'Lực', 'sức lực', '动助加'],
+    ['刂', 'Đao đứng', 'dao, cắt', '到别'],
+    ['阝', 'Phụ / Ấp', 'gò đất (bên trái) / vùng đất (bên phải)', '院阴那都'],
+    ['疒', 'Nạch', 'bệnh tật', '病疼'],
+    ['雨', 'Vũ', 'mưa, thời tiết', '雪'],
+    ['王', 'Ngọc', 'ngọc, đồ quý', '玩现球班'],
+    ['广', 'Nghiễm', 'mái hiên, nhà rộng', '店床'],
+    ['犭', 'Khuyển', 'chó, động vật', '狗猫'],
+    ['鸟', 'Điểu', 'chim', '鸡'],
+    ['页', 'Hiệt', 'đầu, trang', '题颜'],
+    ['走', 'Tẩu', 'chạy, đi', '起'],
+    ['见', 'Kiến', 'nhìn thấy', '觉现视'],
+    ['攵', 'Phộc', 'đánh nhẹ, hành động', '教'],
+    ['冫', 'Băng', 'băng, lạnh', '冷次准'],
+    ['白', 'Bạch', 'màu trắng', '的百']
+  ],
+
+  // [measure word, pinyin, Hán Việt, used for, example zh, example py, example vi]
+  MEASURES: [
+    ['个', 'gè', 'cá', 'người, đồ vật nói chung (dùng nhiều nhất)', '一个人', 'yí gè rén', 'một người'],
+    ['本', 'běn', 'bản', 'sách, vở', '两本书', 'liǎng běn shū', 'hai quyển sách'],
+    ['张', 'zhāng', 'trương', 'vật mỏng, phẳng: giấy, vé, bàn, giường', '一张票', 'yì zhāng piào', 'một tấm vé'],
+    ['杯', 'bēi', 'bôi', 'cốc, chén (đồ uống)', '一杯茶', 'yì bēi chá', 'một cốc trà'],
+    ['件', 'jiàn', 'kiện', 'áo; sự việc', '一件衣服', 'yí jiàn yīfu', 'một chiếc áo'],
+    ['条', 'tiáo', 'điều', 'vật dài, mảnh: quần, cá, đường, sông', '一条鱼', 'yì tiáo yú', 'một con cá'],
+    ['只', 'zhī', 'chích', 'con vật nhỏ; một chiếc trong đôi', '一只猫', 'yì zhī māo', 'một con mèo'],
+    ['辆', 'liàng', 'lượng', 'xe cộ', '一辆车', 'yí liàng chē', 'một chiếc xe'],
+    ['口', 'kǒu', 'khẩu', 'số người trong gia đình', '我家有四口人', 'wǒ jiā yǒu sì kǒu rén', 'nhà tôi có bốn người'],
+    ['块', 'kuài', 'khối', 'miếng, cục; đồng (tiền, khẩu ngữ)', '五块钱', 'wǔ kuài qián', 'năm đồng'],
+    ['位', 'wèi', 'vị', 'người (lịch sự, trang trọng)', '一位老师', 'yí wèi lǎoshī', 'một thầy giáo'],
+    ['双', 'shuāng', 'song', 'đôi: giày, đũa, tất', '一双鞋', 'yì shuāng xié', 'một đôi giày'],
+    ['家', 'jiā', 'gia', 'cửa hàng, công ty, nhà hàng', '一家饭馆', 'yì jiā fànguǎn', 'một nhà hàng'],
+    ['次', 'cì', 'thứ', 'số lần', '去过一次', 'qù guo yí cì', 'đã đi một lần'],
+    ['些', 'xiē', 'ta', 'một vài, một ít', '一些水果', 'yì xiē shuǐguǒ', 'một ít hoa quả'],
+    ['把', 'bǎ', 'bả', 'đồ vật có tay cầm: ghế, ô, dao', '一把椅子', 'yì bǎ yǐzi', 'một cái ghế']
+  ],
+
+  words() {
+    return (window.CHINESE_DATA && window.CHINESE_DATA.all_words) || [];
+  },
+
+  /** App words containing a character (shortest first), for live examples. */
+  wordsWith(ch, limit = 3) {
+    return this.words().filter((w) => w.hanzi.includes(ch)).sort((a, b) => a.hanzi.length - b.hanzi.length).slice(0, limit);
+  },
+
+  /** First app word whose tones match a pattern, e.g. [1, 4]. Skips 一/不 and 3+3. */
+  wordForPair(a, b) {
+    if (!this._pairs) {
+      this._pairs = {};
+      this.words().forEach((w) => {
+        const chars = [...w.hanzi].filter((c) => /[一-龥]/.test(c));
+        if (chars.length !== 2 || chars.some((c) => c === '一' || c === '不')) return;
+        const syl = Tone.splitWord((w.pinyin || '').replace(/\s+/g, ''));
+        if (!syl || syl.length !== 2) return;
+        const key = `${syl[0].tone}-${syl[1].tone}`;
+        if (!this._pairs[key] || (w.lesson || 99) < (this._pairs[key].lesson || 99)) this._pairs[key] = w;
+      });
+    }
+    return this._pairs[`${a}-${b}`] || null;
+  },
+
+  open(section) {
+    if (section) this.section = section;
+    if (App.currentTab !== 'guide') App.navigateTo('guide');
+    else this.render();
+  },
+
+  wordChip(w) {
+    return `<button class="word-chip" onclick="AudioEngine.speak('${jsArg(w.hanzi)}')" aria-label="Nghe ${UI.esc(w.hanzi)}">
+      <span class="hanzi">${w.hanzi}</span><span class="py">${Tone.html(w.pinyin)}</span><span class="wc-mean">${UI.esc(w.meaning)}</span></button>`;
+  },
+
+  say(zh, py, vi) {
+    return `<button class="say-line" onclick="AudioEngine.speak('${jsArg(zh)}')"><span class="hanzi">${zh}</span><span class="py">${Tone.html(py)}</span><span class="say-vi">${UI.esc(vi)}</span>${Icon.svg('sound')}</button>`;
+  },
+
+  render() {
+    const nav = document.getElementById('guide-nav');
+    const body = document.getElementById('guide-body');
+    if (!nav || !body) return;
+    nav.innerHTML = this.SECTIONS.map((s) => `<button class="seg-btn ${s.id === this.section ? 'active' : ''}" onclick="Guide.open('${s.id}')">${s.label}</button>`).join('');
+    const fn = { tones: 'renderTones', radicals: 'renderRadicals', measure: 'renderMeasures', numbers: 'renderNumbers', hsk: 'renderHsk' }[this.section] || 'renderTones';
+    body.innerHTML = this[fn]();
+  },
+
+  renderTones() {
+    const c = (t) => ToneDrill.contour(t, 'lg');
+    const tones = [
+      [1, 'mā', '妈', 'Cao và bằng, giữ giọng ở mức cao (gần thanh ngang nhưng cao hơn).'],
+      [2, 'má', '麻', 'Đi lên từ giữa lên cao, giống hỏi lại "hả?" (gần thanh sắc).'],
+      [3, 'mǎ', '马', 'Xuống thấp rồi lên. Trong câu thường chỉ đọc nửa đầu: thấp và trầm.'],
+      [4, 'mà', '骂', 'Rơi mạnh từ cao xuống thấp, dứt khoát như ra lệnh.'],
+      [5, 'ma', '吗', 'Thanh nhẹ: ngắn, nhẹ, không dấu, cao độ phụ thuộc âm tiết trước.']
+    ];
+    const pairCell = (a, b) => {
+      if (a === 3 && b === 3) return '<td class="pair-sandhi" title="3+3 đọc thành 2+3">đọc 2+3</td>';
+      const w = this.wordForPair(a, b);
+      return w ? `<td><button class="pair-word" onclick="AudioEngine.speak('${jsArg(w.hanzi)}')"><span class="hanzi">${w.hanzi}</span><span class="py">${Tone.html(w.pinyin)}</span></button></td>` : '<td class="pair-empty">–</td>';
+    };
+    return `
+      <article class="guide-card">
+        <h3>4 thanh và thanh nhẹ</h3>
+        <p class="guide-lead">Cùng âm <b>ma</b> nhưng khác thanh là khác nghĩa. Chạm vào từng dòng để nghe.</p>
+        <div class="tone-list">
+          ${tones.map(([t, py, zh, desc]) => `
+            <button class="tone-item" onclick="AudioEngine.speak('${zh}')">
+              ${c(t)}
+              <span class="tone-item-main"><b class="t${t}">${py}</b> <span class="hanzi">${zh}</span></span>
+              <span class="tone-item-desc">${desc}</span>
+            </button>`).join('')}
+        </div>
+        <button class="btn btn-primary" onclick="ToneDrill.start('pair')">${Icon.svg('headphones')}<span>Luyện nghe phân biệt thanh</span></button>
+      </article>
+
+      <article class="guide-card">
+        <h3>Quy tắc biến điệu</h3>
+        <div class="rule-list">
+          <div class="rule"><span class="rule-tag">3 + 3</span><div><b>Hai thanh 3 đứng liền nhau: thanh 3 đầu đọc thành thanh 2.</b>
+            <p>Vẫn viết dấu thanh 3, chỉ đổi khi đọc.</p>${this.say('你好', 'nǐ hǎo', 'đọc là ní hǎo')}${this.say('很好', 'hěn hǎo', 'đọc là hén hǎo')}</div></div>
+          <div class="rule"><span class="rule-tag">不</span><div><b>不 bù đứng trước thanh 4 đọc thành bú.</b>
+            <p>Trước thanh 1, 2, 3 giữ nguyên bù.</p>${this.say('不是', 'bú shì', 'không phải')}${this.say('不去', 'bú qù', 'không đi')}${this.say('不好', 'bù hǎo', 'không tốt')}</div></div>
+          <div class="rule"><span class="rule-tag">一</span><div><b>一 yī đổi thanh theo âm tiết phía sau.</b>
+            <p>Trước thanh 4 (và 个) đọc yí; trước thanh 1, 2, 3 đọc yì; khi đếm số, đọc số thứ tự hoặc đứng cuối từ thì giữ yī.</p>${this.say('一个', 'yí gè', 'một cái')}${this.say('一天', 'yì tiān', 'một ngày')}${this.say('第一', 'dì yī', 'thứ nhất')}</div></div>
+          <div class="rule"><span class="rule-tag">nhẹ</span><div><b>Thanh nhẹ thường gặp ở trợ từ và âm tiết lặp.</b>
+            <p>吗, 呢, 的, 了 và âm tiết thứ hai của 妈妈, 爸爸, 谢谢.</p>${this.say('谢谢', 'xièxie', 'cảm ơn')}</div></div>
+        </div>
+      </article>
+
+      <article class="guide-card">
+        <h3>Bảng 20 cặp thanh</h3>
+        <p class="guide-lead">Phần lớn từ tiếng Trung có hai âm tiết, nên luyện theo cặp giúp nhớ đường nét giọng của cả từ. Hàng là thanh âm tiết đầu, cột là âm tiết sau. Ví dụ lấy từ giáo trình.</p>
+        <div class="table-scroll">
+          <table class="pair-table">
+            <thead><tr><th></th><th>+ 1</th><th>+ 2</th><th>+ 3</th><th>+ 4</th><th>+ nhẹ</th></tr></thead>
+            <tbody>${[1, 2, 3, 4].map((a) => `<tr><th>${a}</th>${[1, 2, 3, 4, 5].map((b) => pairCell(a, b)).join('')}</tr>`).join('')}</tbody>
+          </table>
+        </div>
+      </article>`;
+  },
+
+  renderRadicals() {
+    return `
+      <article class="guide-card">
+        <h3>Vì sao nên học bộ thủ</h3>
+        <p class="guide-lead">Phần lớn chữ Hán ghép từ một bộ chỉ nghĩa và một phần gợi âm. Ví dụ 妈 = 女 (phụ nữ, gợi nghĩa) + 马 (mã, gợi âm "ma"). Nhận ra bộ thủ giúp đoán nghĩa chữ mới và nhớ lâu hơn. Dưới đây là ${this.RADICALS.length} bộ thủ gặp nhiều nhất ở HSK 1–2.</p>
+      </article>
+      <div class="radical-grid">
+        ${this.RADICALS.map(([r, name, mean, chars]) => {
+          const ex = [...chars].map((ch) => this.wordsWith(ch, 1)[0]).filter(Boolean).slice(0, 3);
+          return `
+          <article class="radical-card">
+            <div class="radical-head">
+              <span class="radical-glyph hanzi">${r}</span>
+              <div><b>${name}</b><span>${mean}</span></div>
+            </div>
+            <div class="radical-chars hanzi">${[...chars].map((ch) => `<button onclick="App.navigateTo('writer'); HanziController.loadCharacter('${ch}')" aria-label="Tập viết ${ch}">${ch}</button>`).join('')}</div>
+            ${ex.length ? `<div class="radical-ex">${ex.map((w) => this.wordChip(w)).join('')}</div>` : ''}
+          </article>`;
+        }).join('')}
+      </div>
+      <p class="muted-sm guide-foot">Chạm vào một chữ để luyện viết theo thứ tự nét.</p>`;
+  },
+
+  renderMeasures() {
+    return `
+      <article class="guide-card">
+        <h3>Lượng từ là gì</h3>
+        <p class="guide-lead">Tiếng Trung giống tiếng Việt: giữa số và danh từ phải có lượng từ (một <b>quyển</b> sách = 一<b>本</b>书). Cấu trúc: <b>Số + Lượng từ + Danh từ</b>. Trước lượng từ, số 2 dùng 两 liǎng chứ không dùng 二.</p>
+      </article>
+      <div class="measure-list">
+        ${this.MEASURES.map(([mw, py, hv, use, zh, epy, vi]) => `
+          <article class="measure-card">
+            <button class="measure-head" onclick="AudioEngine.speak('${mw}')">
+              <span class="radical-glyph hanzi">${mw}</span>
+              <span><b class="py">${Tone.html(py)}</b> <span class="hv-badge">${hv}</span><span class="measure-use">${use}</span></span>
+            </button>
+            ${this.say(zh, epy, vi)}
+          </article>`).join('')}
+      </div>`;
+  },
+
+  renderNumbers() {
+    const nums = [['零', 'líng', 0], ['一', 'yī', 1], ['二', 'èr', 2], ['三', 'sān', 3], ['四', 'sì', 4], ['五', 'wǔ', 5], ['六', 'liù', 6], ['七', 'qī', 7], ['八', 'bā', 8], ['九', 'jiǔ', 9], ['十', 'shí', 10]];
+    return `
+      <article class="guide-card">
+        <h3>Số đếm</h3>
+        <div class="num-grid">${nums.map(([zh, py, n]) => `<button class="num-cell" onclick="AudioEngine.speak('${zh}')"><span class="num-n">${n}</span><span class="hanzi">${zh}</span><span class="py">${Tone.html(py)}</span></button>`).join('')}</div>
+        <div class="rule-list">
+          <div class="rule"><span class="rule-tag">11–99</span><div><b>Ghép như tiếng Việt: chục + đơn vị.</b>${this.say('十五', 'shíwǔ', '15')}${this.say('二十', 'èrshí', '20')}${this.say('九十九', 'jiǔshíjiǔ', '99')}</div></div>
+          <div class="rule"><span class="rule-tag">百 千 万</span><div><b>Trăm, nghìn, vạn (10.000).</b><p>Tiếng Trung đếm theo vạn: 10.000 là 一万, 100.000 là 十万.</p>${this.say('一百', 'yìbǎi', '100')}${this.say('三千', 'sānqiān', '3.000')}${this.say('一万', 'yíwàn', '10.000')}</div></div>
+          <div class="rule"><span class="rule-tag">两</span><div><b>Trước lượng từ dùng 两, khi đếm dùng 二.</b>${this.say('两个人', 'liǎng gè rén', 'hai người')}${this.say('第二', 'dì èr', 'thứ hai')}</div></div>
+        </div>
+      </article>
+
+      <article class="guide-card">
+        <h3>Giờ giấc</h3>
+        <div class="rule-list">
+          <div class="rule"><span class="rule-tag">点 分</span><div><b>Giờ + 点, phút + 分.</b>${this.say('现在几点？', 'xiànzài jǐ diǎn?', 'bây giờ mấy giờ?')}${this.say('八点十分', 'bā diǎn shí fēn', '8 giờ 10 phút')}</div></div>
+          <div class="rule"><span class="rule-tag">半 刻</span><div><b>半 = rưỡi, 一刻 = 15 phút, 差 = kém.</b>${this.say('七点半', 'qī diǎn bàn', '7 giờ rưỡi')}${this.say('三点一刻', 'sān diǎn yí kè', '3 giờ 15')}${this.say('差五分十点', 'chà wǔ fēn shí diǎn', '10 giờ kém 5')}</div></div>
+          <div class="rule"><span class="rule-tag">Thứ tự</span><div><b>Thời gian đứng trước động từ, từ lớn đến nhỏ.</b>${this.say('我早上七点起床', 'wǒ zǎoshang qī diǎn qǐchuáng', 'tôi dậy lúc 7 giờ sáng')}</div></div>
+        </div>
+      </article>
+
+      <article class="guide-card">
+        <h3>Ngày tháng và thứ</h3>
+        <div class="rule-list">
+          <div class="rule"><span class="rule-tag">年 月 日</span><div><b>Viết từ lớn đến nhỏ: năm, tháng, ngày.</b><p>Năm đọc từng chữ số. Trong khẩu ngữ, 号 hào thường thay 日 rì.</p>${this.say('二〇二六年十一月二十号', 'èr líng èr liù nián shíyī yuè èrshí hào', 'ngày 20 tháng 11 năm 2026')}</div></div>
+          <div class="rule"><span class="rule-tag">星期</span><div><b>Thứ = 星期 + số (thứ hai là 星期一). Chủ nhật là 星期天 hoặc 星期日.</b>${this.say('今天星期五', 'jīntiān xīngqīwǔ', 'hôm nay thứ sáu')}${this.say('星期天', 'xīngqītiān', 'chủ nhật')}</div></div>
+        </div>
+      </article>
+
+      <article class="guide-card">
+        <h3>Tiền</h3>
+        <div class="rule-list">
+          <div class="rule"><span class="rule-tag">块 毛</span><div><b>Khẩu ngữ dùng 块 (đồng) và 毛 (hào); văn viết dùng 元 và 角. 1 块 = 10 毛.</b>${this.say('多少钱？', 'duōshao qián?', 'bao nhiêu tiền?')}${this.say('三块五', 'sān kuài wǔ', '3,5 đồng')}</div></div>
+        </div>
+      </article>`;
+  },
+
+  renderHsk() {
+    return `
+      <article class="guide-card">
+        <h3>Giáo trình này tương ứng với gì</h3>
+        <p class="guide-lead">30 bài của Hán Ngữ Master đi theo hai cấp sơ cấp HSK 1 (Bài 1–15) và HSK 2 (Bài 16–30), gồm 744 từ, kèm Hán Việt cho người Việt.</p>
+      </article>
+      <article class="guide-card">
+        <h3>HSK 3.0: kỳ thi đang đổi định dạng</h3>
+        <p class="guide-lead">Theo các nguồn tổng hợp (chưa phải văn bản chính thức), chuẩn HSK mới có 9 cấp chia 3 bậc: Sơ cấp (1–3), Trung cấp (4–6), Cao cấp (7–9).</p>
+        <div class="table-scroll">
+          <table class="pair-table hsk-table">
+            <thead><tr><th>Cấp</th><th>HSK 2.0 (cũ)</th><th>HSK 3.0, đề cương 2026 (cộng dồn)</th></tr></thead>
+            <tbody>
+              <tr><th>1</th><td>150 từ</td><td>khoảng 300 từ</td></tr>
+              <tr><th>2</th><td>300 từ</td><td>khoảng 500 từ</td></tr>
+              <tr><th>3</th><td>600 từ</td><td>khoảng 1.000 từ, có thi nói</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul class="guide-points">
+          <li>Kỳ thi đầu tiên theo định dạng mới được nhiều nguồn nhắc tới vào <b>tháng 12/2026</b>; các kỳ thi trước đó vẫn dùng HSK 2.0.</li>
+          <li>Các nguồn chưa thống nhất về số từ và ngày áp dụng. <b>Hãy kiểm tra trên trang chính thức chinesetest.cn</b> trước khi đăng ký thi.</li>
+          <li>Từ vựng trong 30 bài vẫn là nền tảng chung cho cả hai định dạng: luyện vững 744 từ này là chuẩn bị tốt cho cấp 1–2.</li>
+        </ul>
+      </article>`;
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.Guide = Guide;
+}
+/**
  * Main Application Orchestrator & Multi-User Auth Controller
  */
 const App = {
@@ -8521,9 +9045,10 @@ const App = {
   TAB_GROUP: {
     home: 'learn', lessons: 'learn',
     review: 'review', flashcard: 'review', quiz: 'review', grammar: 'review', writer: 'review', match: 'review',
+    tones: 'review', guide: 'learn',
     dict: 'dict', me: 'me'
   },
-  VALID_VIEWS: ['home', 'lessons', 'review', 'flashcard', 'quiz', 'grammar', 'writer', 'match', 'dict', 'me'],
+  VALID_VIEWS: ['home', 'lessons', 'review', 'flashcard', 'quiz', 'grammar', 'writer', 'match', 'tones', 'guide', 'dict', 'me'],
   STEP_NAMES: ['Từ vựng', 'Bài khóa', 'Ngữ pháp', 'Luyện tập'],
 
   async init() {
@@ -8706,6 +9231,11 @@ const App = {
       if (typeof GrammarController !== 'undefined') GrammarController.resetToSetup();
     } else if (tabId === 'flashcard') {
       if (FlashcardController.refreshDue) FlashcardController.refreshDue();
+    } else if (tabId === 'guide') {
+      if (typeof Guide !== 'undefined') Guide.render();
+    } else if (tabId === 'tones') {
+      const sess = document.getElementById('tones-session');
+      if (typeof ToneDrill !== 'undefined' && (!sess || sess.hidden)) ToneDrill.renderHub();
     }
 
     window.scrollTo({ top: 0, behavior: 'auto' });
