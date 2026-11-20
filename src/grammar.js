@@ -3895,6 +3895,8 @@ const GrammarController = {
     let pool = [...this.sentences];
     if (/^hsk\d$/.test(scope)) {
       pool = pool.filter(s => s.hsk === +scope.slice(3));
+    } else if (scope === 'custom') {
+      pool = ScopeSelect.filter(pool, ScopeSelect.get('grammar-scope-select'));
     } else if (scope.startsWith('lesson_')) {
       const lNum = parseInt(scope.replace('lesson_', ''), 10);
       pool = pool.filter(s => s.lesson === lNum);

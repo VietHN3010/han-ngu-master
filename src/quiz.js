@@ -39,6 +39,8 @@ const QuizController = {
     } else if (scope.startsWith('upto_')) {
       const maxL = parseInt(scope.replace('upto_', ''), 10);
       pool = pool.filter(w => typeof w.lesson === 'number' && w.lesson <= maxL);
+    } else if (scope === 'custom') {
+      pool = ScopeSelect.filter(pool, ScopeSelect.get('quiz-scope-select'));
     } else if (scope.startsWith('lesson_')) {
       const lNum = parseInt(scope.replace('lesson_', ''), 10);
       pool = pool.filter(w => w.lesson === lNum);

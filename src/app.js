@@ -600,6 +600,8 @@ const App = {
           FlashcardController.setWords(this.data.all_words);
         } else if (/^hsk\d$/.test(val)) {
           FlashcardController.setWords(this.data.all_words.filter(w => w.hsk === +val.slice(3)));
+        } else if (val === 'custom') {
+          FlashcardController.setWords(ScopeSelect.filter(this.data.all_words, ScopeSelect.get('fc-scope-select')));
         } else if (val === 'bookmarks') {
           FlashcardController.setWords(this.data.all_words.filter(w => StorageManager.isBookmarked(w.id)));
         } else if (val.startsWith('lesson_')) {
@@ -607,6 +609,13 @@ const App = {
           FlashcardController.setWords(this.data.all_words.filter(w => w.lesson === lNum));
         }
       };
+    }
+
+    // "Tự chọn nhiều bài…" multi-lesson picker on the scope selects
+    if (typeof ScopeSelect !== 'undefined') {
+      ScopeSelect.attach('fc-scope-select', (scope) => FlashcardController.setWords(ScopeSelect.filter(this.data.all_words, scope)));
+      ScopeSelect.attach('quiz-scope-select');
+      ScopeSelect.attach('grammar-scope-select');
     }
 
     // Populate Lessons in Selects

@@ -31,17 +31,16 @@ Dự án này được phát triển song song giữa **Claude** và **Antigravi
    - Ép nhả khi cần: `node scripts/agent-sync.js release <agent> --all`.
 
 <!-- AUTO-SYNC-STATE:START -->
-- **Build Tag:** `v13-0211677d`
+- **Build Tag:** `v13-1f02ab8c`
 - **Trạng thái nguồn:** Thay đổi đang thực hiện trong working tree (chưa commit)
-- **Các file nguồn liên quan:** `index.html`, `src/app.js`, `src/review.js`, `src/storage.js`, `src/tones.js`, `style.css`
+- **Các file nguồn liên quan:** `index.html`, `src/app.js`, `src/grammar.js`, `src/quiz.js`, `src/review.js`
 ```text
-index.html     |  43 +++++++++++-
- src/app.js     |   1 +
- src/review.js  | 217 ++++++++++++++++++++++++++++++++++++++++++++++++++++++---
- src/storage.js |  59 ++++++++++++++--
- src/tones.js   |  12 +++-
- style.css      |  34 +++++++++
- 6 files changed, 346 insertions(+), 20 deletions(-)
+index.html     |   9 +++--
+ src/app.js     |   9 +++++
+ src/grammar.js |   2 +
+ src/quiz.js    |   2 +
+ src/review.js  | 120 +++++++++++++++++++++++++++++++++++++++++++++++++--------
+ 5 files changed, 124 insertions(+), 18 deletions(-)
 ```
 <!-- AUTO-SYNC-STATE:END -->
 

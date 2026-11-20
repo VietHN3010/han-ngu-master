@@ -2103,6 +2103,8 @@ const QuizController = {
     } else if (scope.startsWith('upto_')) {
       const maxL = parseInt(scope.replace('upto_', ''), 10);
       pool = pool.filter(w => typeof w.lesson === 'number' && w.lesson <= maxL);
+    } else if (scope === 'custom') {
+      pool = ScopeSelect.filter(pool, ScopeSelect.get('quiz-scope-select'));
     } else if (scope.startsWith('lesson_')) {
       const lNum = parseInt(scope.replace('lesson_', ''), 10);
       pool = pool.filter(w => w.lesson === lNum);
@@ -6234,6 +6236,8 @@ const GrammarController = {
     let pool = [...this.sentences];
     if (/^hsk\d$/.test(scope)) {
       pool = pool.filter(s => s.hsk === +scope.slice(3));
+    } else if (scope === 'custom') {
+      pool = ScopeSelect.filter(pool, ScopeSelect.get('grammar-scope-select'));
     } else if (scope.startsWith('lesson_')) {
       const lNum = parseInt(scope.replace('lesson_', ''), 10);
       pool = pool.filter(s => s.lesson === lNum);
@@ -8670,7 +8674,7 @@ const ReviewScope = {
     if (!scope) return 'tất cả bài đã học';
     if (scope.lessons && scope.lessons.length) {
       const ids = scope.lessons;
-      return ids.length > 4 ? `${ids.length} bài đã chọn` : `Bài ${ids.join(', ')}`;
+      return ids.length > 8 ? `Bài ${ids.slice(0, 6).join(', ')}… (${ids.length} bài)` : `Bài ${ids.join(', ')}`;
     }
     if (scope.levels && scope.levels.length) return scope.levels.map((h) => `HSK ${h}`).join(' + ');
     return 'tất cả bài';
@@ -8714,13 +8718,15 @@ const ReviewScope = {
     const c = empty ? { words: 0, due: 0, fresh: 0 } : this.counts(d);
     return `
       <div class="scope-chips" role="group" aria-label="Chọn khóa HSK">${levelChips}</div>
-      <details class="scope-details" ${byLesson ? 'open' : ''}>
+      <details class="scope-details" ${byLesson || (where === 'dialog' && this.openLessons) ? 'open' : ''}>
         <summary>Hoặc chọn từng bài cụ thể${byLesson ? ` · đang chọn ${d.lessons.length} bài` : ''}</summary>
         ${lessonGroups}
       </details>
       <p class="scope-summary ${empty ? 'warn' : ''}" aria-live="polite">${empty
         ? 'Hãy chọn ít nhất một khóa hoặc một bài.'
-        : `Phạm vi: <b>${UI.esc(this.label(d))}</b> · ${c.words} từ · <b>${c.due}</b> thẻ đến hạn · <b>${c.fresh}</b> từ mới hôm nay`}</p>`;
+        : (where === 'dialog' && this.pickOnly
+          ? `Đã chọn: <b>${UI.esc(this.label(d))}</b> · ${c.words} từ`
+          : `Phạm vi: <b>${UI.esc(this.label(d))}</b> · ${c.words} từ · <b>${c.due}</b> thẻ đến hạn · <b>${c.fresh}</b> từ mới hôm nay`)}</p>`;
   },
 
   rerender(where) {
@@ -8790,33 +8796,44 @@ const ReviewScope = {
       ${this.pickerHtml('card')}`;
   },
 
-  /** Modal shown before the first review session. */
-  openPicker(onStart) {
-    this.draft = JSON.parse(JSON.stringify(this.current()));
+  /**
+   * Modal picker. By default it saves the review scope to the account (first review session).
+   * With opts.save === false it only hands the chosen scope to onStart(scope) — used by the
+   * Quiz / Grammar / Flashcard "Tự chọn nhiều bài" option.
+   */
+  openPicker(onStart, opts = {}) {
+    const save = opts.save !== false;
+    this.draft = JSON.parse(JSON.stringify(opts.initial || this.current()));
+    this.openLessons = !!opts.lessonMode;
+    this.pickOnly = !save;
+    if (opts.lessonMode) this.toLessonMode();
     const wrap = document.createElement('div');
     wrap.className = 'dialog-backdrop';
     wrap.innerHTML = `
       <div class="dialog scope-dialog" role="dialog" aria-modal="true" aria-labelledby="scope-dialog-title">
-        <h3 id="scope-dialog-title">Bạn muốn ôn phần nào?</h3>
-        <p class="dialog-body">Chọn khóa HSK hoặc từng bài. Lựa chọn được lưu lại, đổi bất cứ lúc nào trong tab Ôn tập.</p>
+        <h3 id="scope-dialog-title">${UI.esc(opts.title || 'Bạn muốn ôn phần nào?')}</h3>
+        <p class="dialog-body">${UI.esc(opts.intro || 'Chọn khóa HSK hoặc từng bài. Lựa chọn được lưu lại, đổi bất cứ lúc nào trong tab Ôn tập.')}</p>
         <div id="scope-dialog-body">${this.pickerHtml('dialog')}</div>
         <div class="dialog-actions">
           <button type="button" class="btn btn-outline" data-act="cancel">Để sau</button>
-          <button type="button" class="btn btn-primary" id="scope-dialog-start" data-act="start" ${this.isEmpty(this.draft) ? 'disabled' : ''}>Bắt đầu ôn</button>
+          <button type="button" class="btn btn-primary" id="scope-dialog-start" data-act="start" ${this.isEmpty(this.draft) ? 'disabled' : ''}>${UI.esc(opts.startLabel || 'Bắt đầu ôn')}</button>
         </div>
       </div>`;
     const close = () => { wrap.classList.remove('show'); setTimeout(() => wrap.remove(), 180); document.removeEventListener('keydown', onKey); };
-    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const onKey = (e) => { if (e.key === 'Escape') { close(); if (opts.onCancel) opts.onCancel(); } };
     wrap.addEventListener('click', (e) => {
-      if (e.target === wrap) { close(); return; }
+      if (e.target === wrap) { close(); if (opts.onCancel) opts.onCancel(); return; }
       const b = e.target.closest('[data-act]');
       if (!b) return;
-      if (b.dataset.act === 'cancel') { close(); return; }
+      if (b.dataset.act === 'cancel') { close(); if (opts.onCancel) opts.onCancel(); return; }
       if (b.dataset.act === 'start' && !this.isEmpty(this.draft)) {
-        StorageManager.setReviewScope(this.draft);
+        const chosen = JSON.parse(JSON.stringify(this.draft));
         close();
-        this.renderCard();
-        if (onStart) onStart();
+        if (save) {
+          StorageManager.setReviewScope(chosen);
+          this.renderCard();
+        }
+        if (onStart) onStart(chosen);
       }
     });
     document.addEventListener('keydown', onKey);
@@ -8825,7 +8842,84 @@ const ReviewScope = {
   }
 };
 
+/**
+ * ScopeSelect: adds "Tự chọn nhiều bài…" to a scope <select> (Quiz, Grammar, Flashcard).
+ * Choosing it opens the multi-lesson picker; the chosen scope is kept per select and the option
+ * text shows it (e.g. "Tự chọn: Bài 1, 3, 5, 6, 9"). Tools read it with ScopeSelect.get(selectId).
+ */
+const ScopeSelect = {
+  scopes: {},
+  KEY: 'hnm_custom_scopes_v1',
+
+  load() {
+    try { this.scopes = JSON.parse(localStorage.getItem(this.KEY)) || {}; } catch (e) { this.scopes = {}; }
+  },
+
+  save() {
+    try { localStorage.setItem(this.KEY, JSON.stringify(this.scopes)); } catch (e) { /* ignore */ }
+  },
+
+  get(selectId) {
+    return this.scopes[selectId] || null;
+  },
+
+  /** Filter any list of items that carry `lesson` and `hsk` (words, grammar sentences). */
+  filter(items, scope) {
+    if (!scope) return items;
+    if (scope.lessons && scope.lessons.length) {
+      const set = new Set(scope.lessons);
+      return items.filter((x) => set.has(x.lesson));
+    }
+    if (scope.levels && scope.levels.length) return items.filter((x) => scope.levels.includes(x.hsk));
+    return items;
+  },
+
+  optionText(scope) {
+    return `Tự chọn: ${ReviewScope.label(scope)} · đổi…`;
+  },
+
+  /**
+   * Wire a select. `onPicked(scope)` runs after a choice (Flashcard applies it immediately);
+   * Quiz / Grammar just read the stored scope when the learner presses Start.
+   */
+  attach(selectId, onPicked) {
+    const sel = document.getElementById(selectId);
+    if (!sel || sel._scopeBound) return;
+    sel._scopeBound = true;
+    const opt = sel.querySelector('option[value="custom"]');
+    if (!opt) return;
+    if (!this._loaded) { this.load(); this._loaded = true; }
+    const saved = this.get(selectId);
+    if (saved) opt.textContent = this.optionText(saved);
+    let previous = sel.value;
+    sel.addEventListener('focus', () => { previous = sel.value; });
+    // Re-open the picker when "custom" is chosen again (change does not fire if already selected)
+    sel.addEventListener('mousedown', () => { previous = sel.value; });
+    sel.addEventListener('change', (e) => {
+      if (sel.value !== 'custom') { previous = sel.value; return; }
+      e.stopImmediatePropagation();
+      ReviewScope.openPicker((scope) => {
+        this.scopes[selectId] = scope;
+        this.save();
+        opt.textContent = this.optionText(scope);
+        sel.value = 'custom';
+        previous = 'custom';
+        if (onPicked) onPicked(scope);
+      }, {
+        save: false,
+        lessonMode: true,
+        initial: this.get(selectId) || { levels: [], lessons: [] },
+        title: 'Chọn các bài muốn luyện',
+        intro: 'Tích từng bài bạn muốn (ví dụ Bài 1, 3, 5, 6, 9) hoặc chọn cả khóa.',
+        startLabel: 'Dùng các bài này',
+        onCancel: () => { sel.value = previous === 'custom' && !this.get(selectId) ? 'all' : previous; }
+      });
+    }, true);
+  }
+};
+
 if (typeof window !== 'undefined') {
+  window.ScopeSelect = ScopeSelect;
   window.ReviewScope = ReviewScope;
   window.Review = Review;
 }
@@ -10029,6 +10123,8 @@ const App = {
           FlashcardController.setWords(this.data.all_words);
         } else if (/^hsk\d$/.test(val)) {
           FlashcardController.setWords(this.data.all_words.filter(w => w.hsk === +val.slice(3)));
+        } else if (val === 'custom') {
+          FlashcardController.setWords(ScopeSelect.filter(this.data.all_words, ScopeSelect.get('fc-scope-select')));
         } else if (val === 'bookmarks') {
           FlashcardController.setWords(this.data.all_words.filter(w => StorageManager.isBookmarked(w.id)));
         } else if (val.startsWith('lesson_')) {
@@ -10036,6 +10132,13 @@ const App = {
           FlashcardController.setWords(this.data.all_words.filter(w => w.lesson === lNum));
         }
       };
+    }
+
+    // "Tự chọn nhiều bài…" multi-lesson picker on the scope selects
+    if (typeof ScopeSelect !== 'undefined') {
+      ScopeSelect.attach('fc-scope-select', (scope) => FlashcardController.setWords(ScopeSelect.filter(this.data.all_words, scope)));
+      ScopeSelect.attach('quiz-scope-select');
+      ScopeSelect.attach('grammar-scope-select');
     }
 
     // Populate Lessons in Selects

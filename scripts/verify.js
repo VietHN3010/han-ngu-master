@@ -317,6 +317,16 @@ function run() {
   assert(noScope.fresh.every((w) => w.lesson <= 1), 'Without a scope, new words come only from reached lessons');
   SM.getCurrentUser = realGetUser;
 
+  // 6c. "Tự chọn nhiều bài" (Quiz / Grammar / Flashcard): any combination of lessons
+  const SS = sandbox.window.ScopeSelect;
+  const pick = { levels: [], lessons: [1, 3, 5, 6, 9] };
+  const pickedWords = SS.filter(data.all_words, pick);
+  assert(pickedWords.length > 0 && pickedWords.every((w) => pick.lessons.includes(w.lesson)), 'Custom lesson pick must only keep chosen lessons');
+  assert.deepStrictEqual([...new Set(pickedWords.map((w) => w.lesson))].sort((a, b) => a - b), pick.lessons, 'Custom pick must include every chosen lesson');
+  const pickedGrammar = SS.filter(grammar, pick);
+  assert(pickedGrammar.length > 0 && pickedGrammar.every((g) => pick.lessons.includes(g.lesson)), 'Custom pick must filter grammar sentences too');
+  assert.strictEqual(sandbox.window.ReviewScope.label(pick), 'Bài 1, 3, 5, 6, 9', 'Custom pick label');
+
   let keydownCount = 0;
   win.addEventListener = (ev) => { if (ev === 'keydown') keydownCount++; };
   FlashcardController.setupListeners();
