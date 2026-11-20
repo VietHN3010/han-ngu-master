@@ -3027,6 +3027,112 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
 .scope-line:focus-visible { outline: 2px solid var(--primary); border-radius: 6px; }
 
 .scope-dialog .dialog-actions { position: sticky; bottom: -1.25rem; background: var(--card); margin: 0 -1.25rem -1.25rem; padding: 0.75rem 1.25rem 1.25rem; border-top: 1px solid var(--line); }
+
+/* ==========================================================================
+   v17 CỦNG CỐ KIẾN THỨC (src/consolidate.js)
+   ========================================================================== */
+.consolidate-body { display: grid; gap: 1rem; }
+.consolidate-session { max-width: 560px; margin: 0 auto; display: grid; gap: 1rem; }
+.cs-lead { margin: -0.25rem 0 0.25rem; }
+
+.cs-entry { width: 100%; display: flex; align-items: center; gap: 0.8rem; text-align: left; background: var(--card); border: 1.5px solid var(--jade); border-radius: 18px; padding: 0.9rem 1rem; margin-top: 1rem; cursor: pointer; color: var(--ink); }
+.cs-entry:hover { background: var(--jade-soft); }
+.cs-entry .pt-icon { margin: 0; }
+.cs-entry-text { flex: 1; min-width: 0; display: grid; gap: 0.15rem; }
+.cs-entry-text b { font-size: 0.98rem; }
+.cs-entry-text span { font-size: 0.8rem; color: var(--ink-soft); }
+.cs-entry > .ico { color: var(--ink-soft); flex: none; }
+
+.cs-mode.on { border-color: var(--jade); background: var(--jade-soft); }
+.cs-mode-row { display: flex; gap: 0.75rem; align-items: flex-start; justify-content: space-between; }
+.cs-mode-row h3 { margin-bottom: 0.25rem; }
+.cs-switch { flex: none; padding-top: 0.15rem; }
+.cs-tip { font-size: 0.8rem; color: var(--jade); font-weight: 700; }
+
+.cs-plan { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
+.cs-task { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0; border-top: 1px solid var(--line); }
+.cs-task:first-child { border-top: none; }
+.cs-task-dot { width: 28px; height: 28px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 0.8rem; font-weight: 800; background: var(--bg-subtle); color: var(--ink-soft); }
+.cs-task-dot .ico { width: 16px; height: 16px; }
+.cs-task.done .cs-task-dot { background: var(--jade); color: #fff; }
+.cs-task-text { flex: 1; min-width: 0; display: grid; gap: 0.1rem; }
+.cs-task-text b { font-size: 0.9rem; }
+.cs-task-text small { font-size: 0.76rem; color: var(--ink-soft); }
+.cs-task.done .cs-task-text b { color: var(--ink-soft); text-decoration: line-through; }
+.cs-task .btn { flex: none; }
+
+.cs-map { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+@media (min-width: 720px) { .cs-map { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cs-cluster { text-align: left; background: var(--card); border: 1.5px solid var(--line); border-left-width: 5px; border-radius: 14px; padding: 0.7rem 0.8rem; display: grid; gap: 0.3rem; cursor: pointer; color: var(--ink); }
+.cs-cluster-name { font-size: 0.78rem; font-weight: 800; color: var(--ink-soft); }
+.cs-cluster-score { font-size: 1.15rem; font-weight: 800; }
+.cs-cluster small { font-size: 0.72rem; color: var(--ink-soft); }
+.cs-cluster.cs-none { border-left-color: var(--line); }
+.cs-cluster.cs-none .cs-cluster-score { font-size: 0.9rem; color: var(--ink-soft); }
+.cs-cluster.cs-weak { border-left-color: var(--primary); }
+.cs-cluster.cs-weak .cs-cluster-score { color: var(--primary); }
+.cs-cluster.cs-ok { border-left-color: var(--amber); }
+.cs-cluster.cs-ok .cs-cluster-score { color: var(--amber); }
+.cs-cluster.cs-good { border-left-color: var(--jade); }
+.cs-cluster.cs-good .cs-cluster-score { color: var(--jade); }
+.cs-cluster.cs-locked { opacity: 0.6; }
+
+.cs-pairs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+@media (min-width: 720px) { .cs-pairs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cs-pair { text-align: left; background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 0.7rem 0.8rem; display: grid; gap: 0.35rem; align-content: space-between; cursor: pointer; color: var(--ink); }
+.cs-pair:hover { border-color: var(--primary-border); }
+.cs-pair-words { font-size: 1.3rem; font-weight: 700; line-height: 1.25; }
+.cs-pair-words > span { white-space: nowrap; }
+.cs-pair-words i { font-style: normal; color: var(--ink-soft); font-weight: 400; margin: 0 0.15rem; }
+.cs-pair-meta { font-size: 0.72rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.3rem; }
+.cs-badge { font-size: 0.68rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 99px; background: var(--blue-soft); color: var(--blue); white-space: nowrap; }
+.cs-badge-muted { background: var(--bg-subtle); color: var(--ink-soft); }
+.cs-badge-due { background: var(--amber-soft); color: var(--amber); }
+.cs-badge-good { background: var(--jade-soft); color: var(--jade); }
+.cs-badge-weak { background: var(--red-soft); color: var(--primary); }
+.cs-mixed { margin-top: 0.25rem; }
+
+.cs-session-label { font-size: 0.8rem; font-weight: 800; color: var(--ink-soft); text-align: center; margin: -0.25rem 0 0; }
+.cs-opt-sentence { font-size: 1.15rem; text-align: left; }
+.cs-opts-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cs-blank-card { min-height: 180px; }
+.cs-sentence { font-size: clamp(1.4rem, 6vw, 1.9rem); font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.cs-blank { display: inline-block; min-width: 2.2em; padding: 0 0.25em; border-bottom: 2.5px solid var(--primary); color: var(--primary); }
+.cs-blank.ok { color: var(--jade); border-color: var(--jade); }
+.cs-blank.bad { color: var(--primary); }
+.cs-vi { font-size: 0.92rem; color: var(--ink-soft); }
+
+.cs-rules { display: grid; gap: 0.75rem; }
+.cs-rule { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 0.9rem 1rem; display: grid; gap: 0.6rem; }
+.cs-rule-head { display: flex; gap: 0.8rem; align-items: flex-start; }
+.cs-rule-word { font-size: 1.9rem; font-weight: 700; line-height: 1; color: var(--primary); flex: none; min-width: 2.2rem; }
+.cs-rule-head p { font-size: 0.9rem; line-height: 1.5; }
+.cs-example { display: flex; gap: 0.6rem; align-items: flex-start; text-align: left; width: 100%; background: var(--bg-subtle); border: none; border-radius: 12px; padding: 0.6rem 0.75rem; cursor: pointer; color: var(--ink); }
+.cs-example > .ico { color: var(--primary); flex: none; margin-top: 0.2rem; }
+.cs-example > span { display: grid; gap: 0.1rem; min-width: 0; }
+.cs-example .hanzi { font-size: 1.1rem; font-weight: 600; }
+.cs-example .py { font-size: 0.85rem; }
+.cs-example small { font-size: 0.8rem; color: var(--ink-soft); }
+.cs-tip-card { display: flex; gap: 0.6rem; align-items: flex-start; background: var(--amber-soft); color: var(--ink); border-radius: 14px; padding: 0.8rem 0.9rem; }
+.cs-tip-card > .ico { color: var(--amber); flex: none; margin-top: 0.1rem; }
+.cs-tip-card p { font-size: 0.88rem; line-height: 1.5; }
+
+.cs-write { display: grid; gap: 0.6rem; }
+.cs-write-row { display: grid; gap: 0.25rem; }
+.cs-write-row > span { font-size: 0.78rem; font-weight: 800; color: var(--ink-soft); }
+.cs-write-input { width: 100%; font-size: 1.15rem; padding: 0.7rem 0.85rem; border: 1.5px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); }
+.cs-write-input:focus { outline: none; border-color: var(--primary); }
+.cs-models { background: var(--card); border: 1px dashed var(--line); border-radius: 14px; padding: 0.75rem 0.9rem; display: grid; gap: 0.35rem; }
+.cs-models h4, .cs-review-list h4 { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }
+.cs-models .hanzi { font-size: 1.05rem; }
+.cs-models small { color: var(--ink-soft); }
+
+.cs-review-list { text-align: left; display: grid; gap: 0.4rem; }
+.cs-word { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; text-align: left; background: var(--bg-subtle); border: none; border-radius: 10px; padding: 0.5rem 0.7rem; cursor: pointer; color: var(--ink); font-size: 0.88rem; }
+.cs-word .hanzi { font-size: 1.15rem; font-weight: 700; }
+.cs-gram { background: var(--bg-subtle); border-radius: 10px; padding: 0.5rem 0.7rem; display: grid; gap: 0.15rem; }
+.cs-gram .hanzi { font-size: 1.05rem; font-weight: 600; }
+.cs-gram small { font-size: 0.78rem; color: var(--ink-soft); }
   </style>
   
   <!-- Supabase Client CDN -->
@@ -3233,6 +3339,8 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
             <button id="btn-start-review" class="btn btn-outline btn-block" onclick="Review.startToday()">Bắt đầu ôn tập</button>
           </article>
 
+          <article class="today-card cs-home" id="home-consolidate" aria-label="Củng cố kiến thức"></article>
+
           <article class="today-card">
             <div class="today-card-head">
               <h3>Mục tiêu ngày</h3>
@@ -3370,6 +3478,12 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
           <button class="btn btn-primary btn-block" onclick="Review.startToday()">Bắt đầu ôn tập</button>
         </article>
 
+        <button class="cs-entry" onclick="Consolidate.open()">
+          <span class="pt-icon pt-jade"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
+          <span class="cs-entry-text"><b>Củng cố kiến thức</b><span>Hay quên bài cũ? Tìm cụm bài đang hổng, luyện từ dễ nhầm (不/没, 了/过, 再/又…)</span></span>
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+
         <h3 class="section-label">Luyện theo dạng bài</h3>
         <div class="practice-grid">
           <button class="practice-tile" onclick="App.navigateTo('flashcard')"><span class="pt-icon pt-red"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="15" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v13"/></svg></span><b>Flashcard</b><span>Lật thẻ theo bài hoặc theo cấp</span></button>
@@ -3469,6 +3583,21 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
         </article>
       </div>
       <div id="tones-session" class="tones-session" hidden></div>
+    </section>
+
+    <!-- VIEW: CONSOLIDATE (Củng cố kiến thức) -->
+    <section id="view-consolidate" class="view-section">
+      <div id="consolidate-hub" class="consolidate">
+        <button class="back-link" onclick="App.navigateTo('review')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Ôn tập</span></button>
+        <div class="page-head">
+          <div>
+            <h2>Củng cố kiến thức</h2>
+            <p>Dành cho lúc hay quên từ và cấu trúc của các bài đã học: tìm cụm bài đang hổng, luyện các từ dễ nhầm và tự đặt câu.</p>
+          </div>
+        </div>
+        <div id="consolidate-body" class="consolidate-body"></div>
+      </div>
+      <div id="consolidate-session" class="consolidate-session" hidden></div>
     </section>
 
     <!-- VIEW: KNOWLEDGE GUIDE -->
@@ -4045,8 +4174,8 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
     </div>
   </div>
 
-  <!-- Application Bundle (Cache busted v13-1f02ab8c) -->
-  <script defer src="data.bundle.js?v=v13-1f02ab8c"></script>
-  <script defer src="app.bundle.js?v=v13-1f02ab8c"></script>
+  <!-- Application Bundle (Cache busted v13-f102dbb9) -->
+  <script defer src="data.bundle.js?v=v13-f102dbb9"></script>
+  <script defer src="app.bundle.js?v=v13-f102dbb9"></script>
 </body>
 </html>

@@ -327,6 +327,60 @@ function run() {
   assert(pickedGrammar.length > 0 && pickedGrammar.every((g) => pick.lessons.includes(g.lesson)), 'Custom pick must filter grammar sentences too');
   assert.strictEqual(sandbox.window.ReviewScope.label(pick), 'Bài 1, 3, 5, 6, 9', 'Custom pick label');
 
+  // 6d. Củng cố kiến thức: confusable sets, lesson clusters, consolidation mode
+  const CF = sandbox.window.CONFUSABLES;
+  const CS = sandbox.window.Consolidate;
+  assert(Array.isArray(CF) && CF.length >= 12, 'Confusable sets missing');
+  assert.strictEqual(new Set(CF.map((p) => p.id)).size, CF.length, 'Confusable set ids must be unique');
+  CF.forEach((p) => {
+    assert.strictEqual(p.rules.length, p.words.length, `${p.id}: one rule per word`);
+    p.rules.forEach((r) => assert(p.words.includes(r.w) && r.ex && r.ex.zh && r.ex.py && r.ex.vi, `${p.id}: bad rule ${r.w}`));
+    assert(p.items.length >= 5, `${p.id}: needs at least 5 items`);
+    assert(data.lessons.some((l) => l.id === p.lesson), `${p.id}: unknown lesson ${p.lesson}`);
+    p.items.forEach((it) => {
+      assert.strictEqual(it.zh.split('＿').length, 2, `${p.id}: item must have exactly one blank: ${it.zh}`);
+      assert(it.a.length && it.a.every((a) => p.words.includes(a)), `${p.id}: answer must be one of the set words: ${it.zh}`);
+      assert(it.vi && it.why, `${p.id}: item needs vi + why: ${it.zh}`);
+    });
+  });
+  const clusters = CS.clusters();
+  const clustered = clusters.flatMap((c) => c.lessons).sort((a, b) => a - b);
+  assert.strictEqual(JSON.stringify(clustered), JSON.stringify( data.lessons.map((l) => l.id).sort((a, b) => a - b)), 'Clusters must cover every lesson exactly once');
+  assert(clusters.every((c) => c.lessons.length <= 5 && c.lessons.every((id) => data.lessons.find((l) => l.id === id).hsk === c.hsk)), 'A cluster stays inside one HSK level');
+  assert.strictEqual(clusters[0].key, '1-5');
+
+  const csUser = { lastActiveLesson: 28, completedLessons: [1, 2, 3], wordProgress: {}, reviewScope: null, dailyGoals: {} };
+  const realSave = SM.saveCurrentUser;
+  SM.getCurrentUser = () => csUser;
+  SM.saveCurrentUser = () => {};
+  assert.strictEqual(JSON.stringify(CS.reachedLevels()), '[1,2]', 'Lesson 28 reaches HSK 1 and 2');
+  assert.strictEqual(CS.weakestCluster().key, '1-5', 'Untested: start with the first cluster');
+  csUser.consolidation = { clusters: { '1-5': { score: 90 }, '6-10': { score: 60 }, '11-15': { score: 70 } } };
+  assert.strictEqual(CS.weakestCluster().key, '6-10', 'Weakest tested cluster below 80% comes first');
+  assert.strictEqual(CS.pairOfDay().id, CF.find((p) => p.lesson <= 28).id, 'First unlocked set is offered first');
+  csUser.consolidation.pairs = { jiu_cai: { lvl: 0, n: 5, ok: 2, next: Date.now() - 1000 } };
+  assert.strictEqual(CS.pairOfDay().id, 'jiu_cai', 'A due set comes before new sets');
+  assert.strictEqual(CS.plan().length, 4, 'Daily plan has 4 tasks');
+  assert.strictEqual(JSON.stringify(CS.checkSentences(CF[0], ['我不去。', 'hello', '我去。'])), '["ok","nohanzi","noword"]', 'Own-sentence check');
+  const Prefs = sandbox.window.Prefs || sandbox.Prefs;
+  if (Prefs) Prefs.data.newPerDay = 10;
+  CS.render = () => {};
+  const realToast = App.toast;
+  App.toast = () => {};
+  CS.toggleMode();
+  assert.strictEqual(JSON.stringify(csUser.reviewScope), '{"levels":[1,2],"lessons":[]}', 'Mode on: review every reached course');
+  if (Prefs) assert.strictEqual(Prefs.data.newPerDay, 20, 'Mode on: 20 new words a day');
+  CS.toggleMode();
+  assert.strictEqual(csUser.reviewScope, null, 'Mode off: previous scope restored');
+  if (Prefs) assert.strictEqual(Prefs.data.newPerDay, 10, 'Mode off: previous daily limit restored');
+  SM.getCurrentUser = realGetUser;
+  SM.saveCurrentUser = realSave;
+  App.toast = realToast;
+
+  // Pinyin must not split a syllable ("z ài", "N éng")
+  const splitPy = data.all_words.filter((w) => /(^|\s)[bpmfdtnlgkhjqxzcsryw]\s+[aeiouüāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/i.test(w.pinyin));
+  assert.strictEqual(splitPy.length, 0, `Broken pinyin: ${splitPy.map((w) => `${w.hanzi} [${w.pinyin}]`).join(', ')}`);
+
   let keydownCount = 0;
   win.addEventListener = (ev) => { if (ev === 'keydown') keydownCount++; };
   FlashcardController.setupListeners();

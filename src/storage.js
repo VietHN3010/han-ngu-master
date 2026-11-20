@@ -26,7 +26,7 @@ function getSupabase() {
 const PROGRESS_FIELDS = [
   'completedLessons', 'lastActiveLesson', 'bookmarks', 'wordProgress',
   'customWords', 'streak', 'lastActiveDate', 'quizHighScores', 'updatedAt',
-  'xp', 'dailyGoals', 'lessonSteps', 'reviewScope'
+  'xp', 'dailyGoals', 'lessonSteps', 'reviewScope', 'consolidation'
 ];
 
 function emptyProgress() {
@@ -43,6 +43,7 @@ function emptyProgress() {
     dailyGoals: {},
     lessonSteps: {},
     reviewScope: null,
+    consolidation: null,
     updatedAt: 0
   };
 }
@@ -285,6 +286,7 @@ const StorageManager = {
     user.xp = (user.xp || 0) + (g.xp || 0);
     if ((g.lastActiveLesson || 1) > (user.lastActiveLesson || 1)) user.lastActiveLesson = g.lastActiveLesson;
     user.dailyGoals = { ...(g.dailyGoals || {}), ...(user.dailyGoals || {}) };
+    if (!user.consolidation && g.consolidation) user.consolidation = g.consolidation;
     delete users[this.GUEST_KEY];
     this.saveAllUsers(users);
     this.saveCurrentUser(user);

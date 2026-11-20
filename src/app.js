@@ -9,10 +9,10 @@ const App = {
   TAB_GROUP: {
     home: 'learn', lessons: 'learn',
     review: 'review', flashcard: 'review', quiz: 'review', grammar: 'review', writer: 'review', match: 'review',
-    tones: 'review', guide: 'learn',
+    tones: 'review', consolidate: 'review', guide: 'learn',
     dict: 'dict', me: 'me'
   },
-  VALID_VIEWS: ['home', 'lessons', 'review', 'flashcard', 'quiz', 'grammar', 'writer', 'match', 'tones', 'guide', 'dict', 'me'],
+  VALID_VIEWS: ['home', 'lessons', 'review', 'flashcard', 'quiz', 'grammar', 'writer', 'match', 'tones', 'consolidate', 'guide', 'dict', 'me'],
   STEP_NAMES: ['Từ vựng', 'Bài khóa', 'Ngữ pháp', 'Luyện tập'],
 
   async init() {
@@ -195,6 +195,8 @@ const App = {
       if (typeof GrammarController !== 'undefined') GrammarController.resetToSetup();
     } else if (tabId === 'flashcard') {
       if (FlashcardController.refreshDue) FlashcardController.refreshDue();
+    } else if (tabId === 'consolidate') {
+      if (typeof Consolidate !== 'undefined' && !Consolidate.session) { Consolidate.showHub(); Consolidate.render(); }
     } else if (tabId === 'guide') {
       if (typeof Guide !== 'undefined') Guide.render();
     } else if (tabId === 'tones') {
@@ -333,6 +335,7 @@ const App = {
         setText(`${pre}-review-eta`, total ? `khoảng ${eta} phút` : 'đã xong hôm nay');
       });
       if (typeof ReviewScope !== 'undefined') setText('today-scope-label', StorageManager.hasChosenScope() ? ReviewScope.label() : 'chưa chọn (bấm để chọn khóa)');
+      if (typeof Consolidate !== 'undefined') Consolidate.renderHomeCard();
       const startBtn = document.getElementById('btn-start-review');
       if (startBtn) startBtn.innerText = total ? `Bắt đầu ôn ${total} thẻ` : 'Ôn thêm từ đã học';
       document.querySelectorAll('[data-due-badge]').forEach((b) => {

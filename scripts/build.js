@@ -51,6 +51,7 @@ const SRC_FILES = [
   'src/review.js',
   'src/tones.js',
   'src/guide.js',
+  'src/consolidate.js',
   'src/app.js'
 ];
 

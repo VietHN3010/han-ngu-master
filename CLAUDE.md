@@ -31,16 +31,17 @@ Dự án này được phát triển song song giữa **Claude** và **Antigravi
    - Ép nhả khi cần: `node scripts/agent-sync.js release <agent> --all`.
 
 <!-- AUTO-SYNC-STATE:START -->
-- **Build Tag:** `v13-1f02ab8c`
+- **Build Tag:** `v13-f102dbb9`
 - **Trạng thái nguồn:** Thay đổi đang thực hiện trong working tree (chưa commit)
-- **Các file nguồn liên quan:** `index.html`, `src/app.js`, `src/grammar.js`, `src/quiz.js`, `src/review.js`
+- **Các file nguồn liên quan:** `index.html`, `src/app.js`, `src/consolidate.js`, `src/data.js`, `src/storage.js`, `style.css`
 ```text
-index.html     |   9 +++--
- src/app.js     |   9 +++++
- src/grammar.js |   2 +
- src/quiz.js    |   2 +
- src/review.js  | 120 +++++++++++++++++++++++++++++++++++++++++++++++++--------
- 5 files changed, 124 insertions(+), 18 deletions(-)
+index.html         | 135 +++++++-
+ src/app.js         |   7 +-
+ src/consolidate.js | 999 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/data.js        |  46 +--
+ src/storage.js     |   4 +-
+ style.css          | 106 ++++++
+ 6 files changed, 1268 insertions(+), 29 deletions(-)
 ```
 <!-- AUTO-SYNC-STATE:END -->
 
@@ -85,7 +86,8 @@ Các file nguồn trong `src/`:
 15. `src/guide.js`: `Guide` (trang Kiến thức `#guide`: thanh điệu & biến điệu, bảng 20 cặp thanh, 44 bộ thủ, 16 lượng từ, số/giờ/ngày/tiền, kỳ thi HSK 2.0 vs 3.0). Ví dụ lấy tự động từ `all_words`.
 16. `src/notes.js` (**tự sinh, không sửa tay**): `window.LESSON_NOTES` = kiến thức từ slide bài giảng HSK (chiết tự, cách dùng, câu ví dụ, từ mở rộng, ngữ pháp, ngữ âm, văn hóa). `words[wordId]` gắn vào từng từ, `lessons[id]` gắn vào bài (`lessons[0]` = slide nhập môn, hiện ở Kiến thức > Ngữ âm / Chữ Hán). Sinh lại bằng `node scripts/build-notes.js ../slide-audit` từ `slide-audit/clean_*.json` (thư mục ngoài repo). Đóng gói chung vào `data.bundle.js`. Hiển thị qua `Notes` trong `src/ui.js`.
 17. `src/data-hsk3.js` + `src/grammar-hsk3.js` (**tự sinh, không sửa tay**): 10 bài HSK 3 (Bài 31–40) và 50 bài tập ngữ pháp, nối thêm vào `CHINESE_DATA.lessons` / `GRAMMAR_DATA`. Sinh lại bằng `node scripts/build-hsk3.js ../slide-audit` từ `slide-audit/hsk3/lesson_*.json` (lệnh này cũng ghi `slide-audit/clean_H.json` cho ghi chú; sau đó chạy `node scripts/build-notes.js ../slide-audit`). Không còn cố định 30 bài/744 từ: dùng `CHINESE_DATA.lessons.length`, `LessonBrowser.lastLessonId()`, bộ lọc `hskN`.
-18. `src/app.js`: `App` (Điều hướng **4 tab** `learn · review · dict · me` qua `TAB_GROUP`; các view: `home` (Hôm nay), `lessons`, `review`, `flashcard`, `quiz`, `grammar`, `writer`, `match`, `dict`, `me`; hash routing `#lesson-X`; màn Hôm nay, trang Tôi, chế độ khách).
+18. `src/consolidate.js`: `CONFUSABLES` (15 nhóm từ dễ nhầm HSK1–2: 不/没, 了/过, 二/两, 想/要, 怎么/怎么样, 几/多少, 认识/知道, 有点儿/一点儿, 还是/或者, 从/离, 会/能/可以, 次/遍, 的/得, 再/又, 就/才; mỗi nhóm có quy tắc, câu mẫu, 5–6 câu điền từ, `a` là mảng đáp án chấp nhận, phần tử đầu là đáp án chuẩn) và `Consolidate` (view `#consolidate`, mở từ trang Ôn tập và thẻ trên Hôm nay): bản đồ kiến thức theo cụm 5 bài/cấp HSK, kiểm tra 10 câu mỗi cụm (từ sai tự vào hàng ôn qua `updateWordSrs(id,'again')`), luyện điền từ dễ nhầm có lịch ôn riêng 1–2–4–7–14–30 ngày, tự đặt 3 câu, kế hoạch 4 việc mỗi ngày, và **chế độ củng cố** (đặt phạm vi ôn = mọi khóa đã học + 20 từ mới/ngày, tắt thì khôi phục cài đặt cũ). Lưu ở `user.consolidation` (trong `PROGRESS_FIELDS`, đồng bộ đám mây).
+19. `src/app.js`: `App` (Điều hướng **4 tab** `learn · review · dict · me` qua `TAB_GROUP`; các view: `home` (Hôm nay), `lessons`, `review`, `flashcard`, `quiz`, `grammar`, `writer`, `match`, `tones`, `consolidate`, `guide`, `dict`, `me`; hash routing `#lesson-X`; màn Hôm nay, trang Tôi, chế độ khách).
 
 **Chế độ khách (v14):** không còn bắt đăng nhập. `StorageManager.ensureGuest()` tạo học viên trên máy (`isGuest: true`, không đồng bộ). Khi đăng nhập/đăng ký, `_mergeGuestInto()` gộp tiến độ khách vào tài khoản. Lời mời tạo tài khoản hiện sau khi hoàn thành bài.
 
