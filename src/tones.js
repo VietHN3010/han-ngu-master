@@ -72,8 +72,16 @@ const ToneDrill = {
     const user = StorageManager.getCurrentUser();
     const maxLesson = Math.max(3, (user && user.lastActiveLesson) || 1, ...(((user && user.completedLessons) || [])));
     let pool = this.pool(mode);
-    const reached = pool.filter((p) => typeof p.word.lesson === 'number' && p.word.lesson <= maxLesson);
-    if (reached.length >= this.SESSION) pool = reached;
+    const scope = StorageManager.getReviewScope();
+    if (scope) {
+      // Learner chose which courses / lessons to practise
+      const ids = new Set(StorageManager.scopeWords(pool.map((p) => p.word), scope).map((w) => w.id));
+      const inScope = pool.filter((p) => ids.has(p.word.id));
+      if (inScope.length >= 4) pool = inScope;
+    } else {
+      const reached = pool.filter((p) => typeof p.word.lesson === 'number' && p.word.lesson <= maxLesson);
+      if (reached.length >= this.SESSION) pool = reached;
+    }
 
     // Bias towards the learner's weakest pairs
     const weak = new Set(this.weakest(3).map((w) => w.key));

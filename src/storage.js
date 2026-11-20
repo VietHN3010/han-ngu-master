@@ -26,7 +26,7 @@ function getSupabase() {
 const PROGRESS_FIELDS = [
   'completedLessons', 'lastActiveLesson', 'bookmarks', 'wordProgress',
   'customWords', 'streak', 'lastActiveDate', 'quizHighScores', 'updatedAt',
-  'xp', 'dailyGoals', 'lessonSteps'
+  'xp', 'dailyGoals', 'lessonSteps', 'reviewScope'
 ];
 
 function emptyProgress() {
@@ -42,6 +42,7 @@ function emptyProgress() {
     xp: 0,
     dailyGoals: {},
     lessonSteps: {},
+    reviewScope: null,
     updatedAt: 0
   };
 }
@@ -290,16 +291,60 @@ const StorageManager = {
     return true;
   },
 
+  // ---------- REVIEW SCOPE ----------
+  /**
+   * Which part of the course the learner wants to review, saved with the account (syncs across devices):
+   *   { levels: [1, 2], lessons: [] }   -> every lesson of HSK 1 and HSK 2
+   *   { levels: [], lessons: [3, 4, 5] } -> only these lessons (overrides levels)
+   * null means "not chosen yet": review everything the learner has reached.
+   */
+  getReviewScope() {
+    const user = this.getCurrentUser();
+    const sc = user && user.reviewScope;
+    if (!sc) return null;
+    return {
+      levels: Array.isArray(sc.levels) ? sc.levels.map(Number).filter(Boolean) : [],
+      lessons: Array.isArray(sc.lessons) ? sc.lessons.map(Number).filter(Boolean) : []
+    };
+  },
+
+  setReviewScope(scope) {
+    const user = this.getCurrentUser();
+    if (!user) return;
+    user.reviewScope = scope
+      ? { levels: [...new Set((scope.levels || []).map(Number))].sort(), lessons: [...new Set((scope.lessons || []).map(Number))].sort((a, b) => a - b) }
+      : null;
+    this.saveCurrentUser(user);
+  },
+
+  hasChosenScope() {
+    return !!this.getReviewScope();
+  },
+
+  /** Words inside a scope (all words when no scope / empty scope). */
+  scopeWords(allWords, scope = this.getReviewScope()) {
+    if (!scope) return allWords;
+    if (scope.lessons && scope.lessons.length) {
+      const set = new Set(scope.lessons);
+      return allWords.filter((w) => set.has(w.lesson));
+    }
+    if (scope.levels && scope.levels.length) return allWords.filter((w) => scope.levels.includes(w.hsk));
+    return allWords;
+  },
+
   // ---------- SPACED REPETITION QUEUE ----------
   /**
    * Builds today's review queue: words whose nextReview is due (most overdue first),
-   * then up to `newLimit` new words from lessons the learner has opened/completed.
+   * then up to `newLimit` new words. Only words inside the learner's review scope are used.
+   * Without a chosen scope, new words come from lessons the learner has opened/completed;
+   * with a chosen scope, from the earliest unseen lessons inside that scope.
    */
-  getReviewQueue(allWords, newLimit = 10) {
+  getReviewQueue(allWords, newLimit = 10, scope = this.getReviewScope()) {
     const user = this.getCurrentUser();
     const progress = (user && user.wordProgress) || {};
     const now = Date.now();
-    const due = allWords
+    const scoped = this.scopeWords(allWords, scope);
+    const due = scoped
       .filter((w) => progress[w.id] && (progress[w.id].nextReview || 0) <= now)
       .sort((a, b) => (progress[a.id].nextReview || 0) - (progress[b.id].nextReview || 0));
     const reached = new Set([...(user && user.completedLessons) || [], (user && user.lastActiveLesson) || 1]);
@@ -307,11 +352,11 @@ const StorageManager = {
     const today = new Date().toISOString().slice(0, 10);
     const introducedToday = Object.values(progress).filter((p) => p.firstSeen === today).length;
     const room = Math.max(0, newLimit - introducedToday);
-    const fresh = allWords
-      .filter((w) => !progress[w.id] && typeof w.lesson === 'number' && w.lesson <= maxLesson)
+    const fresh = scoped
+      .filter((w) => !progress[w.id] && typeof w.lesson === 'number' && (scope || w.lesson <= maxLesson))
       .sort((a, b) => a.lesson - b.lesson)
       .slice(0, room);
-    const hard = allWords.filter((w) => progress[w.id] && (progress[w.id].lapses || 0) >= 2 && (progress[w.id].nextReview || 0) <= now);
+    const hard = scoped.filter((w) => progress[w.id] && (progress[w.id].lapses || 0) >= 2 && (progress[w.id].nextReview || 0) <= now);
     return { due, fresh, hard, all: [...due, ...fresh] };
   },
 

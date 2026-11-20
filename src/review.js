@@ -31,27 +31,40 @@ const Review = {
     if (this.active) return;
     if (hub) hub.hidden = false;
     if (sess) sess.hidden = true;
+    ReviewScope.renderCard();
     if (typeof App !== 'undefined' && App.updateDashboardStats) App.updateDashboardStats();
   },
 
-  /** Words the learner has already met (lessons reached), weakest first. */
+  /**
+   * Words to practise when nothing is due: inside the learner's review scope, words already
+   * studied come first (weakest first), topped up with the earliest unseen words of the scope.
+   * Without a chosen scope, only lessons the learner has reached are used.
+   */
   learnedPool(limit = 15) {
     const user = StorageManager.getCurrentUser();
     const progress = (user && user.wordProgress) || {};
+    const scope = StorageManager.getReviewScope();
     const maxLesson = Math.max(1, ...((user && user.completedLessons) || []), (user && user.lastActiveLesson) || 1);
-    return this.words()
-      .filter((w) => typeof w.lesson === 'number' && w.lesson <= maxLesson)
-      .sort((a, b) => ((progress[a.id] || {}).srsLevel || 0) - ((progress[b.id] || {}).srsLevel || 0) || Math.random() - 0.5)
-      .slice(0, limit);
+    let base = StorageManager.scopeWords(this.words(), scope).filter((w) => typeof w.lesson === 'number');
+    if (!scope) base = base.filter((w) => w.lesson <= maxLesson);
+    const weakest = (a, b) => ((progress[a.id] || {}).srsLevel || 0) - ((progress[b.id] || {}).srsLevel || 0) || Math.random() - 0.5;
+    const seen = base.filter((w) => progress[w.id]).sort(weakest);
+    const unseen = base.filter((w) => !progress[w.id]).sort((a, b) => a.lesson - b.lesson);
+    return [...seen, ...unseen].slice(0, limit);
   },
 
-  startToday() {
+  /** Start today's review. The first time, ask which courses / lessons to review. */
+  startToday(skipPicker = false) {
+    if (!skipPicker && !StorageManager.hasChosenScope()) {
+      ReviewScope.openPicker(() => this.startToday(true));
+      return;
+    }
     const limit = (typeof Prefs !== 'undefined' && Prefs.data.newPerDay) || 10;
     const q = StorageManager.getReviewQueue(this.words(), limit);
     let words = q.all;
     if (!words.length) {
       words = this.learnedPool(12);
-      App.toast('Đã ôn hết thẻ đến hạn. Đây là lượt ôn thêm các từ yếu nhất.', 'info', 3200);
+      if (words.length) App.toast(`Đã ôn hết thẻ đến hạn trong ${ReviewScope.label()}. Đây là lượt ôn thêm các từ yếu nhất.`, 'info', 3200);
     }
     this.begin(words, 'today');
   },
@@ -63,7 +76,7 @@ const Review = {
 
   begin(words, mode) {
     if (!words.length) {
-      App.toast('Chưa có từ để ôn. Hãy học Bài 1 trước nhé.', 'info');
+      App.toast(StorageManager.hasChosenScope() ? `Chưa có từ để ôn trong ${ReviewScope.label()}. Hãy đổi phạm vi ôn tập.` : 'Chưa có từ để ôn. Hãy học Bài 1 trước nhé.', 'info', 3200);
       return;
     }
     this.mode = mode;
@@ -398,6 +411,194 @@ const Review = {
   }
 };
 
+/**
+ * ReviewScope: lets each learner choose which HSK courses (or specific lessons) to review,
+ * instead of mixing every level together. Saved with the account via StorageManager.setReviewScope.
+ */
+const ReviewScope = {
+  draft: null,
+
+  lessons() {
+    return (window.CHINESE_DATA && window.CHINESE_DATA.lessons) || [];
+  },
+
+  levels() {
+    return [...new Set(this.lessons().map((l) => l.hsk))].sort();
+  },
+
+  /** Default selection for a learner who has not chosen yet: the levels of lessons they have reached. */
+  suggested() {
+    const user = StorageManager.getCurrentUser();
+    const reached = new Set([...((user && user.completedLessons) || []), (user && user.lastActiveLesson) || 1]);
+    const levels = [...new Set(this.lessons().filter((l) => reached.has(l.id)).map((l) => l.hsk))];
+    return { levels: levels.length ? levels : [1], lessons: [] };
+  },
+
+  current() {
+    return StorageManager.getReviewScope() || this.suggested();
+  },
+
+  /** Short human label, e.g. "HSK 1 + HSK 2" or "Bài 3, 4, 5". */
+  label(scope = StorageManager.getReviewScope()) {
+    if (!scope) return 'tất cả bài đã học';
+    if (scope.lessons && scope.lessons.length) {
+      const ids = scope.lessons;
+      return ids.length > 4 ? `${ids.length} bài đã chọn` : `Bài ${ids.join(', ')}`;
+    }
+    if (scope.levels && scope.levels.length) return scope.levels.map((h) => `HSK ${h}`).join(' + ');
+    return 'tất cả bài';
+  },
+
+  counts(scope) {
+    const words = StorageManager.scopeWords((window.CHINESE_DATA && window.CHINESE_DATA.all_words) || [], scope);
+    const limit = (typeof Prefs !== 'undefined' && Prefs.data.newPerDay) || 10;
+    const q = StorageManager.getReviewQueue(window.CHINESE_DATA.all_words, limit, scope);
+    return { words: words.length, due: q.due.length, fresh: q.fresh.length };
+  },
+
+  isEmpty(scope) {
+    return !(scope.lessons && scope.lessons.length) && !(scope.levels && scope.levels.length);
+  },
+
+  /** Picker markup bound to this.draft; `where` is 'card' (Review hub) or 'dialog'. */
+  pickerHtml(where) {
+    const d = this.draft;
+    const byLesson = d.lessons.length > 0;
+    const words = (window.CHINESE_DATA && window.CHINESE_DATA.all_words) || [];
+    const levelChips = this.levels().map((h) => {
+      const n = words.filter((w) => w.hsk === h).length;
+      const lessonIds = this.lessons().filter((l) => l.hsk === h).map((l) => l.id);
+      const on = !byLesson && d.levels.includes(h);
+      const partial = byLesson && lessonIds.some((id) => d.lessons.includes(id));
+      return `<button type="button" class="scope-chip ${on ? 'on' : ''} ${partial ? 'partial' : ''}" aria-pressed="${on}" aria-label="HSK ${h}, bài ${Math.min(...lessonIds)} đến ${Math.max(...lessonIds)}, ${n} từ" onclick="ReviewScope.toggleLevel(${h}, '${where}')">
+        <span class="scope-check">${on ? Icon.svg('check') : ''}</span><span><b>HSK ${h}</b><small>Bài ${Math.min(...lessonIds)}–${Math.max(...lessonIds)} · ${n} từ</small></span></button>`;
+    }).join('');
+    const lessonGroups = this.levels().map((h) => `
+      <div class="scope-group">
+        <div class="scope-group-head"><b>HSK ${h}</b>
+          <button type="button" class="btn-ghost btn-sm" onclick="ReviewScope.selectLessons(${h}, true, '${where}')">Chọn cả khóa</button>
+          <button type="button" class="btn-ghost btn-sm" onclick="ReviewScope.selectLessons(${h}, false, '${where}')">Bỏ chọn</button></div>
+        <div class="scope-lessons">${this.lessons().filter((l) => l.hsk === h).map((l) => {
+          const on = byLesson ? d.lessons.includes(l.id) : d.levels.includes(h);
+          return `<label class="scope-lesson ${on ? 'on' : ''}"><input type="checkbox" ${on ? 'checked' : ''} aria-label="Bài ${l.id}: ${UI.esc(l.title)}" onchange="ReviewScope.toggleLesson(${l.id}, this.checked, '${where}')"><span class="sl-num">${l.id}</span><span class="sl-title hanzi">${l.zh_title}</span></label>`;
+        }).join('')}</div>
+      </div>`).join('');
+    const empty = this.isEmpty(d);
+    const c = empty ? { words: 0, due: 0, fresh: 0 } : this.counts(d);
+    return `
+      <div class="scope-chips" role="group" aria-label="Chọn khóa HSK">${levelChips}</div>
+      <details class="scope-details" ${byLesson ? 'open' : ''}>
+        <summary>Hoặc chọn từng bài cụ thể${byLesson ? ` · đang chọn ${d.lessons.length} bài` : ''}</summary>
+        ${lessonGroups}
+      </details>
+      <p class="scope-summary ${empty ? 'warn' : ''}" aria-live="polite">${empty
+        ? 'Hãy chọn ít nhất một khóa hoặc một bài.'
+        : `Phạm vi: <b>${UI.esc(this.label(d))}</b> · ${c.words} từ · <b>${c.due}</b> thẻ đến hạn · <b>${c.fresh}</b> từ mới hôm nay`}</p>`;
+  },
+
+  rerender(where) {
+    if (where === 'dialog') {
+      const body = document.getElementById('scope-dialog-body');
+      if (body) body.innerHTML = this.pickerHtml('dialog');
+      const start = document.getElementById('scope-dialog-start');
+      if (start) start.disabled = this.isEmpty(this.draft);
+    } else {
+      // Inline card saves immediately
+      if (!this.isEmpty(this.draft)) StorageManager.setReviewScope(this.draft);
+      this.renderCard();
+      if (App.updateDashboardStats) App.updateDashboardStats();
+    }
+  },
+
+  toggleLevel(h, where) {
+    const d = this.draft;
+    if (d.lessons.length) { d.lessons = []; d.levels = [h]; }
+    else if (d.levels.includes(h)) d.levels = d.levels.filter((x) => x !== h);
+    else d.levels = [...d.levels, h].sort();
+    this.rerender(where);
+  },
+
+  /** Switch to lesson mode, starting from the lessons implied by the selected levels. */
+  toLessonMode() {
+    const d = this.draft;
+    if (!d.lessons.length) d.lessons = this.lessons().filter((l) => d.levels.includes(l.hsk)).map((l) => l.id);
+    d.levels = [];
+  },
+
+  toggleLesson(id, on, where) {
+    this.toLessonMode();
+    const d = this.draft;
+    d.lessons = on ? [...new Set([...d.lessons, id])] : d.lessons.filter((x) => x !== id);
+    this.normalise();
+    this.rerender(where);
+  },
+
+  selectLessons(h, on, where) {
+    this.toLessonMode();
+    const ids = this.lessons().filter((l) => l.hsk === h).map((l) => l.id);
+    const d = this.draft;
+    d.lessons = on ? [...new Set([...d.lessons, ...ids])] : d.lessons.filter((x) => !ids.includes(x));
+    this.normalise();
+    this.rerender(where);
+  },
+
+  /** If the chosen lessons are exactly whole levels, store them as levels (shorter label). */
+  normalise() {
+    const d = this.draft;
+    if (!d.lessons.length) return;
+    const set = new Set(d.lessons);
+    const full = this.levels().filter((h) => this.lessons().filter((l) => l.hsk === h).every((l) => set.has(l.id)));
+    const covered = this.lessons().filter((l) => full.includes(l.hsk)).map((l) => l.id);
+    if (covered.length === d.lessons.length) { d.levels = full; d.lessons = []; }
+  },
+
+  /** Inline card in the Review hub. */
+  renderCard() {
+    const el = document.getElementById('review-scope-card');
+    if (!el) return;
+    this.draft = JSON.parse(JSON.stringify(this.current()));
+    el.innerHTML = `
+      <div class="today-card-head"><h3>Phạm vi ôn tập</h3><span class="muted-sm">Lưu theo tài khoản</span></div>
+      <p class="muted-sm">Chọn khóa hoặc bài bạn muốn ôn. Hàng đợi, luyện nghe và luyện thanh điệu chỉ lấy từ trong phạm vi này.</p>
+      ${this.pickerHtml('card')}`;
+  },
+
+  /** Modal shown before the first review session. */
+  openPicker(onStart) {
+    this.draft = JSON.parse(JSON.stringify(this.current()));
+    const wrap = document.createElement('div');
+    wrap.className = 'dialog-backdrop';
+    wrap.innerHTML = `
+      <div class="dialog scope-dialog" role="dialog" aria-modal="true" aria-labelledby="scope-dialog-title">
+        <h3 id="scope-dialog-title">Bạn muốn ôn phần nào?</h3>
+        <p class="dialog-body">Chọn khóa HSK hoặc từng bài. Lựa chọn được lưu lại, đổi bất cứ lúc nào trong tab Ôn tập.</p>
+        <div id="scope-dialog-body">${this.pickerHtml('dialog')}</div>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-outline" data-act="cancel">Để sau</button>
+          <button type="button" class="btn btn-primary" id="scope-dialog-start" data-act="start" ${this.isEmpty(this.draft) ? 'disabled' : ''}>Bắt đầu ôn</button>
+        </div>
+      </div>`;
+    const close = () => { wrap.classList.remove('show'); setTimeout(() => wrap.remove(), 180); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    wrap.addEventListener('click', (e) => {
+      if (e.target === wrap) { close(); return; }
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      if (b.dataset.act === 'cancel') { close(); return; }
+      if (b.dataset.act === 'start' && !this.isEmpty(this.draft)) {
+        StorageManager.setReviewScope(this.draft);
+        close();
+        this.renderCard();
+        if (onStart) onStart();
+      }
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(wrap);
+    requestAnimationFrame(() => wrap.classList.add('show'));
+  }
+};
+
 if (typeof window !== 'undefined') {
+  window.ReviewScope = ReviewScope;
   window.Review = Review;
 }

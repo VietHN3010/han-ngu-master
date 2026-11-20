@@ -31,22 +31,17 @@ Dự án này được phát triển song song giữa **Claude** và **Antigravi
    - Ép nhả khi cần: `node scripts/agent-sync.js release <agent> --all`.
 
 <!-- AUTO-SYNC-STATE:START -->
-- **Build Tag:** `v13-79cdab6f`
+- **Build Tag:** `v13-0211677d`
 - **Trạng thái nguồn:** Thay đổi đang thực hiện trong working tree (chưa commit)
-- **Các file nguồn liên quan:** `index.html`, `src/app.js`, `src/data-hsk3.js`, `src/grammar-hsk3.js`, `src/grammar.js`, `src/guide.js`, `src/lessons.js`, `src/match.js`, `src/notes.js`, `src/quiz.js`, `style.css`
+- **Các file nguồn liên quan:** `index.html`, `src/app.js`, `src/review.js`, `src/storage.js`, `src/tones.js`, `style.css`
 ```text
-index.html          | 46 ++++++++++++++++++++++++++--------------------
- src/app.js          | 14 ++++++++------
- src/data-hsk3.js    | 13 +++++++++++++
- src/grammar-hsk3.js |  5 +++++
- src/grammar.js      | 10 +++++-----
- src/guide.js        | 19 +++++++++++++++----
- src/lessons.js      | 23 ++++++++++++++---------
- src/match.js        |  3 +--
- src/notes.js        |  2 +-
- src/quiz.js         |  6 ++----
- style.css           |  2 ++
- 11 files changed, 92 insertions(+), 51 deletions(-)
+index.html     |  43 +++++++++++-
+ src/app.js     |   1 +
+ src/review.js  | 217 ++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ src/storage.js |  59 ++++++++++++++--
+ src/tones.js   |  12 +++-
+ style.css      |  34 +++++++++
+ 6 files changed, 346 insertions(+), 20 deletions(-)
 ```
 <!-- AUTO-SYNC-STATE:END -->
 
@@ -86,7 +81,7 @@ Các file nguồn trong `src/`:
 10. `src/dictionary.js`: `DictionaryController` (Tra cứu từ điển nhanh HSK 1 & 2).
 11. `src/pinyin.js`: `PinyinController` (Bảng 23 thanh mẫu, 36 vận mẫu và 5 thanh điệu Pinyin kèm chữ Hán đại diện chuẩn âm Bắc Kinh `sound`).
 12. `src/ui.js`: `Icon` (bộ biểu tượng SVG dùng chung, thay emoji), `Tone` (tách âm tiết pinyin + tô màu thanh điệu `.t1`–`.t5`), `Prefs` (bật/tắt Pinyin, Hán Việt, màu thanh điệu, số từ mới/ngày), `UI` (`toast`, `confirm`, `alert`, `loadScript`). **Không dùng `window.alert/confirm`** — dùng `UI.confirm/UI.alert`.
-13. `src/review.js`: `Review` (hàng đợi ôn tập hôm nay theo lịch ôn ngắt quãng, trộn dạng bài: intro / flip / meaning / reverse / listen / write; luyện nghe). HanziWriter được tải lười qua `HANZI_WRITER_URL`.
+13. `src/review.js`: `Review` (hàng đợi ôn tập hôm nay theo lịch ôn ngắt quãng, trộn dạng bài: intro / flip / meaning / reverse / listen / write; luyện nghe). HanziWriter được tải lười qua `HANZI_WRITER_URL`. **Phạm vi ôn tập (`ReviewScope`):** người học chọn khóa HSK hoặc từng bài; lưu ở `user.reviewScope` (`{levels:[1,2], lessons:[]}`, `lessons` ưu tiên hơn `levels`, đồng bộ đám mây) qua `StorageManager.get/setReviewScope()`. `getReviewQueue()`, `Review.learnedPool()` (luyện nghe) và `ToneDrill` chỉ lấy từ trong phạm vi (`StorageManager.scopeWords()`). Lần đầu bấm ôn tập sẽ hiện hộp chọn phạm vi.
 14. `src/tones.js`: `ToneDrill` (luyện nghe phân biệt thanh: một âm tiết / cặp thanh, bỏ qua từ có 一, 不 và 3+3; thống kê độ chính xác từng cặp thanh trong `localStorage` `hnm_tone_stats_v1`). View `#tones`.
 15. `src/guide.js`: `Guide` (trang Kiến thức `#guide`: thanh điệu & biến điệu, bảng 20 cặp thanh, 44 bộ thủ, 16 lượng từ, số/giờ/ngày/tiền, kỳ thi HSK 2.0 vs 3.0). Ví dụ lấy tự động từ `all_words`.
 16. `src/notes.js` (**tự sinh, không sửa tay**): `window.LESSON_NOTES` = kiến thức từ slide bài giảng HSK (chiết tự, cách dùng, câu ví dụ, từ mở rộng, ngữ pháp, ngữ âm, văn hóa). `words[wordId]` gắn vào từng từ, `lessons[id]` gắn vào bài (`lessons[0]` = slide nhập môn, hiện ở Kiến thức > Ngữ âm / Chữ Hán). Sinh lại bằng `node scripts/build-notes.js ../slide-audit` từ `slide-audit/clean_*.json` (thư mục ngoài repo). Đóng gói chung vào `data.bundle.js`. Hiển thị qua `Notes` trong `src/ui.js`.

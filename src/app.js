@@ -332,6 +332,7 @@ const App = {
         setText(`${pre}-hard`, q.hard.length);
         setText(`${pre}-review-eta`, total ? `khoảng ${eta} phút` : 'đã xong hôm nay');
       });
+      if (typeof ReviewScope !== 'undefined') setText('today-scope-label', StorageManager.hasChosenScope() ? ReviewScope.label() : 'chưa chọn (bấm để chọn khóa)');
       const startBtn = document.getElementById('btn-start-review');
       if (startBtn) startBtn.innerText = total ? `Bắt đầu ôn ${total} thẻ` : 'Ôn thêm từ đã học';
       document.querySelectorAll('[data-due-badge]').forEach((b) => {

@@ -296,6 +296,27 @@ function run() {
   App.updateDashboardStats();
   assert.strictEqual(elements['hero-lesson-title'].innerText, 'Bài 5: 这是王老师');
 
+  // 6b. Review scope: queue only uses words from the chosen HSK levels / lessons
+  const SM = sandbox.window.StorageManager;
+  const realGetUser = SM.getCurrentUser;
+  const past = Date.now() - 86400000;
+  const scopeUser = { lastActiveLesson: 1, completedLessons: [], wordProgress: {}, reviewScope: null };
+  data.all_words.filter((w) => w.lesson === 2 || w.lesson === 20 || w.lesson === 31)
+    .forEach((w) => { scopeUser.wordProgress[w.id] = { srsLevel: 1, nextReview: past }; });
+  SM.getCurrentUser = () => scopeUser;
+  const byLevel = SM.getReviewQueue(data.all_words, 10, { levels: [1], lessons: [] });
+  assert(byLevel.due.length > 0 && byLevel.due.every((w) => w.hsk === 1), 'Scope HSK1: due words must all be HSK 1');
+  assert(byLevel.fresh.every((w) => w.hsk === 1), 'Scope HSK1: new words must all be HSK 1');
+  const byLevels = SM.getReviewQueue(data.all_words, 10, { levels: [1, 3], lessons: [] });
+  assert(byLevels.due.some((w) => w.hsk === 3) && !byLevels.due.some((w) => w.hsk === 2), 'Scope HSK1+3 must exclude HSK 2');
+  const byLessons = SM.getReviewQueue(data.all_words, 10, { levels: [1, 2, 3], lessons: [20] });
+  assert(byLessons.all.length > 0 && byLessons.all.every((w) => w.lesson === 20), 'Lesson scope must override levels');
+  const fresh3 = SM.getReviewQueue(data.all_words, 10, { levels: [3], lessons: [] }).fresh;
+  assert(fresh3.length === 10 && fresh3.every((w) => w.hsk === 3), 'Chosen HSK3 scope must offer new HSK 3 words even before reaching lesson 31');
+  const noScope = SM.getReviewQueue(data.all_words, 10, null);
+  assert(noScope.fresh.every((w) => w.lesson <= 1), 'Without a scope, new words come only from reached lessons');
+  SM.getCurrentUser = realGetUser;
+
   let keydownCount = 0;
   win.addEventListener = (ev) => { if (ev === 'keydown') keydownCount++; };
   FlashcardController.setupListeners();

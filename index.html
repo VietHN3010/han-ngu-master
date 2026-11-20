@@ -2993,6 +2993,40 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
 .note-text { flex: 1; min-width: 0; }
 .lesson-head { grid-template-columns: minmax(0, 1fr); }
 .lesson-head-row { min-width: 0; }
+
+/* Review scope picker (chọn khóa / bài để ôn) */
+.scope-card { max-width: 640px; }
+.scope-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; }
+.scope-chip { display: flex; align-items: center; gap: 0.6rem; text-align: left; background: var(--paper); border: 1.5px solid var(--line); border-radius: 14px; padding: 0.6rem 0.75rem; cursor: pointer; font: inherit; color: var(--ink); }
+.scope-chip > span:last-child { display: grid; gap: 0.05rem; }
+.scope-chip small { font-size: 0.74rem; color: var(--ink-soft); }
+.scope-chip.on { border-color: var(--primary); background: var(--red-soft); }
+.scope-chip.partial { border-style: dashed; border-color: var(--primary-border); }
+.scope-check { width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid var(--line); display: grid; place-items: center; flex: none; background: var(--card); color: #fff; }
+.scope-chip.on .scope-check { background: var(--primary); border-color: var(--primary); }
+.scope-check .ico { width: 14px; height: 14px; stroke-width: 3; }
+.scope-details > summary { cursor: pointer; font-size: 0.84rem; font-weight: 700; color: var(--ink-soft); padding: 0.25rem 0; }
+.scope-details[open] > summary { margin-bottom: 0.5rem; }
+.scope-group { display: grid; gap: 0.4rem; margin-bottom: 0.75rem; }
+.scope-group-head { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; font-size: 0.85rem; }
+.scope-group-head b { margin-right: auto; }
+.scope-group-head .btn-ghost { padding: 0.2rem 0.5rem; font-size: 0.76rem; border-radius: 8px; cursor: pointer; }
+.scope-lessons { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.35rem; max-height: 260px; overflow-y: auto; padding-right: 2px; }
+.scope-lesson { display: flex; align-items: center; gap: 0.4rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.35rem 0.5rem; cursor: pointer; font-size: 0.82rem; background: var(--card); min-width: 0; }
+.scope-lesson.on { border-color: var(--primary-border); background: var(--red-soft); }
+.scope-lesson input { accent-color: var(--primary); flex: none; }
+.sl-num { font-weight: 800; color: var(--ink-soft); font-variant-numeric: tabular-nums; flex: none; }
+.sl-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.scope-summary { font-size: 0.84rem; color: var(--ink-soft); line-height: 1.5; }
+.scope-summary b { color: var(--ink); }
+.scope-summary.warn { color: var(--primary); font-weight: 700; }
+.scope-dialog { width: min(560px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; }
+.scope-line { all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--ink-soft); padding: 0.1rem 0; }
+.scope-line b { color: var(--ink); }
+.scope-line-act { color: var(--primary); font-weight: 800; }
+.scope-line:focus-visible { outline: 2px solid var(--primary); border-radius: 6px; }
+
+.scope-dialog .dialog-actions { position: sticky; bottom: -1.25rem; background: var(--card); margin: 0 -1.25rem -1.25rem; padding: 0.75rem 1.25rem 1.25rem; border-top: 1px solid var(--line); }
   </style>
   
   <!-- Supabase Client CDN -->
@@ -3195,6 +3229,7 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
               <div><b id="today-new">0</b><span>từ mới</span></div>
               <div><b id="today-hard">0</b><span>hay quên</span></div>
             </div>
+            <button class="scope-line" onclick="App.navigateTo('review')" aria-label="Đổi phạm vi ôn tập"><span>Phạm vi: <b id="today-scope-label">chưa chọn</b></span><span class="scope-line-act">Đổi</span></button>
             <button id="btn-start-review" class="btn btn-outline btn-block" onclick="Review.startToday()">Bắt đầu ôn tập</button>
           </article>
 
@@ -3318,6 +3353,8 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
             <p>Hệ thống chọn đúng từ cần ôn dựa trên lịch ôn ngắt quãng 1–2–4–7–14–30 ngày</p>
           </div>
         </div>
+
+        <article class="today-card scope-card" id="review-scope-card" aria-label="Phạm vi ôn tập"></article>
 
         <article class="today-card review-today">
           <div class="today-card-head">
@@ -4005,8 +4042,8 @@ button.lesson-card .lesson-card-vi { font-size: 0.8rem; color: var(--ink-soft); 
     </div>
   </div>
 
-  <!-- Application Bundle (Cache busted v13-79cdab6f) -->
-  <script defer src="data.bundle.js?v=v13-79cdab6f"></script>
-  <script defer src="app.bundle.js?v=v13-79cdab6f"></script>
+  <!-- Application Bundle (Cache busted v13-0211677d) -->
+  <script defer src="data.bundle.js?v=v13-0211677d"></script>
+  <script defer src="app.bundle.js?v=v13-0211677d"></script>
 </body>
 </html>
